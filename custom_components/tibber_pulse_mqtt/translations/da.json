@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Konfigurér MQTT og fejlfinding for Tibber Pulse MQTT.",
+        "data": {
+          "broker_mode": "MQTT-broker-tilstand",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "language": "Sprog",
+          "debug_log_component": "Aktivér komponentens debug-logning",
+          "log_missed_base64": "Log manglende payloads (Base64)",
+          "log_obis": "Vis OBIS-koder i log"
+        },
+        "data_description": {
+          "debug_log_component": "Slår debug-logniveau til for denne integration.",
+          "log_missed_base64": "Når aktiveret, logges manglende/ugyldige payloads i Base64 til fejlfinding.",
+          "log_obis": "Når aktiveret, medtages fortolkede OBIS-koder i loggene."
+        }
+      },
+      "external_broker": {
+        "title": "Ekstern MQTT-broker",
+        "description": "Angiv forbindelsesoplysninger for din eksterne MQTT-broker.",
+        "data": {
+          "host": "MQTT-vært",
+          "port": "MQTT-port",
+          "username": "Brugernavn",
+          "password": "Adgangskode",
+          "client_id": "Client ID",
+          "tls": "Brug TLS"
+        }
+      },
+      "external_tls": {
+        "title": "Ekstern MQTT TLS",
+        "description": "Konfigurér TLS for den eksterne broker.",
+        "data": {
+          "cafile": "Sti til CA-fil",
+          "certfile": "Sti til klientcertifikat",
+          "keyfile": "Sti til klientnøgle",
+          "tls_version": "TLS-version",
+          "tls_insecure": "Tillad usikker TLS (spring verifikation over)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Indstillinger",
+        "description": "Redigér MQTT- og fejlfindingstilvalg.",
+        "data": {
+          "broker_mode": "MQTT-broker-tilstand",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "language": "Sprog",
+          "debug_log_component": "Aktivér komponentens debug-logning",
+          "log_missed_base64": "Log manglende payloads (Base64)",
+          "log_obis": "Vis OBIS-koder i log"
+        },
+        "data_description": {
+          "debug_log_component": "Slår debug-logniveau til for denne integration.",
+          "log_missed_base64": "Når aktiveret, logges manglende/ugyldige payloads i Base64 til fejlfinding.",
+          "log_obis": "Når aktiveret, medtages fortolkede OBIS-koder i loggene."
+        }
+      },
+      "external_broker_options": {
+        "title": "Ekstern MQTT-broker - Indstillinger",
+        "description": "Redigér forbindelsesoplysninger for din eksterne MQTT-broker.",
+        "data": {
+          "host": "MQTT-vært",
+          "port": "MQTT-port",
+          "username": "Brugernavn",
+          "password": "Adgangskode",
+          "client_id": "Client ID",
+          "tls": "Brug TLS"
+        }
+      },
+      "external_tls_options": {
+        "title": "Ekstern MQTT TLS - Indstillinger",
+        "description": "Redigér TLS-indstillinger for den eksterne broker.",
+        "data": {
+          "cafile": "Sti til CA-fil",
+          "certfile": "Sti til klientcertifikat",
+          "keyfile": "Sti til klientnøgle",
+          "tls_version": "TLS-version",
+          "tls_insecure": "Tillad usikker TLS (spring verifikation over)"
+        }
+      }
+    }
+  }
+}

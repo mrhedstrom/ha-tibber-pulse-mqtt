@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "MQTT und Fehlersuche für Tibber Pulse MQTT konfigurieren.",
+        "data": {
+          "broker_mode": "MQTT-Broker-Modus",
+          "subscribe_topic": "MQTT-Subscribe-Topic",
+          "language": "Sprache",
+          "debug_log_component": "Debug-Logging für die Komponente aktivieren",
+          "log_missed_base64": "Fehlende Payloads protokollieren (Base64)",
+          "log_obis": "OBIS-Codes im Log anzeigen"
+        },
+        "data_description": {
+          "debug_log_component": "Aktiviert das Debug-Loglevel für diese Integration.",
+          "log_missed_base64": "Wenn aktiviert, werden fehlende/ungültige Payloads zur Diagnose in Base64 protokolliert.",
+          "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen."
+        }
+      },
+      "external_broker": {
+        "title": "Externer MQTT-Broker",
+        "description": "Verbindungsdaten für deinen externen MQTT-Broker eingeben.",
+        "data": {
+          "host": "MQTT-Host",
+          "port": "MQTT-Port",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "client_id": "Client-ID",
+          "tls": "TLS verwenden"
+        }
+      },
+      "external_tls": {
+        "title": "Externe MQTT TLS",
+        "description": "TLS für den externen Broker konfigurieren.",
+        "data": {
+          "cafile": "Pfad zur CA-Datei",
+          "certfile": "Pfad zum Client-Zertifikat",
+          "keyfile": "Pfad zum Client-Schlüssel",
+          "tls_version": "TLS-Version",
+          "tls_insecure": "Unsicheres TLS zulassen (Verifizierung überspringen)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT – Optionen",
+        "description": "MQTT- und Debug-Optionen bearbeiten.",
+        "data": {
+          "broker_mode": "MQTT-Broker-Modus",
+          "subscribe_topic": "MQTT-Subscribe-Topic",
+          "language": "Sprache",
+          "debug_log_component": "Debug-Logging für die Komponente aktivieren",
+          "log_missed_base64": "Fehlende Payloads protokollieren (Base64)",
+          "log_obis": "OBIS-Codes im Log anzeigen"
+        },
+        "data_description": {
+          "debug_log_component": "Aktiviert das Debug-Loglevel für diese Integration.",
+          "log_missed_base64": "Wenn aktiviert, werden fehlende/ungültige Payloads zur Diagnose in Base64 protokolliert.",
+          "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen."
+        }
+      },
+      "external_broker_options": {
+        "title": "Externer MQTT-Broker – Optionen",
+        "description": "Verbindungsdaten für deinen externen MQTT-Broker bearbeiten.",
+        "data": {
+          "host": "MQTT-Host",
+          "port": "MQTT-Port",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "client_id": "Client-ID",
+          "tls": "TLS verwenden"
+        }
+      },
+      "external_tls_options": {
+        "title": "Externe MQTT TLS – Optionen",
+        "description": "TLS-Einstellungen für den externen Broker bearbeiten.",
+        "data": {
+          "cafile": "Pfad zur CA-Datei",
+          "certfile": "Pfad zum Client-Zertifikat",
+          "keyfile": "Pfad zum Client-Schlüssel",
+          "tls_version": "TLS-Version",
+          "tls_insecure": "Unsicheres TLS zulassen (Verifizierung überspringen)"
+        }
+      }
+    }
+  }
+}

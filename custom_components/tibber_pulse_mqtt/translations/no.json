@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Konfigurer MQTT og feilsøking for Tibber Pulse MQTT.",
+        "data": {
+          "broker_mode": "MQTT-meglermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "language": "Språk",
+          "debug_log_component": "Aktiver debug-logging for komponenten",
+          "log_missed_base64": "Logg manglende payloads (Base64)",
+          "log_obis": "Vis OBIS-koder i logg"
+        },
+        "data_description": {
+          "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
+          "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
+          "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+        }
+      },
+      "external_broker": {
+        "title": "Ekstern MQTT-megler",
+        "description": "Oppgi tilkoblingsdetaljer for din eksterne MQTT-megler.",
+        "data": {
+          "host": "MQTT-vert",
+          "port": "MQTT-port",
+          "username": "Brukernavn",
+          "password": "Passord",
+          "client_id": "Client ID",
+          "tls": "Bruk TLS"
+        }
+      },
+      "external_tls": {
+        "title": "Ekstern MQTT TLS",
+        "description": "Konfigurer TLS for ekstern megler.",
+        "data": {
+          "cafile": "Sti til CA-fil",
+          "certfile": "Sti til klientsertifikat",
+          "keyfile": "Sti til klientnøkkel",
+          "tls_version": "TLS-versjon",
+          "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Alternativer",
+        "description": "Rediger MQTT- og feilsøkingsalternativer.",
+        "data": {
+          "broker_mode": "MQTT-meglermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "language": "Språk",
+          "debug_log_component": "Aktiver debug-logging for komponenten",
+          "log_missed_base64": "Logg manglende payloads (Base64)",
+          "log_obis": "Vis OBIS-koder i logg"
+        },
+        "data_description": {
+          "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
+          "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
+          "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+        }
+      },
+      "external_broker_options": {
+        "title": "Ekstern MQTT-megler - Alternativer",
+        "description": "Rediger tilkoblingsdetaljer for din eksterne MQTT-megler.",
+        "data": {
+          "host": "MQTT-vert",
+          "port": "MQTT-port",
+          "username": "Brukernavn",
+          "password": "Passord",
+          "client_id": "Client ID",
+          "tls": "Bruk TLS"
+        }
+      },
+      "external_tls_options": {
+        "title": "Ekstern MQTT TLS - Alternativer",
+        "description": "Rediger TLS-innstillinger for ekstern megler.",
+        "data": {
+          "cafile": "Sti til CA-fil",
+          "certfile": "Sti til klientsertifikat",
+          "keyfile": "Sti til klientnøkkel",
+          "tls_version": "TLS-versjon",
+          "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
+        }
+      }
+    }
+  }
+}

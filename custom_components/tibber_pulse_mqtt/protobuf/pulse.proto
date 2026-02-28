@@ -1,0 +1,11 @@
+syntax = "proto3";
+package tibber.pulse;
+
+// Envelope med ett kapslat length-delimited fält på tag 2.
+// Det är INTE en kort UTF-8-sträng, utan en blob som i sin tur innehåller "P1" + komprimerat block.
+message Envelope {
+  uint32 a    = 1;   // unknown (varint)
+  bytes  blob = 2;   // encapsulated protobuf/bytes including "P1" and zlib/raw-deflate
+  uint32 b    = 3;   // unknown (varint)
+  uint32 meta = 5;   // unknown/CRC (varint)
+}

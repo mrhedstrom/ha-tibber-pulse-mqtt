@@ -1,0 +1,9 @@
+{
+  "name": "Tibber Pulse MQTT",
+  "domains": [
+    "sensor"
+  ],
+  "country": "all",
+  "homeassistant": "2024.6.0",
+  "render_readme": true
+}

@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Configure MQTT and debugging for Tibber Pulse MQTT.",
+        "data": {
+          "broker_mode": "MQTT broker mode",
+          "subscribe_topic": "MQTT subscribe topic",
+          "language": "Language",
+          "debug_log_component": "Enable component debug logging",
+          "log_missed_base64": "Log missed payloads (Base64)",
+          "log_obis": "Show OBIS codes in log"
+        },
+        "data_description": {
+          "debug_log_component": "Turns on debug-level logging for this integration.",
+          "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
+          "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+        }
+      },
+      "external_broker": {
+        "title": "External MQTT broker",
+        "description": "Enter connection details for your external MQTT broker.",
+        "data": {
+          "host": "MQTT host",
+          "port": "MQTT port",
+          "username": "Username",
+          "password": "Password",
+          "client_id": "Client ID",
+          "tls": "Use TLS"
+        }
+      },
+      "external_tls": {
+        "title": "External MQTT TLS",
+        "description": "Configure TLS for the external broker.",
+        "data": {
+          "cafile": "CA file path",
+          "certfile": "Client certificate path",
+          "keyfile": "Client key path",
+          "tls_version": "TLS version",
+          "tls_insecure": "Allow insecure TLS (skip verify)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Options",
+        "description": "Edit MQTT and debugging options.",
+        "data": {
+          "broker_mode": "MQTT broker mode",
+          "subscribe_topic": "MQTT subscribe topic",
+          "language": "Language",
+          "debug_log_component": "Enable component debug logging",
+          "log_missed_base64": "Log missed payloads (Base64)",
+          "log_obis": "Show OBIS codes in log"
+        },
+        "data_description": {
+          "debug_log_component": "Turns on debug-level logging for this integration.",
+          "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
+          "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+        }
+      },
+      "external_broker_options": {
+        "title": "External MQTT broker - Options",
+        "description": "Edit connection details for your external MQTT broker.",
+        "data": {
+          "host": "MQTT host",
+          "port": "MQTT port",
+          "username": "Username",
+          "password": "Password",
+          "client_id": "Client ID",
+          "tls": "Use TLS"
+        }
+      },
+      "external_tls_options": {
+        "title": "External MQTT TLS - Options",
+        "description": "Edit TLS settings for the external broker.",
+        "data": {
+          "cafile": "CA file path",
+          "certfile": "Client certificate path",
+          "keyfile": "Client key path",
+          "tls_version": "TLS version",
+          "tls_insecure": "Allow insecure TLS (skip verify)"
+        }
+      }
+    }
+  }
+}

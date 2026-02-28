@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Configureer MQTT en foutopsporing voor Tibber Pulse MQTT.",
+        "data": {
+          "broker_mode": "MQTT-brokermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "language": "Taal",
+          "debug_log_component": "Debugloggen voor component inschakelen",
+          "log_missed_base64": "Gemiste payloads loggen (Base64)",
+          "log_obis": "OBIS-codes in log weergeven"
+        },
+        "data_description": {
+          "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
+          "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
+          "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen."
+        }
+      },
+      "external_broker": {
+        "title": "Externe MQTT-broker",
+        "description": "Voer verbindingsgegevens in voor je externe MQTT-broker.",
+        "data": {
+          "host": "MQTT-host",
+          "port": "MQTT-poort",
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord",
+          "client_id": "Client-ID",
+          "tls": "TLS gebruiken"
+        }
+      },
+      "external_tls": {
+        "title": "Externe MQTT TLS",
+        "description": "Configureer TLS voor de externe broker.",
+        "data": {
+          "cafile": "Pad naar CA-bestand",
+          "certfile": "Pad naar clientcertificaat",
+          "keyfile": "Pad naar clientsleutel",
+          "tls_version": "TLS-versie",
+          "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Opties",
+        "description": "MQTT- en debugopties bewerken.",
+        "data": {
+          "broker_mode": "MQTT-brokermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "language": "Taal",
+          "debug_log_component": "Debugloggen voor component inschakelen",
+          "log_missed_base64": "Gemiste payloads loggen (Base64)",
+          "log_obis": "OBIS-codes in log weergeven"
+        },
+        "data_description": {
+          "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
+          "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
+          "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen."
+        }
+      },
+      "external_broker_options": {
+        "title": "Externe MQTT-broker - Opties",
+        "description": "Bewerk verbindingsgegevens voor je externe MQTT-broker.",
+        "data": {
+          "host": "MQTT-host",
+          "port": "MQTT-poort",
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord",
+          "client_id": "Client-ID",
+          "tls": "TLS gebruiken"
+        }
+      },
+      "external_tls_options": {
+        "title": "Externe MQTT TLS - Opties",
+        "description": "Bewerk TLS-instellingen voor de externe broker.",
+        "data": {
+          "cafile": "Pad naar CA-bestand",
+          "certfile": "Pad naar clientcertificaat",
+          "keyfile": "Pad naar clientsleutel",
+          "tls_version": "TLS-versie",
+          "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
+        }
+      }
+    }
+  }
+}
