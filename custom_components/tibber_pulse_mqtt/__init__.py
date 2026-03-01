@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, CONF_DEBUG_LOG_COMPONENT
@@ -11,6 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["sensor"]
 
+CONFIG_SCHEMA = cv.platform_only_config_schema(DOMAIN)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Nothing to do for YAML setup; we use config entries.
