@@ -16,6 +16,8 @@ Local MQTT integration for Tibber Pulse devices (P1, HAN, KM). Decodes compresse
 - Robust binary parser: protobuf wire + zlib
 
 ## HACS Installation
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mrhedstrom&repository=ha-tibber-pulse-mqtt)
+
 You can install this integration via **HACS** as a **Custom repository**:
 
 1. Open **HACS → Integrations**.
