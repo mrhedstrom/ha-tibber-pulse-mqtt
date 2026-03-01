@@ -1,6 +1,6 @@
 {
   "name": "Tibber Pulse MQTT",
   "country": "all",
-  "homeassistant": "2024.6.0",
+  "homeassistant": "2026.3.0",
   "render_readme": true
 }
