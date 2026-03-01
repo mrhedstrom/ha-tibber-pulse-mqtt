@@ -1,19 +1,19 @@
 {
   "domain": "tibber_pulse_mqtt",
   "name": "Tibber Pulse MQTT",
-  "version": "0.1.0",
+  "after_dependencies": ["mqtt"],
+  "codeowners": ["@mrhedstrom"],
+  "config_flow": true,
   "documentation": "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt",
+  "integration_type": "hub",
+  "iot_class": "local_push",
   "issue_tracker": "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/issues",
+  "loggers": [
+    "custom_components.tibber_pulse_mqtt"
+  ],
   "requirements": [
     "paho-mqtt>=1.6.1",
     "protobuf>=4.25.0"
   ],
-  "after_dependencies": ["mqtt"],
-  "codeowners": ["@mrhedstrom"],
-  "iot_class": "local_push",
-  "integration_type": "hub",
-  "config_flow": true,
-  "loggers": [
-    "custom_components.tibber_pulse_mqtt"
-  ]
+  "version": "0.1.0"
 }
