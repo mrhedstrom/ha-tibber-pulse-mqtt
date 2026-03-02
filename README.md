@@ -1,5 +1,5 @@
 # Home Assistant Tibber Pulse (P1, HAN, KM) MQTT integration
-Local MQTT integration for Tibber Pulse devices (P1, HAN, KM). Decodes compressed protobuf envelopes, parses OBIS data, and exposes real‑time **native HA sensor entities** in Home Assistant (no MQTT Discovery, no extra topics). Supports multiple Pulse devices. Can also be forwarded to Tibber Cloud via an external MQTT bridge to keep data in both HA and Tibber.
+Local MQTT integration for Tibber Pulse devices (P1, HAN, KM). Decodes compressed protobuf envelopes, parses OBIS data, and exposes real‑time **native HA sensor entities** in Home Assistant (no MQTT Discovery, no extra topics, no cloud dependencies). Supports multiple Pulse devices. Can also be forwarded to Tibber Cloud via an external MQTT bridge to keep data in both HA and Tibber.
 
 Support development at [![PayPal](https://img.shields.io/badge/PayPal-003087?logo=paypal&logoColor=white)](https://paypal.me/mrhedstrom1)
 
@@ -92,7 +92,7 @@ sensor.tibber_<deviceid>_<obis_code_slug>
 ## Translations
 Currently there are translations for all main languages in the countries where Tibber Pulse is sold. They have been generated with AI since developers don't speak them all. If you find something wrong with translations let us know.
 
-Selected language follows HA settings, but language for sensor names can be selected in the integrations settings and defaults to HA language at integration first setup.
+Selected language follows HA global settings, but language for sensor names can be selected in the integrations settings and defaults to HA language at integration first setup.
 
 - Svenska
 - English
