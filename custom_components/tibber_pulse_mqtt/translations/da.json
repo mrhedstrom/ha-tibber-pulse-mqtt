@@ -87,115 +87,115 @@
     },
     "entity": {
         "sensor": {
-            "1-0:1.8.0": {
+            "1-0_1_8_0": {
                 "name": "Total importeret energi"
             },
-            "1-0:1.8.1": {
+            "1-0_1_8_1": {
                 "name": "Importeret energi (T1)"
             },
-            "1-0:1.8.2": {
+            "1-0_1_8_2": {
                 "name": "Importeret energi (T2)"
             },
-            "1-0:2.8.0": {
+            "1-0_2_8_0": {
                 "name": "Total eksporteret energi"
             },
-            "1-0:2.8.1": {
+            "1-0_2_8_1": {
                 "name": "Eksporteret energi (T1)"
             },
-            "1-0:2.8.2": {
+            "1-0_2_8_2": {
                 "name": "Eksporteret energi (T2)"
             },
-            "1-0:1.7.0": {
+            "1-0_1_7_0": {
                 "name": "Aktiv effekt (samlet)"
             },
-            "1-0:2.7.0": {
+            "1-0_2_7_0": {
                 "name": "Aktiv effekt ud (samlet)"
             },
-            "1-0:21.7.0": {
+            "1-0_21_7_0": {
                 "name": "Aktiv effekt L1"
             },
-            "1-0:22.7.0": {
+            "1-0_22_7_0": {
                 "name": "Aktiv effekt ud L1"
             },
-            "1-0:41.7.0": {
+            "1-0_41_7_0": {
                 "name": "Aktiv effekt L2"
             },
-            "1-0:42.7.0": {
+            "1-0_42_7_0": {
                 "name": "Aktiv effekt ud L2"
             },
-            "1-0:61.7.0": {
+            "1-0_61_7_0": {
                 "name": "Aktiv effekt L3"
             },
-            "1-0:62.7.0": {
+            "1-0_62_7_0": {
                 "name": "Aktiv effekt ud L3"
             },
-            "1-0:32.7.0": {
+            "1-0_32_7_0": {
                 "name": "Spænding L1"
             },
-            "1-0:52.7.0": {
+            "1-0_52_7_0": {
                 "name": "Spænding L2"
             },
-            "1-0:72.7.0": {
+            "1-0_72_7_0": {
                 "name": "Spænding L3"
             },
-            "1-0:31.7.0": {
+            "1-0_31_7_0": {
                 "name": "Strøm L1"
             },
-            "1-0:51.7.0": {
+            "1-0_51_7_0": {
                 "name": "Strøm L2"
             },
-            "1-0:71.7.0": {
+            "1-0_71_7_0": {
                 "name": "Strøm L3"
             },
-            "1-0:14.7.0": {
+            "1-0_14_7_0": {
                 "name": "Netfrekvens"
             },
-            "0-0:1.0.0": {
+            "0-0_1_0_0": {
                 "name": "Dato/Tid"
             },
-            "0-0:96.1.0": {
+            "0-0_96_1_0": {
                 "name": "Serienummer"
             },
-            "0-0:96.1.1": {
+            "0-0_96_1_1": {
                 "name": "Måler-ID"
             },
-            "0-0:42.0.0": {
+            "0-0_42_0_0": {
                 "name": "Alternativt ID"
             },
-            "0-0:96.13.0": {
+            "0-0_96_13_0": {
                 "name": "Besked"
             },
-            "0-0:96.13.1": {
+            "0-0_96_13_1": {
                 "name": "Beskedkode"
             },
-            "1-0:3.8.0": {
+            "1-0_3_8_0": {
                 "name": "Reaktiv energi import"
             },
-            "1-0:4.8.0": {
+            "1-0_4_8_0": {
                 "name": "Reaktiv energi eksport"
             },
-            "1-0:3.7.0": {
+            "1-0_3_7_0": {
                 "name": "Reaktiv effekt (ind)"
             },
-            "1-0:4.7.0": {
+            "1-0_4_7_0": {
                 "name": "Reaktiv effekt (ud)"
             },
-            "1-0:23.7.0": {
+            "1-0_23_7_0": {
                 "name": "Reaktiv effekt L1 (ind)"
             },
-            "1-0:24.7.0": {
+            "1-0_24_7_0": {
                 "name": "Reaktiv effekt L1 (ud)"
             },
-            "1-0:43.7.0": {
+            "1-0_43_7_0": {
                 "name": "Reaktiv effekt L2 (ind)"
             },
-            "1-0:44.7.0": {
+            "1-0_44_7_0": {
                 "name": "Reaktiv effekt L2 (ud)"
             },
-            "1-0:63.7.0": {
+            "1-0_63_7_0": {
                 "name": "Reaktiv effekt L3 (ind)"
             },
-            "1-0:64.7.0": {
+            "1-0_64_7_0": {
                 "name": "Reaktiv effekt L3 (ud)"
             }
         }

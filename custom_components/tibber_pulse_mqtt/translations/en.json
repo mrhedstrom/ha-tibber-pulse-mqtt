@@ -87,115 +87,115 @@
     },
     "entity": {
         "sensor": {
-            "1-0:1.8.0": {
+            "1-0_1_8_0": {
                 "name": "Total energy import"
             },
-            "1-0:1.8.1": {
+            "1-0_1_8_1": {
                 "name": "Energy import (T1)"
             },
-            "1-0:1.8.2": {
+            "1-0_1_8_2": {
                 "name": "Energy import (T2)"
             },
-            "1-0:2.8.0": {
+            "1-0_2_8_0": {
                 "name": "Total energy export"
             },
-            "1-0:2.8.1": {
+            "1-0_2_8_1": {
                 "name": "Energy export (T1)"
             },
-            "1-0:2.8.2": {
+            "1-0_2_8_2": {
                 "name": "Energy export (T2)"
             },
-            "1-0:1.7.0": {
+            "1-0_1_7_0": {
                 "name": "Active power (total)"
             },
-            "1-0:2.7.0": {
+            "1-0_2_7_0": {
                 "name": "Active power out (total)"
             },
-            "1-0:21.7.0": {
+            "1-0_21_7_0": {
                 "name": "Active power L1"
             },
-            "1-0:22.7.0": {
+            "1-0_22_7_0": {
                 "name": "Active power out L1"
             },
-            "1-0:41.7.0": {
+            "1-0_41_7_0": {
                 "name": "Active power L2"
             },
-            "1-0:42.7.0": {
+            "1-0_42_7_0": {
                 "name": "Active power out L2"
             },
-            "1-0:61.7.0": {
+            "1-0_61_7_0": {
                 "name": "Active power L3"
             },
-            "1-0:62.7.0": {
+            "1-0_62_7_0": {
                 "name": "Active power out L3"
             },
-            "1-0:32.7.0": {
+            "1-0_32_7_0": {
                 "name": "Voltage L1"
             },
-            "1-0:52.7.0": {
+            "1-0_52_7_0": {
                 "name": "Voltage L2"
             },
-            "1-0:72.7.0": {
+            "1-0_72_7_0": {
                 "name": "Voltage L3"
             },
-            "1-0:31.7.0": {
+            "1-0_31_7_0": {
                 "name": "Current L1"
             },
-            "1-0:51.7.0": {
+            "1-0_51_7_0": {
                 "name": "Current L2"
             },
-            "1-0:71.7.0": {
+            "1-0_71_7_0": {
                 "name": "Current L3"
             },
-            "1-0:14.7.0": {
+            "1-0_14_7_0": {
                 "name": "Grid frequency"
             },
-            "0-0:1.0.0": {
+            "0-0_1_0_0": {
                 "name": "Date/Time"
             },
-            "0-0:96.1.0": {
+            "0-0_96_1_0": {
                 "name": "Serial number"
             },
-            "0-0:96.1.1": {
+            "0-0_96_1_1": {
                 "name": "Meter ID"
             },
-            "0-0:42.0.0": {
+            "0-0_42_0_0": {
                 "name": "Alternative ID"
             },
-            "0-0:96.13.0": {
+            "0-0_96_13_0": {
                 "name": "Message"
             },
-            "0-0:96.13.1": {
+            "0-0_96_13_1": {
                 "name": "Message code"
             },
-            "1-0:3.8.0": {
+            "1-0_3_8_0": {
                 "name": "Reactive energy import"
             },
-            "1-0:4.8.0": {
+            "1-0_4_8_0": {
                 "name": "Reactive energy export"
             },
-            "1-0:3.7.0": {
+            "1-0_3_7_0": {
                 "name": "Reactive power (in)"
             },
-            "1-0:4.7.0": {
+            "1-0_4_7_0": {
                 "name": "Reactive power (out)"
             },
-            "1-0:23.7.0": {
+            "1-0_23_7_0": {
                 "name": "Reactive power L1 (in)"
             },
-            "1-0:24.7.0": {
+            "1-0_24_7_0": {
                 "name": "Reactive power L1 (out)"
             },
-            "1-0:43.7.0": {
+            "1-0_43_7_0": {
                 "name": "Reactive power L2 (in)"
             },
-            "1-0:44.7.0": {
+            "1-0_44_7_0": {
                 "name": "Reactive power L2 (out)"
             },
-            "1-0:63.7.0": {
+            "1-0_63_7_0": {
                 "name": "Reactive power L3 (in)"
             },
-            "1-0:64.7.0": {
+            "1-0_64_7_0": {
                 "name": "Reactive power L3 (out)"
             }
         }

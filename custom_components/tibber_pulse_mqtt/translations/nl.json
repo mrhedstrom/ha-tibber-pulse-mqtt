@@ -87,115 +87,115 @@
     },
     "entity": {
         "sensor": {
-            "1-0:1.8.0": {
+            "1-0_1_8_0": {
                 "name": "Totale energie-import"
             },
-            "1-0:1.8.1": {
+            "1-0_1_8_1": {
                 "name": "Energie-import (T1)"
             },
-            "1-0:1.8.2": {
+            "1-0_1_8_2": {
                 "name": "Energie-import (T2)"
             },
-            "1-0:2.8.0": {
+            "1-0_2_8_0": {
                 "name": "Totale energie-export"
             },
-            "1-0:2.8.1": {
+            "1-0_2_8_1": {
                 "name": "Energie-export (T1)"
             },
-            "1-0:2.8.2": {
+            "1-0_2_8_2": {
                 "name": "Energie-export (T2)"
             },
-            "1-0:1.7.0": {
+            "1-0_1_7_0": {
                 "name": "Actief vermogen (totaal)"
             },
-            "1-0:2.7.0": {
+            "1-0_2_7_0": {
                 "name": "Actief vermogen uit (totaal)"
             },
-            "1-0:21.7.0": {
+            "1-0_21_7_0": {
                 "name": "Actief vermogen L1"
             },
-            "1-0:22.7.0": {
+            "1-0_22_7_0": {
                 "name": "Actief vermogen uit L1"
             },
-            "1-0:41.7.0": {
+            "1-0_41_7_0": {
                 "name": "Actief vermogen L2"
             },
-            "1-0:42.7.0": {
+            "1-0_42_7_0": {
                 "name": "Actief vermogen uit L2"
             },
-            "1-0:61.7.0": {
+            "1-0_61_7_0": {
                 "name": "Actief vermogen L3"
             },
-            "1-0:62.7.0": {
+            "1-0_62_7_0": {
                 "name": "Actief vermogen uit L3"
             },
-            "1-0:32.7.0": {
+            "1-0_32_7_0": {
                 "name": "Spanning L1"
             },
-            "1-0:52.7.0": {
+            "1-0_52_7_0": {
                 "name": "Spanning L2"
             },
-            "1-0:72.7.0": {
+            "1-0_72_7_0": {
                 "name": "Spanning L3"
             },
-            "1-0:31.7.0": {
+            "1-0_31_7_0": {
                 "name": "Stroom L1"
             },
-            "1-0:51.7.0": {
+            "1-0_51_7_0": {
                 "name": "Stroom L2"
             },
-            "1-0:71.7.0": {
+            "1-0_71_7_0": {
                 "name": "Stroom L3"
             },
-            "1-0:14.7.0": {
+            "1-0_14_7_0": {
                 "name": "Netfrequentie"
             },
-            "0-0:1.0.0": {
+            "0-0_1_0_0": {
                 "name": "Datum/Tijd"
             },
-            "0-0:96.1.0": {
+            "0-0_96_1_0": {
                 "name": "Serienummer"
             },
-            "0-0:96.1.1": {
+            "0-0_96_1_1": {
                 "name": "Meter-ID"
             },
-            "0-0:42.0.0": {
+            "0-0_42_0_0": {
                 "name": "Alternatief ID"
             },
-            "0-0:96.13.0": {
+            "0-0_96_13_0": {
                 "name": "Bericht"
             },
-            "0-0:96.13.1": {
+            "0-0_96_13_1": {
                 "name": "Berichtcode"
             },
-            "1-0:3.8.0": {
+            "1-0_3_8_0": {
                 "name": "Reactieve energie-import"
             },
-            "1-0:4.8.0": {
+            "1-0_4_8_0": {
                 "name": "Reactieve energie-export"
             },
-            "1-0:3.7.0": {
+            "1-0_3_7_0": {
                 "name": "Reactief vermogen (in)"
             },
-            "1-0:4.7.0": {
+            "1-0_4_7_0": {
                 "name": "Reactief vermogen (uit)"
             },
-            "1-0:23.7.0": {
+            "1-0_23_7_0": {
                 "name": "Reactief vermogen L1 (in)"
             },
-            "1-0:24.7.0": {
+            "1-0_24_7_0": {
                 "name": "Reactief vermogen L1 (uit)"
             },
-            "1-0:43.7.0": {
+            "1-0_43_7_0": {
                 "name": "Reactief vermogen L2 (in)"
             },
-            "1-0:44.7.0": {
+            "1-0_44_7_0": {
                 "name": "Reactief vermogen L2 (uit)"
             },
-            "1-0:63.7.0": {
+            "1-0_63_7_0": {
                 "name": "Reactief vermogen L3 (in)"
             },
-            "1-0:64.7.0": {
+            "1-0_64_7_0": {
                 "name": "Reactief vermogen L3 (uit)"
             }
         }

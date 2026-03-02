@@ -118,7 +118,6 @@ class SensorManager:
                         ent_local = TibberSensor(
                             unique_id=unique_id,
                             dev_id=dev_id,
-                            name=obis_code,
                             obis_code=obis_code,
                             meta=meta,
                             status=status or {}
@@ -183,14 +182,13 @@ class TibberSensor(SensorEntity):
         self,
         unique_id: str,
         dev_id: str,     # pulse_id
-        name: str,
         obis_code: str,
         meta: Dict[str, Any],
         status: Dict[str, Any]
     ):
         self._attr_unique_id = unique_id
         self.has_entity_name = True
-        self._attr_translation_key = obis_code
+        self._attr_translation_key = obis_code.replace(':','_').replace('.','_')
 
         self._dev_id = dev_id          # Canonical device key = pulse_id
         self._obis = obis_code
