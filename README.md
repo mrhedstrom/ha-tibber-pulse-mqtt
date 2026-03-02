@@ -41,13 +41,15 @@ Copy the `custom_components/tibber_pulse_mqtt` folder into your HA `config/custo
 If you would like to send the messages to Tibber cloud continue reading next chapter.
 
 If you are happy with only local mqtt follow these simple steps.<br>
-After resetting tibber pulse by holding the side button for 5 seconds tibber will start a WiFi Access Point. Connect to it with the password printed on the back of the pulse meter. Navigate to 10.133.70.1 and setup tibber pulse to connect to your local mqtt broker. If you are using HA built-in Mosquitto, it is reccomended to first create a HA user for the Pulse device.
+After resetting tibber pulse by holding the side button for 5 seconds tibber will start a WiFi Access Point. Connect to it with the password printed on the back of the pulse meter. Navigate to http://10.133.70.1 and setup tibber pulse to connect to your local mqtt broker. If you are using HA built-in Mosquitto, it is reccomended to first create a HA user for the Pulse device.
 
 ## Configure MQTT Bridge (Pulse → AWS via local Mosquitto)
 To keep Tibber app functionality and Tibber integrations for load balancing car chargers etc. and support firmware updates, it is recommended to forward mesages both to and from Tibber cloud (AWS iot).
-We **recommend** the documented method by **MSkjel/LocalPulse2Tibber**.  
+We **recommend** the documented method by **MSkjel/LocalPulse2Tibber** to extract the pulse certificates and setting up a mqtt bridge from local mqtt to Tibber cloud.  
 Credit and reference: https://github.com/MSkjel/LocalPulse2Tibber
 
+Extract your tibber pulse device certificates (CA.ca, Cert.crt, Priv.key) and save as files in:<br>
+/share/mosquitto/tibber_cert<br>
 Example `bridge.conf` for two way mqtt bridge:
 
 ```conf
@@ -68,9 +70,11 @@ cleansession true
 
 # OUT: local → AWS
 topic tibber-pulse-<id>/publish out 1
+# Replace <id> with your tibber pulse topic
 
 # IN: AWS → local (Important for firmware updates etc. from tibber app)
 topic tibber-pulse-<id>/receive in 1
+# Replace <id> with your tibber pulse topic
 ```
 
 ## Topics
@@ -85,16 +89,25 @@ Entity IDs are of the form:
 sensor.tibber_<deviceid>_<obis_code_slug>
 ```
 ## Translations
-Currently there are translations for all main languages in the countries where Tibber Pulse is sold.
+Currently there are translations for all main languages in the countries where Tibber Pulse is sold. They have been generated with AI since developers don't speak them all. If you find something wrong with translations let us know.
 
-Svenska, English, Norsk, Dansk, Nederlands, Deutsch
+```conf
+Svenska
+English
+Norsk
+Dansk
+Nederlands
+Deutsch
+```
+
+Selected language follows HA settings, but language for sensor names can be selected in the integrations settings and defaults to HA language at integration first setup.
 
 ## Protobuf
 We use the official protobuf library to parse wire format generically and extract the compressed payload. An experimental pulse.proto is included for reference; the integration does not depend on a compiled .pb2 file at runtime.
-Notes
 
+### Notes
 If your device emits zlib-compressed OBIS text, it will be parsed as such.
-If your device uses a proprietary binary layout after zlib, a fallback parser is included; please share sample frames to improve decoding tables. This has only been developed using Pulse P1 and has not seen other models messages. The models P1, HAN, KM, should follow the same protocols since they are in the same product family and share common hardware.
+If your device uses a proprietary binary layout after zlib, a fallback parser is included but not used; please share sample frames to improve decoding tables. This has only been developed using Pulse P1 and has not seen other models messages. The models P1, HAN, KM, should follow the same protocols since they are in the same product family and share common hardware.
 
 ## Credits
 Tibber Pulse community work and formats<br>
