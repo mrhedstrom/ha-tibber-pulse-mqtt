@@ -99,6 +99,7 @@ Supported languages
 - Svenska
 - English
 - Norsk
+- Suomi
 - Dansk
 - Nederlands
 - Deutsch
