@@ -1,90 +1,203 @@
 {
-  "config": {
-    "step": {
-      "user": {
-        "title": "Tibber Pulse MQTT",
-        "description": "Konfigurer MQTT og feilsøking for Tibber Pulse MQTT.",
-        "data": {
-          "broker_mode": "MQTT-meglermodus",
-          "subscribe_topic": "MQTT subscribe-topic",
-          "language": "Språk",
-          "debug_log_component": "Aktiver debug-logging for komponenten",
-          "log_missed_base64": "Logg manglende payloads (Base64)",
-          "log_obis": "Vis OBIS-koder i logg"
-        },
-        "data_description": {
-          "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
-          "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
-          "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+    "config": {
+        "step": {
+            "user": {
+                "title": "Tibber Pulse MQTT",
+                "description": "Konfigurer MQTT og feilsøking for Tibber Pulse MQTT.",
+                "data": {
+                    "broker_mode": "MQTT-meglermodus",
+                    "subscribe_topic": "MQTT subscribe-topic",
+                    "debug_log_component": "Aktiver debug-logging for komponenten",
+                    "log_missed_base64": "Logg manglende payloads (Base64)",
+                    "log_obis": "Vis OBIS-koder i logg"
+                },
+                "data_description": {
+                    "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
+                    "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
+                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+                }
+            },
+            "external_broker": {
+                "title": "Ekstern MQTT-megler",
+                "description": "Oppgi tilkoblingsdetaljer for din eksterne MQTT-megler.",
+                "data": {
+                    "host": "MQTT-vert",
+                    "port": "MQTT-port",
+                    "username": "Brukernavn",
+                    "password": "Passord",
+                    "client_id": "Client ID",
+                    "tls": "Bruk TLS"
+                }
+            },
+            "external_tls": {
+                "title": "Ekstern MQTT TLS",
+                "description": "Konfigurer TLS for ekstern megler.",
+                "data": {
+                    "cafile": "Sti til CA-fil",
+                    "certfile": "Sti til klientsertifikat",
+                    "keyfile": "Sti til klientnøkkel",
+                    "tls_version": "TLS-versjon",
+                    "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
+                }
+            }
         }
-      },
-      "external_broker": {
-        "title": "Ekstern MQTT-megler",
-        "description": "Oppgi tilkoblingsdetaljer for din eksterne MQTT-megler.",
-        "data": {
-          "host": "MQTT-vert",
-          "port": "MQTT-port",
-          "username": "Brukernavn",
-          "password": "Passord",
-          "client_id": "Client ID",
-          "tls": "Bruk TLS"
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Tibber Pulse MQTT - Alternativer",
+                "description": "Rediger MQTT- og feilsøkingsalternativer.",
+                "data": {
+                    "broker_mode": "MQTT-meglermodus",
+                    "subscribe_topic": "MQTT subscribe-topic",
+                    "debug_log_component": "Aktiver debug-logging for komponenten",
+                    "log_missed_base64": "Logg manglende payloads (Base64)",
+                    "log_obis": "Vis OBIS-koder i logg"
+                },
+                "data_description": {
+                    "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
+                    "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
+                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+                }
+            },
+            "external_broker_options": {
+                "title": "Ekstern MQTT-megler - Alternativer",
+                "description": "Rediger tilkoblingsdetaljer for din eksterne MQTT-megler.",
+                "data": {
+                    "host": "MQTT-vert",
+                    "port": "MQTT-port",
+                    "username": "Brukernavn",
+                    "password": "Passord",
+                    "client_id": "Client ID",
+                    "tls": "Bruk TLS"
+                }
+            },
+            "external_tls_options": {
+                "title": "Ekstern MQTT TLS - Alternativer",
+                "description": "Rediger TLS-innstillinger for ekstern megler.",
+                "data": {
+                    "cafile": "Sti til CA-fil",
+                    "certfile": "Sti til klientsertifikat",
+                    "keyfile": "Sti til klientnøkkel",
+                    "tls_version": "TLS-versjon",
+                    "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
+                }
+            }
         }
-      },
-      "external_tls": {
-        "title": "Ekstern MQTT TLS",
-        "description": "Konfigurer TLS for ekstern megler.",
-        "data": {
-          "cafile": "Sti til CA-fil",
-          "certfile": "Sti til klientsertifikat",
-          "keyfile": "Sti til klientnøkkel",
-          "tls_version": "TLS-versjon",
-          "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
+    },
+    "entity": {
+        "sensor": {
+            "1-0:1.8.0": {
+                "name": "Total energiimport"
+            },
+            "1-0:1.8.1": {
+                "name": "Energiimport (T1)"
+            },
+            "1-0:1.8.2": {
+                "name": "Energiimport (T2)"
+            },
+            "1-0:2.8.0": {
+                "name": "Total energiek eksport"
+            },
+            "1-0:2.8.1": {
+                "name": "Energiek eksport (T1)"
+            },
+            "1-0:2.8.2": {
+                "name": "Energiek eksport (T2)"
+            },
+            "1-0:1.7.0": {
+                "name": "Aktiv effekt (total)"
+            },
+            "1-0:2.7.0": {
+                "name": "Aktiv effekt ut (total)"
+            },
+            "1-0:21.7.0": {
+                "name": "Aktiv effekt L1"
+            },
+            "1-0:22.7.0": {
+                "name": "Aktiv effekt ut L1"
+            },
+            "1-0:41.7.0": {
+                "name": "Aktiv effekt L2"
+            },
+            "1-0:42.7.0": {
+                "name": "Aktiv effekt ut L2"
+            },
+            "1-0:61.7.0": {
+                "name": "Aktiv effekt L3"
+            },
+            "1-0:62.7.0": {
+                "name": "Aktiv effekt ut L3"
+            },
+            "1-0:32.7.0": {
+                "name": "Spenning L1"
+            },
+            "1-0:52.7.0": {
+                "name": "Spenning L2"
+            },
+            "1-0:72.7.0": {
+                "name": "Spenning L3"
+            },
+            "1-0:31.7.0": {
+                "name": "Strøm L1"
+            },
+            "1-0:51.7.0": {
+                "name": "Strøm L2"
+            },
+            "1-0:71.7.0": {
+                "name": "Strøm L3"
+            },
+            "1-0:14.7.0": {
+                "name": "Nettfrekvens"
+            },
+            "0-0:1.0.0": {
+                "name": "Dato/Tid"
+            },
+            "0-0:96.1.0": {
+                "name": "Serienummer"
+            },
+            "0-0:96.1.1": {
+                "name": "Måler-ID"
+            },
+            "0-0:42.0.0": {
+                "name": "Alternativt ID"
+            },
+            "0-0:96.13.0": {
+                "name": "Melding"
+            },
+            "0-0:96.13.1": {
+                "name": "Meldingskode"
+            },
+            "1-0:3.8.0": {
+                "name": "Reaktiv energi import"
+            },
+            "1-0:4.8.0": {
+                "name": "Reaktiv energi eksport"
+            },
+            "1-0:3.7.0": {
+                "name": "Reaktiv effekt (inn)"
+            },
+            "1-0:4.7.0": {
+                "name": "Reaktiv effekt (ut)"
+            },
+            "1-0:23.7.0": {
+                "name": "Reaktiv effekt L1 (inn)"
+            },
+            "1-0:24.7.0": {
+                "name": "Reaktiv effekt L1 (ut)"
+            },
+            "1-0:43.7.0": {
+                "name": "Reaktiv effekt L2 (inn)"
+            },
+            "1-0:44.7.0": {
+                "name": "Reaktiv effekt L2 (ut)"
+            },
+            "1-0:63.7.0": {
+                "name": "Reaktiv effekt L3 (inn)"
+            },
+            "1-0:64.7.0": {
+                "name": "Reaktiv effekt L3 (ut)"
+            }
         }
-      }
     }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Tibber Pulse MQTT - Alternativer",
-        "description": "Rediger MQTT- og feilsøkingsalternativer.",
-        "data": {
-          "broker_mode": "MQTT-meglermodus",
-          "subscribe_topic": "MQTT subscribe-topic",
-          "language": "Språk",
-          "debug_log_component": "Aktiver debug-logging for komponenten",
-          "log_missed_base64": "Logg manglende payloads (Base64)",
-          "log_obis": "Vis OBIS-koder i logg"
-        },
-        "data_description": {
-          "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
-          "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
-          "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
-        }
-      },
-      "external_broker_options": {
-        "title": "Ekstern MQTT-megler - Alternativer",
-        "description": "Rediger tilkoblingsdetaljer for din eksterne MQTT-megler.",
-        "data": {
-          "host": "MQTT-vert",
-          "port": "MQTT-port",
-          "username": "Brukernavn",
-          "password": "Passord",
-          "client_id": "Client ID",
-          "tls": "Bruk TLS"
-        }
-      },
-      "external_tls_options": {
-        "title": "Ekstern MQTT TLS - Alternativer",
-        "description": "Rediger TLS-innstillinger for ekstern megler.",
-        "data": {
-          "cafile": "Sti til CA-fil",
-          "certfile": "Sti til klientsertifikat",
-          "keyfile": "Sti til klientnøkkel",
-          "tls_version": "TLS-versjon",
-          "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
-        }
-      }
-    }
-  }
 }
