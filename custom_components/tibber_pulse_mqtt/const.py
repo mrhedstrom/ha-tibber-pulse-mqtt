@@ -1,7 +1,6 @@
 DOMAIN = "tibber_pulse_mqtt"
 
 CONF_BROKER_MODE = "broker_mode"    # "homeassistant" | "external"
-CONF_LANGUAGE = "language"
 
 # External broker fields
 CONF_HOST = "host"
@@ -32,5 +31,4 @@ DEFAULT_LOG_OBIS = False
 DEFAULT_PORT = 1883
 DEFAULT_TLS_PORT = 8883
 DEFAULT_TOPIC = "tibber-pulse-<id>/publish"
-DEFAULT_LANGUAGE = "en"
 DEFAULT_DEBUG = False

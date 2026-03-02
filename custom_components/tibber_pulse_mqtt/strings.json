@@ -1,90 +1,203 @@
 {
-  "config": {
-    "step": {
-      "user": {
-        "title": "Tibber Local",
-        "description": "Configure MQTT and debugging for Tibber Local.",
-        "data": {
-          "broker_mode": "MQTT broker mode",
-          "subscribe_topic": "MQTT subscribe topic",
-          "language": "Language",
-          "debug_log_component": "Enable component debug logging",
-          "log_missed_base64": "Log missed payloads (Base64)",
-          "log_obis": "Show OBIS codes in log"
-        },
-        "data_description": {
-          "debug_log_component": "Turns on debug-level logging for this integration.",
-          "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
-          "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+    "config": {
+        "step": {
+            "user": {
+                "title": "Tibber Pulse MQTT",
+                "description": "Configure MQTT and debugging for Tibber Pulse MQTT.",
+                "data": {
+                    "broker_mode": "MQTT broker mode",
+                    "subscribe_topic": "MQTT subscribe topic",
+                    "debug_log_component": "Enable component debug logging",
+                    "log_missed_base64": "Log missed payloads (Base64)",
+                    "log_obis": "Show OBIS codes in log"
+                },
+                "data_description": {
+                    "debug_log_component": "Turns on debug-level logging for this integration.",
+                    "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
+                    "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+                }
+            },
+            "external_broker": {
+                "title": "External MQTT broker",
+                "description": "Enter connection details for your external MQTT broker.",
+                "data": {
+                    "host": "MQTT host",
+                    "port": "MQTT port",
+                    "username": "Username",
+                    "password": "Password",
+                    "client_id": "Client ID",
+                    "tls": "Use TLS"
+                }
+            },
+            "external_tls": {
+                "title": "External MQTT TLS",
+                "description": "Configure TLS for the external broker.",
+                "data": {
+                    "cafile": "CA file path",
+                    "certfile": "Client certificate path",
+                    "keyfile": "Client key path",
+                    "tls_version": "TLS version",
+                    "tls_insecure": "Allow insecure TLS (skip verify)"
+                }
+            }
         }
-      },
-      "external_broker": {
-        "title": "External MQTT broker",
-        "description": "Enter connection details for your external MQTT broker.",
-        "data": {
-          "host": "MQTT host",
-          "port": "MQTT port",
-          "username": "Username",
-          "password": "Password",
-          "client_id": "Client ID",
-          "tls": "Use TLS"
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Tibber Pulse MQTT - Options",
+                "description": "Edit MQTT and debugging options.",
+                "data": {
+                    "broker_mode": "MQTT broker mode",
+                    "subscribe_topic": "MQTT subscribe topic",
+                    "debug_log_component": "Enable component debug logging",
+                    "log_missed_base64": "Log missed payloads (Base64)",
+                    "log_obis": "Show OBIS codes in log"
+                },
+                "data_description": {
+                    "debug_log_component": "Turns on debug-level logging for this integration.",
+                    "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
+                    "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+                }
+            },
+            "external_broker_options": {
+                "title": "External MQTT broker - Options",
+                "description": "Edit connection details for your external MQTT broker.",
+                "data": {
+                    "host": "MQTT host",
+                    "port": "MQTT port",
+                    "username": "Username",
+                    "password": "Password",
+                    "client_id": "Client ID",
+                    "tls": "Use TLS"
+                }
+            },
+            "external_tls_options": {
+                "title": "External MQTT TLS - Options",
+                "description": "Edit TLS settings for the external broker.",
+                "data": {
+                    "cafile": "CA file path",
+                    "certfile": "Client certificate path",
+                    "keyfile": "Client key path",
+                    "tls_version": "TLS version",
+                    "tls_insecure": "Allow insecure TLS (skip verify)"
+                }
+            }
         }
-      },
-      "external_tls": {
-        "title": "External MQTT TLS",
-        "description": "Configure TLS for the external broker.",
-        "data": {
-          "cafile": "CA file path",
-          "certfile": "Client certificate path",
-          "keyfile": "Client key path",
-          "tls_version": "TLS version",
-          "tls_insecure": "Allow insecure TLS (skip verify)"
+    },
+    "entity": {
+        "sensor": {
+            "1-0_1_8_0": {
+                "name": "Total energy import"
+            },
+            "1-0_1_8_1": {
+                "name": "Energy import (T1)"
+            },
+            "1-0_1_8_2": {
+                "name": "Energy import (T2)"
+            },
+            "1-0_2_8_0": {
+                "name": "Total energy export"
+            },
+            "1-0_2_8_1": {
+                "name": "Energy export (T1)"
+            },
+            "1-0_2_8_2": {
+                "name": "Energy export (T2)"
+            },
+            "1-0_1_7_0": {
+                "name": "Active power (total)"
+            },
+            "1-0_2_7_0": {
+                "name": "Active power out (total)"
+            },
+            "1-0_21_7_0": {
+                "name": "Active power L1"
+            },
+            "1-0_22_7_0": {
+                "name": "Active power out L1"
+            },
+            "1-0_41_7_0": {
+                "name": "Active power L2"
+            },
+            "1-0_42_7_0": {
+                "name": "Active power out L2"
+            },
+            "1-0_61_7_0": {
+                "name": "Active power L3"
+            },
+            "1-0_62_7_0": {
+                "name": "Active power out L3"
+            },
+            "1-0_32_7_0": {
+                "name": "Voltage L1"
+            },
+            "1-0_52_7_0": {
+                "name": "Voltage L2"
+            },
+            "1-0_72_7_0": {
+                "name": "Voltage L3"
+            },
+            "1-0_31_7_0": {
+                "name": "Current L1"
+            },
+            "1-0_51_7_0": {
+                "name": "Current L2"
+            },
+            "1-0_71_7_0": {
+                "name": "Current L3"
+            },
+            "1-0_14_7_0": {
+                "name": "Grid frequency"
+            },
+            "0-0_1_0_0": {
+                "name": "Date/Time"
+            },
+            "0-0_96_1_0": {
+                "name": "Serial number"
+            },
+            "0-0_96_1_1": {
+                "name": "Meter ID"
+            },
+            "0-0_42_0_0": {
+                "name": "Alternative ID"
+            },
+            "0-0_96_13_0": {
+                "name": "Message"
+            },
+            "0-0_96_13_1": {
+                "name": "Message code"
+            },
+            "1-0_3_8_0": {
+                "name": "Reactive energy import"
+            },
+            "1-0_4_8_0": {
+                "name": "Reactive energy export"
+            },
+            "1-0_3_7_0": {
+                "name": "Reactive power (in)"
+            },
+            "1-0_4_7_0": {
+                "name": "Reactive power (out)"
+            },
+            "1-0_23_7_0": {
+                "name": "Reactive power L1 (in)"
+            },
+            "1-0_24_7_0": {
+                "name": "Reactive power L1 (out)"
+            },
+            "1-0_43_7_0": {
+                "name": "Reactive power L2 (in)"
+            },
+            "1-0_44_7_0": {
+                "name": "Reactive power L2 (out)"
+            },
+            "1-0_63_7_0": {
+                "name": "Reactive power L3 (in)"
+            },
+            "1-0_64_7_0": {
+                "name": "Reactive power L3 (out)"
+            }
         }
-      }
     }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Tibber Local - Options",
-        "description": "Edit MQTT and debugging options.",
-        "data": {
-          "broker_mode": "MQTT broker mode",
-          "subscribe_topic": "MQTT subscribe topic",
-          "language": "Language",
-          "debug_log_component": "Enable component debug logging",
-          "log_missed_base64": "Log missed payloads (Base64)",
-          "log_obis": "Show OBIS codes in log"
-        },
-        "data_description": {
-          "debug_log_component": "Turns on debug-level logging for this integration.",
-          "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
-          "log_obis": "When enabled, parsed OBIS codes are included in the logs."
-        }
-      },
-      "external_broker_options": {
-        "title": "External MQTT broker - Options",
-        "description": "Edit connection details for your external MQTT broker.",
-        "data": {
-          "host": "MQTT host",
-          "port": "MQTT port",
-          "username": "Username",
-          "password": "Password",
-          "client_id": "Client ID",
-          "tls": "Use TLS"
-        }
-      },
-      "external_tls_options": {
-        "title": "External MQTT TLS - Options",
-        "description": "Edit TLS settings for the external broker.",
-        "data": {
-          "cafile": "CA file path",
-          "certfile": "Client certificate path",
-          "keyfile": "Client key path",
-          "tls_version": "TLS version",
-          "tls_insecure": "Allow insecure TLS (skip verify)"
-        }
-      }
-    }
-  }
 }

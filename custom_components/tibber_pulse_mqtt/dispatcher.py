@@ -10,7 +10,7 @@ from typing import Dict, Any, Literal, Tuple, Optional
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
 
-from .const import DOMAIN, CONF_LANGUAGE, DEFAULT_LANGUAGE, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS
+from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS
 
 try:
     from .protobuf import pulse_pb2
@@ -571,4 +571,4 @@ class TibberDispatcher:
         for code, value in obis.items():
             if code == "_units":
                 continue
-            sm.add_or_update(pulse_id, code, value, status, self.cfg.get(CONF_LANGUAGE, DEFAULT_LANGUAGE))
+            sm.add_or_update(pulse_id, code, value, status)

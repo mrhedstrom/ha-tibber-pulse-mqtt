@@ -12,7 +12,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
-from .translators import load_translation
 from .obis.full_db import obis_meta
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,7 +63,6 @@ class SensorManager:
         self._entities: dict[str, TibberSensor] = {}
 
         # Translation and unit caches
-        self._translations_cache: dict[str, dict] = {}
         self._obis_units: dict[str, str] = {}  # OBIS code -> raw unit seen in OBIS
 
         # Meter serial (0-0:96.1.1) per device (pulse_id)
@@ -78,19 +76,12 @@ class SensorManager:
         """Set last-seen raw unit mapping per OBIS code (used for conversion)."""
         self._obis_units = units_map or {}
 
-    def _t(self, lang: str) -> dict:
-        """Load translated names (cached) for OBIS codes."""
-        if lang not in self._translations_cache:
-            self._translations_cache[lang] = load_translation(lang)
-        return self._translations_cache[lang]
-
     def add_or_update(
         self,
         dev_id: str,           # pulse_id
         obis_code: str,
         value: Any,
-        status: Dict[str, Any] | None,
-        lang: str
+        status: Dict[str, Any] | None
     ):
         """
         Add or update one OBIS sensor bound to a canonical device (pulse_id).
@@ -122,14 +113,11 @@ class SensorManager:
                         reg = er.async_get(self.hass)
                         er_entry = reg.async_get_entity_id("sensor", DOMAIN, unique_id)
 
-                        trans = self._t(lang)
-                        name = trans.get(obis_code, obis_code)
                         meta = obis_meta.get(obis_code, {})
 
                         ent_local = TibberSensor(
                             unique_id=unique_id,
                             dev_id=dev_id,
-                            name=name,
                             obis_code=obis_code,
                             meta=meta,
                             status=status or {}
@@ -194,13 +182,13 @@ class TibberSensor(SensorEntity):
         self,
         unique_id: str,
         dev_id: str,     # pulse_id
-        name: str,
         obis_code: str,
         meta: Dict[str, Any],
         status: Dict[str, Any]
     ):
         self._attr_unique_id = unique_id
-        self._attr_name = name
+        self.has_entity_name = True
+        self._attr_translation_key = obis_code.replace(':','_').replace('.','_')
 
         self._dev_id = dev_id          # Canonical device key = pulse_id
         self._obis = obis_code
