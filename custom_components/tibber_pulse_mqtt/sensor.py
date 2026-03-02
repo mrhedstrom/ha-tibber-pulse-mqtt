@@ -212,20 +212,15 @@ class TibberSensor(SensorEntity):
         self._meter_id = None
         self._added_to_hass = False
 
-        # Target unit from OBIS metadata (optional)
+        # Target unit from OBIS metadata
         unit = self.meta.get("unit")
         if unit:
             self._attr_native_unit_of_measurement = unit
-
-        # UI precision hints (optional)
-        if unit in ("W",):
-            self._attr_suggested_display_precision = 0
-        elif unit in ("V", "A"):
-            self._attr_suggested_display_precision = 1
-        elif unit in ("VAr",):
-            self._attr_suggested_display_precision = 0
-        elif unit in ("Wh", "VArh"):
-            self._attr_suggested_display_precision = 0
+        
+        # UI precision
+        display_precision = self.meta.get("display_precision")
+        if display_precision is not None:
+            self._attr_suggested_display_precision = display_precision
 
         if "device_class" in self.meta:
             self._attr_device_class = self.meta["device_class"]
