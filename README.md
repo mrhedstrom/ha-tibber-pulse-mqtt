@@ -92,7 +92,9 @@ sensor.tibber_<deviceid>_<obis_code_slug>
 ## Translations
 Currently there are translations for all main languages in the countries where Tibber Pulse is sold. They have been generated with AI since developers don't speak them all. If you find something wrong with translations let us know.
 
-Selected language follows HA global settings, but language for sensor names can be selected in the integrations settings and defaults to HA language at integration first setup.
+Selected language follows HA global settings. If your HA language is not supported, English will be the default language.
+
+Supported languages
 
 - Svenska
 - English
@@ -100,9 +102,6 @@ Selected language follows HA global settings, but language for sensor names can 
 - Dansk
 - Nederlands
 - Deutsch
-
-
-
 
 ## Protobuf
 We use the official protobuf library to parse wire format generically and extract the compressed payload. An experimental pulse.proto is included for reference; the integration does not depend on a compiled .pb2 file at runtime.
