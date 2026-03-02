@@ -24,7 +24,7 @@ You can install this integration via **HACS** as a **Custom repository**:
 1. Open **HACS → Integrations**.
 2. Click **⋯** (overflow menu) → **Custom repositories**.
 3. Add repository URL:  
-   `https://github.com/mrhedstrom/tibber_pulse_mqtt`  
+   `https://github.com/mrhedstrom/ha-tibber-pulse-mqtt`  
    Category: **Integration**
 4. Click **Add**.
 5. Search for **Tibber Pulse MQTT** in HACS and **Install**.
