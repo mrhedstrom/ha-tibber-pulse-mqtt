@@ -174,6 +174,7 @@ class ExternalMQTTClient:
         # - If topic contains embedded '+', subscribe to a broadened topic and filter locally.
         self._needs_filter = _has_extended_plus(self.topic)
         self._subscribe_topic = _derive_subscribe_topic(self.topic) if self._needs_filter else self.topic
+        self._filter_regex = _compile_topic_regex(self.topic) if self._needs_filter else None
 
         self._client = paho.Client(client_id=self.client_id)
         if self.username:
@@ -206,6 +207,7 @@ class ExternalMQTTClient:
                 _LOGGER.debug("[Ext MQTT] Filtered topic (no match): wanted=%s got=%s", self.topic, msg.topic)
             return
 
+        payload = _payload_to_bytes(msg.payload)
         _debug_log_rx("Ext MQTT", msg.topic, payload, self._debug)
 
         try:
