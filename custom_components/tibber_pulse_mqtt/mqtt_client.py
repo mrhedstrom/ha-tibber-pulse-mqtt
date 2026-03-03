@@ -85,6 +85,18 @@ def _compile_topic_regex(pattern: str) -> Pattern:
     return re.compile(regex_str)
 
 
+def _payload_to_bytes(payload) -> bytes:
+    """Normalize payload to bytes."""
+    return payload if isinstance(payload, (bytes, bytearray)) else str(payload).encode()
+
+
+def _debug_log_rx(prefix: str, topic: str, payload: bytes, enabled: bool):
+    """Log a compact RX line if debug is enabled."""
+    if enabled:
+        head = payload[:16].hex()
+        _LOGGER.debug("[%s] RX topic=%s len=%d head=%s", prefix, topic, len(payload), head)
+
+
 class HAMQTTBridge:
     """Subscribe via Home Assistant's MQTT integration with extended '+' support."""
 
@@ -101,26 +113,23 @@ class HAMQTTBridge:
         """
         await ha_mqtt.async_wait_for_mqtt_client(self.hass)
 
-        # Decide whether we must subscribe broader and filter locally
         needs_filter = _has_extended_plus(topic)
         subscribe_topic = _derive_subscribe_topic(topic) if needs_filter else topic
-        filter_regex: Optional[Pattern] = _compile_topic_regex(topic) if needs_filter else None
+        filter_regex = _compile_topic_regex(topic) if needs_filter else None
 
         async def _wrapped(msg):
-            # Filter topics that do not actually match the original pattern (only when needed)
             if filter_regex and not filter_regex.match(msg.topic):
                 if self._debug:
-                    _LOGGER.debug(
-                        "[HA MQTT] Filtered topic (no match): wanted=%s got=%s",
-                        topic, msg.topic
-                    )
+                    _LOGGER.debug("[HA MQTT] Filtered topic (no match): wanted=%s got=%s", topic, msg.topic)
                 return
 
-            payload = msg.payload if isinstance(msg.payload, (bytes, bytearray)) else str(msg.payload).encode()
-            if self._debug:
-                head = payload[:16].hex()
-                _LOGGER.debug("[HA MQTT] RX topic=%s len=%d head=%s", msg.topic, len(payload), head)
-            cb(msg.topic, payload)
+            payload = _payload_to_bytes(msg.payload)
+            _debug_log_rx("HA MQTT", msg.topic, payload, self._debug)
+
+            try:
+                cb(msg.topic, payload)
+            except Exception as e:
+                _LOGGER.exception("Callback error: %s", e)
 
         unsub = await ha_mqtt.async_subscribe(self.hass, subscribe_topic, _wrapped, qos=1, encoding=None)
         self._unsubs.append(unsub)
@@ -165,7 +174,6 @@ class ExternalMQTTClient:
         # - If topic contains embedded '+', subscribe to a broadened topic and filter locally.
         self._needs_filter = _has_extended_plus(self.topic)
         self._subscribe_topic = _derive_subscribe_topic(self.topic) if self._needs_filter else self.topic
-        self._filter_regex: Optional[Pattern] = _compile_topic_regex(self.topic) if self._needs_filter else None
 
         self._client = paho.Client(client_id=self.client_id)
         if self.username:
@@ -193,23 +201,18 @@ class ExternalMQTTClient:
         client.subscribe(self._subscribe_topic, qos=1)
 
     def _on_message(self, client, userdata, msg):
-        # If we used a broadened subscription, ensure messages truly match the original pattern.
         if self._filter_regex and not self._filter_regex.match(msg.topic):
             if self._debug:
-                _LOGGER.debug(
-                    "[Ext MQTT] Filtered topic (no match): wanted=%s got=%s",
-                    self.topic, msg.topic
-                )
+                _LOGGER.debug("[Ext MQTT] Filtered topic (no match): wanted=%s got=%s", self.topic, msg.topic)
             return
 
-        payload = msg.payload
-        if self._debug:
-            head = payload[:16].hex()
-            _LOGGER.debug("[Ext MQTT] RX topic=%s len=%d head=%s", msg.topic, len(payload), head)
+        _debug_log_rx("Ext MQTT", msg.topic, payload, self._debug)
+
         try:
             self.cb(msg.topic, payload)
         except Exception as e:
             _LOGGER.exception("Callback error: %s", e)
+
 
     def start(self):
         self._client.connect(self.host, self.port, keepalive=60)
