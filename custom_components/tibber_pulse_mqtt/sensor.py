@@ -187,7 +187,7 @@ class TibberSensor(SensorEntity):
         status: Dict[str, Any]
     ):
         self._attr_unique_id = unique_id
-        self.has_entity_name = True
+        self._has_entity_name = True
         self._attr_translation_key = obis_code.replace(':','_').replace('.','_')
 
         self._dev_id = dev_id          # Canonical device key = pulse_id
