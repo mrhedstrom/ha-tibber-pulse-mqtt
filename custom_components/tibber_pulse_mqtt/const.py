@@ -30,5 +30,5 @@ DEFAULT_LOG_OBIS = False
 # Defaults
 DEFAULT_PORT = 1883
 DEFAULT_TLS_PORT = 8883
-DEFAULT_TOPIC = "tibber-pulse-<id>/publish"
+DEFAULT_TOPIC = "tibber-pulse-+/publish"
 DEFAULT_DEBUG = False
