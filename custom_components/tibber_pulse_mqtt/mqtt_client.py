@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+import re
 import ssl
 import threading
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Pattern
 from homeassistant.core import HomeAssistant
 from homeassistant.components import mqtt as ha_mqtt
 import paho.mqtt.client as paho
@@ -13,22 +14,115 @@ _LOGGER = logging.getLogger(__name__)
 
 MessageCallback = Callable[[str, bytes], None]  # topic, payload
 
+
+# ------------------------------
+# Helpers for extended '+' logic
+# ------------------------------
+
+def _has_extended_plus(topic: str) -> bool:
+    """Return True if any topic level contains '+' not equal to '+' (i.e., embedded '+')."""
+    for level in topic.split('/'):
+        if '+' in level and level != '+':
+            return True
+    return False
+
+
+def _derive_subscribe_topic(pattern: str) -> str:
+    """
+    Transform an extended '+' pattern into a valid MQTT subscribe topic.
+
+    Rule:
+    - If a level contains '+' and that level != '+', replace that entire level with '+'.
+      e.g., 'tibber-pulse-+/update' -> '+/update'
+    - Otherwise, keep each level as-is.
+    """
+    levels = pattern.split('/')
+    sub_levels = []
+    for lvl in levels:
+        if '+' in lvl and lvl != '+':
+            sub_levels.append('+')
+        else:
+            sub_levels.append(lvl)
+    return '/'.join(sub_levels)
+
+
+def _compile_topic_regex(pattern: str) -> Pattern:
+    """
+    Compile a regex from a topic pattern that may contain:
+    - Standard MQTT '+' level wildcard (match any single level).
+    - Extended embedded '+' inside a level (treated as [^/]+ at each '+' position).
+    - Standard MQTT '#' (if present as a full level, treated as '.*' in regex).
+
+    The resulting regex matches full topics (anchored).
+    """
+    regex_parts = []
+    levels = pattern.split('/')
+    has_hash = False
+
+    for i, lvl in enumerate(levels):
+        if lvl == '+':
+            # Standard single-level wildcard
+            regex_parts.append(r'[^/]+')
+        elif lvl == '#':
+            # Multi-level wildcard; normally only valid as the last level
+            regex_parts.append(r'.*')
+            has_hash = True
+            # If '#' is not the last level, broker would reject, but our regex still tolerates it.
+        elif '+' in lvl:
+            # Extended embedded '+': treat each '+' as [^/]+ inside this level
+            # Build by escaping the literal chunks and joining with [^/]+
+            chunks = lvl.split('+')
+            escaped = [re.escape(c) for c in chunks]
+            # If pattern starts/ends with '+', we still require non-empty for each '+'
+            part = r'[^/]+'.join(escaped)
+            regex_parts.append(part)
+        else:
+            # Literal level
+            regex_parts.append(re.escape(lvl))
+
+    # Anchor regex; if '#' present, '.*' will consume tail anyway
+    regex_str = '^' + '/'.join(regex_parts) + '$'
+    return re.compile(regex_str)
+
+
 class HAMQTTBridge:
-    """Subscribe via Home Assistant's MQTT integration."""
+    """Subscribe via Home Assistant's MQTT integration with extended '+' support."""
+
     def __init__(self, hass: HomeAssistant):
         self.hass = hass
         self._unsubs = []
         self._debug = _LOGGER.isEnabledFor(logging.DEBUG)
 
     async def async_subscribe(self, topic: str, cb: MessageCallback):
+        """
+        Subscribe with support for embedded '+':
+        - If the topic contains an embedded '+', subscribe to a derived topic with '+' as the whole level.
+        - Filter messages locally to ensure they match the original pattern.
+        """
         await ha_mqtt.async_wait_for_mqtt_client(self.hass)
+
+        # Decide whether we must subscribe broader and filter locally
+        needs_filter = _has_extended_plus(topic)
+        subscribe_topic = _derive_subscribe_topic(topic) if needs_filter else topic
+        filter_regex: Optional[Pattern] = _compile_topic_regex(topic) if needs_filter else None
+
         async def _wrapped(msg):
+            # Filter topics that do not actually match the original pattern (only when needed)
+            if filter_regex and not filter_regex.match(msg.topic):
+                if self._debug:
+                    _LOGGER.debug(
+                        "[HA MQTT] Filtered topic (no match): wanted=%s got=%s",
+                        topic, msg.topic
+                    )
+                return
+
             payload = msg.payload if isinstance(msg.payload, (bytes, bytearray)) else str(msg.payload).encode()
             if self._debug:
                 head = payload[:16].hex()
                 _LOGGER.debug("[HA MQTT] RX topic=%s len=%d head=%s", msg.topic, len(payload), head)
             cb(msg.topic, payload)
-        unsub = await ha_mqtt.async_subscribe(self.hass, topic, _wrapped, qos=1, encoding=None)
+
+        unsub = await ha_mqtt.async_subscribe(self.hass, subscribe_topic, _wrapped, qos=1, encoding=None)
         self._unsubs.append(unsub)
 
     async def async_stop(self):
@@ -36,13 +130,26 @@ class HAMQTTBridge:
             u()
         self._unsubs.clear()
 
+
 class ExternalMQTTClient:
-    """Own paho client in a background thread."""
-    def __init__(self, host: str, port: int, topic: str, cb: MessageCallback,
-                username: Optional[str]=None, password: Optional[str]=None,
-                client_id: Optional[str]=None,
-                tls: bool=False, cafile: Optional[str]=None, certfile: Optional[str]=None,
-                keyfile: Optional[str]=None, tls_insecure: bool=False, tls_version: str="tlsv1.2"):
+    """Own paho client in a background thread with extended '+' support."""
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        topic: str,
+        cb: MessageCallback,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        client_id: Optional[str] = None,
+        tls: bool = False,
+        cafile: Optional[str] = None,
+        certfile: Optional[str] = None,
+        keyfile: Optional[str] = None,
+        tls_insecure: bool = False,
+        tls_version: str = "tlsv1.2",
+    ):
         self.host, self.port = host, port
         self.topic = topic
         self.cb = cb
@@ -53,6 +160,12 @@ class ExternalMQTTClient:
         self.tls_insecure = tls_insecure
         self.tls_version = tls_version
         self._debug = _LOGGER.isEnabledFor(logging.DEBUG)
+
+        # Prepare extended '+' handling for paho client:
+        # - If topic contains embedded '+', subscribe to a broadened topic and filter locally.
+        self._needs_filter = _has_extended_plus(self.topic)
+        self._subscribe_topic = _derive_subscribe_topic(self.topic) if self._needs_filter else self.topic
+        self._filter_regex: Optional[Pattern] = _compile_topic_regex(self.topic) if self._needs_filter else None
 
         self._client = paho.Client(client_id=self.client_id)
         if self.username:
@@ -75,10 +188,20 @@ class ExternalMQTTClient:
         self._thread: Optional[threading.Thread] = None
 
     def _on_connect(self, client, userdata, flags, rc, properties=None):
-        _LOGGER.info("[Ext MQTT] Connected rc=%s, subscribing to %s", rc, self.topic)
-        client.subscribe(self.topic, qos=1)
+        _LOGGER.info("[Ext MQTT] Connected rc=%s, subscribing to %s (derived=%s)",
+                     rc, self.topic, self._subscribe_topic)
+        client.subscribe(self._subscribe_topic, qos=1)
 
     def _on_message(self, client, userdata, msg):
+        # If we used a broadened subscription, ensure messages truly match the original pattern.
+        if self._filter_regex and not self._filter_regex.match(msg.topic):
+            if self._debug:
+                _LOGGER.debug(
+                    "[Ext MQTT] Filtered topic (no match): wanted=%s got=%s",
+                    self.topic, msg.topic
+                )
+            return
+
         payload = msg.payload
         if self._debug:
             head = payload[:16].hex()

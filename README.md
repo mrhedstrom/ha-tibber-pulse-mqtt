@@ -61,8 +61,8 @@ bridge_tls_version tlsv1.2
 bridge_insecure false
 bridge_protocol_version mqttv311
 address a1zhmn1192zl1a.iot.eu-west-1.amazonaws.com:8883
-clientid tibber-pulse-<id>
-# Replace tibber-pulse-<id> with your tibber pulse client id
+clientid tibber-pulse-<your device id>
+# Replace tibber-pulse-<your device id> with your tibber pulse client id
 try_private false
 notifications false
 restart_timeout 5
@@ -70,19 +70,39 @@ round_robin false
 cleansession true
 
 # OUT: local → AWS
-topic tibber-pulse-<id>/publish out 1
-# Replace tibber-pulse-<id> with your tibber pulse client id
+topic tibber-pulse-<your device id>/publish out 1
+# Replace tibber-pulse-<your device id> with your tibber pulse client id
 
 # IN: AWS → local (Important for firmware updates etc. from tibber app)
-topic tibber-pulse-<id>/receive in 1
-# Replace tibber-pulse-<id> with your tibber pulse client id
+topic tibber-pulse-<your device id>/receive in 1
+# Replace tibber-pulse-<your device id> with your tibber pulse client id
 ```
 
 ## Topics
-By default, this integration subscribes to: `tibber-pulse-<id>/publish`  
-You need to put your tibber device id into this topic since mqtt does not support wildcards within topic level name.
+By default, this integration subscribes to: `tibber-pulse-+/publish`  
 
-You can change this in the integration options.
+This is an extended wildcard pattern that matches **all Tibber Pulse devices**, regardless of their individual device ID.  
+
+Examples of topics captured by this pattern:
+
+> tibber-pulse-1029a71625514301a8d5aa2c6ec0f84a/publish  
+> tibber-pulse-2029a71625514301a8d5aa2c6ec0f84b/publish  
+> tibber-pulse-3029a71625514301a8d5aa2c6ec0f84c/publish
+
+Normally, MQTT does **not** allow wildcards inside a topic level (for example, `tibber-pulse-+/publish` cannot be subscribed directly by the broker).  
+However, this integration adds **extended wildcard support**, meaning:
+
+- A broader valid MQTT topic is used for the actual subscription.
+- Incoming messages are then **locally filtered** so that only topics matching the original pattern (`tibber-pulse-+/publish`) are processed.
+
+This allows the integration to automatically detect and receive messages from *any* Tibber Pulse device without manually specifying the device ID.
+
+### Performance Note
+If you specify the **exact device ID** (e.g. `tibber-pulse-<your device id>/publish`) instead of using a wildcard, the integration can skip the local filtering step.  
+This reduces CPU usage slightly and may be beneficial on low‑power systems.
+
+You can adjust the topic pattern in the integration options if needed.
+
 ## Multiple devices
 Each Pulse unit becomes a distinct Device in HA.  
 Entity IDs are of the form:
