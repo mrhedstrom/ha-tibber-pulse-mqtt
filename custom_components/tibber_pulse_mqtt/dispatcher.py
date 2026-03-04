@@ -571,4 +571,8 @@ class TibberDispatcher:
         for code, value in obis.items():
             if code == "_units":
                 continue
-            sm.add_or_update(pulse_id, code, value, status)
+            
+            self.hass.loop.call_soon_threadsafe(
+                self.hass.async_create_task,
+                sm.add_or_update(pulse_id, code, value, status),
+            )

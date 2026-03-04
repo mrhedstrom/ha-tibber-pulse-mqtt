@@ -76,7 +76,7 @@ class SensorManager:
         """Set last-seen raw unit mapping per OBIS code (used for conversion)."""
         self._obis_units = units_map or {}
 
-    def add_or_update(
+    async def add_or_update(
         self,
         dev_id: str,           # pulse_id
         obis_code: str,
@@ -85,77 +85,78 @@ class SensorManager:
     ):
         """
         Add or update one OBIS sensor bound to a canonical device (pulse_id).
-        Ensures unique_id stability and avoids duplicate creation in fast update bursts.
+        Robust against user-renamed entity_ids.
         """
         unique_id = f"tibber_{dev_id}_{obis_code.replace(':','_').replace('.','_')}"
+        raw_unit = self._obis_units.get(obis_code) if hasattr(self, "_obis_units") else None
+
+        # Entity Registry lookup
+        reg = er.async_get(self.hass)
+        er_entry_entity_id = reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+
+        # Runtime instance lookup
         ent = self._entities.get(unique_id)
 
-        # Compute scaled value before creating/updating so first state is correct
-        raw_unit = self._obis_units.get(obis_code) if hasattr(self, "_obis_units") else None
+        # If entity exists in registry but not in runtime, recreate it
+        if ent is None and er_entry_entity_id:
+            meta = obis_meta.get(obis_code, {})
+            ent = TibberSensor(
+                unique_id=unique_id,
+                dev_id=dev_id,
+                obis_code=obis_code,
+                meta=meta,
+                status=status or {}
+            )
+
+            self._entities[unique_id] = ent
+            # HA will automatically attach entity_id via registry
+            self.async_add_entities([ent])
+
+        # Compute scaled value (needed for both new + existing entities)
         if ent:
             target_unit = ent.meta.get("unit")
         else:
             target_unit = obis_meta.get(obis_code, {}).get("unit")
+
         scaled_value = convert_unit_value(value, raw_unit, target_unit)
 
+        # Create brand-new entity
         if ent is None:
-            # Create entity on the HA event loop in a locked section to prevent duplicates.
-            async def _create():
-                async with self._create_lock:
-                    # Double-check after acquiring the lock (idempotent creation)
-                    if unique_id in self._entities:
+            async with self._create_lock:
+                # Double-check after locking
+                if unique_id in self._entities:
+                    ent = self._entities[unique_id]
+                else:
+                    meta = obis_meta.get(obis_code, {})
+
+                    ent = TibberSensor(
+                        unique_id=unique_id,
+                        dev_id=dev_id,
+                        obis_code=obis_code,
+                        meta=meta,
+                        status=status or {}
+                    )
+                    ent._state = scaled_value
+
+                    self._entities[unique_id] = ent
+
+                    if er_entry_entity_id:
+                        # HA will reconnect by unique_id
+                        self.async_add_entities([ent])
                         return
-                    if unique_id in self._creating:
-                        return
 
-                    self._creating.add(unique_id)
-                    try:
-                        reg = er.async_get(self.hass)
-                        er_entry = reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+                    # First-time creation, generate suggested entity_id
+                    suggested_object_id = unique_id
+                    ent.entity_id = async_generate_entity_id(
+                        "sensor.{}",
+                        suggested_object_id,
+                        hass=self.hass
+                    )
 
-                        meta = obis_meta.get(obis_code, {})
+                    self.async_add_entities([ent])
+                # after creation, fall through and update its state below
 
-                        ent_local = TibberSensor(
-                            unique_id=unique_id,
-                            dev_id=dev_id,
-                            obis_code=obis_code,
-                            meta=meta,
-                            status=status or {}
-                        )
-                        # Buffer the first value; it will be written once the entity is added to HA.
-                        ent_local._state = scaled_value
-
-                        self._entities[unique_id] = ent_local
-
-                        if er_entry:
-                            # Entity already exists in the Entity Registry:
-                            # Add instance and let HA reattach it by unique_id (preserves entity_id/history).
-                            self.async_add_entities([ent_local])
-                            return
-
-                        # Generate a stable entity_id only at first creation (not when ER backfills).
-                        suggested_object_id = unique_id
-                        ent_local.entity_id = async_generate_entity_id(
-                            "sensor.{}",
-                            suggested_object_id,
-                            hass=self.hass
-                        )
-
-                        # Add the entity into HA (callback, not a coroutine).
-                        self.async_add_entities([ent_local])
-                    finally:
-                        self._creating.discard(unique_id)
-
-            # Always schedule onto the HA loop thread-safely
-            try:
-                loop = self.hass.loop
-                loop.call_soon_threadsafe(lambda: self.hass.async_create_task(_create()))
-            except Exception:
-                # Extremely early fallback
-                asyncio.get_event_loop().call_soon_threadsafe(lambda: self.hass.async_create_task(_create()))
-            return
-
-        # Existing entity: update status + state; actual state write is loop-thread-safe inside the entity
+        # Update entity
         ent.set_status(status or {})
         ent.set_state(scaled_value)
 
