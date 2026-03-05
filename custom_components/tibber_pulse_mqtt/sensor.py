@@ -51,6 +51,18 @@ async def async_setup_entry(
     _LOGGER.info("Tibber Local sensor platform initialized")
 
 
+async def async_unload_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry
+):
+    """Platform-level unload hook (optional). Entities are handled by HA."""
+    hub = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if hub and hasattr(hub, "sensor_manager"):
+        # Nothing to explicitly unload in SensorManager right now
+        pass
+    return True
+
+
 class SensorManager:
     """Creates and updates Tibber sensors in a race-safe and idempotent way."""
 
@@ -63,7 +75,7 @@ class SensorManager:
         self._entities: dict[str, TibberSensor] = {}
 
         # Translation and unit caches
-        self._obis_units: dict[str, str] = {}  # OBIS code -> raw unit seen in OBIS
+        self._obis_units: dict[str, str] = {}  # OBIS code -> last-seen raw unit
 
         # Meter serial (0-0:96.1.1) per device (pulse_id)
         self._meter_ids: Dict[str, str] = {}
@@ -154,7 +166,7 @@ class SensorManager:
                     )
 
                     self.async_add_entities([ent])
-                # after creation, fall through and update its state below
+                # After creation, fall through and update its state below
 
         # Update entity
         ent.set_status(status or {})
@@ -205,7 +217,7 @@ class TibberSensor(SensorEntity):
         unit = self.meta.get("unit")
         if unit:
             self._attr_native_unit_of_measurement = unit
-        
+
         # UI precision
         display_precision = self.meta.get("display_precision")
         if display_precision is not None:
@@ -257,11 +269,23 @@ class TibberSensor(SensorEntity):
     def _schedule_state_write(self):
         """Schedule async_write_ha_state on the HA event loop thread-safely."""
         if getattr(self, "hass", None):
+            loop = self.hass.loop
             try:
-                self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
-            except Exception:
-                # As a last resort, ignore; HA will refresh soon anyway
-                pass
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+            # If already on the HA loop, write immediately; else schedule thread-safe
+            if running_loop is loop:
+                try:
+                    self.async_write_ha_state()
+                except Exception:
+                    pass
+            else:
+                try:
+                    loop.call_soon_threadsafe(self.async_write_ha_state)
+                except Exception:
+                    # As a last resort, ignore; HA will refresh soon anyway
+                    pass
 
     def set_state(self, value: Any):
         """Set internal state; write only after entity is added to HA, on the HA loop."""
