@@ -156,8 +156,11 @@ class TibberDispatcher:
                         q.task_done()
                 except asyncio.QueueEmpty:
                     pass
-
-        task = self.hass.async_create_task(_worker(), name=f"tibber_dispatcher_worker:{dev_id}")
+        
+        task = self.hass.async_create_background_task(
+            _worker(),
+            name=f"tibber_dispatcher_worker:{dev_id}"
+        )
 
         def _done_cb(t: asyncio.Task):
             try:
