@@ -11,6 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 # -------------------------
 
 def _read_varint(buf: bytes, i: int, n: int):
+    """Read a protobuf varint from buf starting at index i. Returns (value, next_index)."""
     shift = 0
     result = 0
     while i < n:
@@ -27,7 +28,8 @@ def _read_varint(buf: bytes, i: int, n: int):
 def iter_len_delimited(buf: bytes, depth: int = 0, max_depth: int = 8) -> Iterable[Tuple[int, int, int, bytes]]:
     """
     Yield (depth, start, length, field_bytes) for all length-delimited (wire_type=2) fields,
-    recursively up to max_depth. We recurse even if inner blobs are not protobuf – we’re hunting for deflate streams.
+    recursively scanning nested messages up to max_depth. We are intentionally agnostic
+    to field numbers/names—only the wire type matters.
     """
     i, n = 0, len(buf)
     while i < n:
@@ -70,7 +72,8 @@ def iter_len_delimited(buf: bytes, depth: int = 0, max_depth: int = 8) -> Iterab
 # Decompress helpers
 # -------------------------
 
-# Try multiple wbits (auto zlib/gzip, zlib, raw-deflate, gzip)
+# Try several wbits configurations:
+# 47 = auto (zlib/gzip), 15 = zlib wrapper, -15 = raw deflate, 31 = gzip wrapper
 _WBITS_TRY = (47, 15, -15, 31)
 
 def _try_decompress_once(blob: bytes):
@@ -125,14 +128,14 @@ def extract_zlib_payload_if_any(buf: bytes) -> Optional[bytes]:
 
 def decompress_any_payload(buf: bytes) -> Optional[bytes]:
     """
-    Return *decompressed* OBIS-ish payload (bytes) from the first candidate that yields
-    plausible OBIS text after decompression. If none looks like OBIS, return the first
-    successful decompressed output anyway (best-effort).
+    Return a *decompressed* payload (bytes) from the first candidate that yields something
+    that looks like OBIS telegram text. If none looks like OBIS, return the first successful
+    decompression anyway (best-effort), else None.
     """
     first_success: Optional[bytes] = None
 
+    # Search nested candidates first
     for depth, start, length, cand in iter_len_delimited(buf, 0, 8):
-        # 1) quick try without offset
         r0 = _try_decompress_once(cand)
         if r0 is not None:
             _off, _w, out = r0
@@ -140,7 +143,7 @@ def decompress_any_payload(buf: bytes) -> Optional[bytes]:
                 return out
             if first_success is None:
                 first_success = out
-        # 2) offset scan
+
         r = _scan_offsets_and_decompress(cand, max_offset=512)
         if r is not None:
             off, w, out = r
@@ -235,12 +238,13 @@ def try_decompress_all_candidates(buf: bytes, debug: bool = False) -> Optional[T
     return best_plain
 
 def pick_best_candidate_from_blob(blob: bytes) -> bytes | None:
-    # Prefer the first candidate that decompresses at offset 0..64; else return the largest candidate (excluding 'P1').
+    """
+    Debug helper: pick a "good" length-delimited candidate (used by dispatcher for logging).
+    Prefer something that decompresses quickly; otherwise return the largest candidate.
+    """
     best = None
     best_len = -1
     for depth, start, length, cand in iter_len_delimited(blob, 0, 6):
-        if length == 2 and cand == b"P1":
-            continue
         if length > best_len:
             best = cand; best_len = length
         # quick probe

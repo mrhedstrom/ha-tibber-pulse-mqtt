@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
@@ -15,7 +15,17 @@ try:
 except Exception:
     pulse_pb2 = None
 
-from .parsers.pulse_envelope import pick_best_candidate_from_blob
+# We will use this only for quick “does this buffer contain any deflate?” checks.
+try:
+    from .parsers.pulse_envelope import pick_best_candidate_from_blob, extract_zlib_payload_if_any
+except Exception:
+    # Fallback: keep the import compatible even if the helper is not present
+    def pick_best_candidate_from_blob(_blob: bytes):
+        return None  # for debug only
+
+    def extract_zlib_payload_if_any(_buf: bytes):
+        return None  # “no deflate” by default
+
 from .parsers.obis_text import parse_obis_text
 
 from .obis.streaming import ObisStreamManager
@@ -23,6 +33,33 @@ from .util.diagnostics import DiagnosticsRegistry
 from .ha.invoke import call_sm_threadsafe, call_sm_on_loop
 
 _LOGGER = logging.getLogger(__name__)
+
+# Tibber’s in‑payload delimiter between frames seen on /publish topics.
+_MARKER = bytes.fromhex("00000000ffff20c105")
+
+
+def _split_tibber_frames(payload: bytes) -> List[bytes]:
+    """
+    Split one MQTT payload into one or more Tibber frames using the known delimiter.
+    Returns a list of non-empty chunks. If no delimiter is present, returns [payload].
+    """
+    if _MARKER not in payload:
+        return [payload]
+    parts: list[bytes] = []
+    pos = 0
+    n = len(payload)
+    while True:
+        p = payload.find(_MARKER, pos)
+        if p == -1:
+            tail = payload[pos:]
+            if tail:
+                parts.append(tail)
+            break
+        chunk = payload[pos:p]
+        if chunk:
+            parts.append(chunk)
+        pos = p + len(_MARKER)
+    return parts
 
 
 class TibberDispatcher:
@@ -156,7 +193,7 @@ class TibberDispatcher:
                         q.task_done()
                 except asyncio.QueueEmpty:
                     pass
-        
+
         task = self.hass.async_create_background_task(
             _worker(),
             name=f"tibber_dispatcher_worker:{dev_id}"
@@ -216,55 +253,76 @@ class TibberDispatcher:
         except Exception:
             pass
 
-        # 2) PROTOBUF ENVELOPE
-        blob = None
+        # 2) MODEL-AGNOSTIC MULTI-FRAME HANDLING (safe guards)
+        any_ok = False
+        any_skip = False
+        saw_non_deflate = False
+
         try:
-            env = pulse_pb2.Envelope()
-            env.ParseFromString(payload)
-            blob = getattr(env, "blob", None)
+            frames_raw = _split_tibber_frames(payload)
+            if self.debug and len(frames_raw) > 1:
+                _LOGGER.debug("Payload split into %d Tibber frame(s)", len(frames_raw))
+
+            for raw_frame in frames_raw:
+                # Try parsing as Envelope to get 'blob'. If that fails, we can still consider the raw frame.
+                blob = None
+                if pulse_pb2 is not None:
+                    try:
+                        env = pulse_pb2.Envelope()
+                        env.ParseFromString(raw_frame)
+                        blob = getattr(env, "blob", None)
+                    except Exception:
+                        blob = None
+
+                # Quick “is there any deflate” sniff (to avoid feeding non-deflate frames)
+                deflate_probe = None
+                if blob:
+                    deflate_probe = extract_zlib_payload_if_any(blob)
+                if (deflate_probe is None) and not blob:
+                    deflate_probe = extract_zlib_payload_if_any(raw_frame)
+
+                if blob is None and deflate_probe is None:
+                    # This frame is likely status/metadata or non-deflate → do not count as MISS.
+                    saw_non_deflate = True
+                    continue
+
+                # Choose the candidate to feed: prefer 'blob' if present; otherwise the raw frame.
+                candidate = blob if blob is not None else raw_frame
+
+                if self.debug and blob:
+                    try:
+                        cand = pick_best_candidate_from_blob(blob)
+                        if cand is not None:
+                            _LOGGER.debug("Envelope blob best-candidate len=%d head=%s", len(cand), cand[:16].hex())
+                    except Exception as exc:
+                        _LOGGER.debug("Error picking candidate: %s", exc)
+
+                frames, skip_bump, off_used = self._streams.feed_blob(dev_id, candidate)
+
+                if frames:
+                    for frame in frames:
+                        obis = parse_obis_text(frame)
+                        if obis:
+                            self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
+                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=(blob is not None))
+                    any_ok = True
+                elif skip_bump:
+                    any_skip = True
+
+            if any_ok:
+                return
+            if any_skip or saw_non_deflate:
+                # A stream likely started or the frames were genuinely non-deflate → no MISS for this publish.
+                if self._streams.consume_skip_bump(dev_id) and self.debug:
+                    _LOGGER.debug("No complete deflate/OBIS in this publish for %s — skipping MISS bump", dev_id)
+                    self._diag.maybe_log_payload_as_base64(payload)
+                return
+
         except Exception:
-            blob = None
+            # Fall through to RAW OBIS fallback and final MISS bump below
+            pass
 
-        if blob:
-            if self.debug:
-                try:
-                    cand = pick_best_candidate_from_blob(blob)
-                    _LOGGER.debug(
-                        "Envelope blob best-candidate len=%d head=%s",
-                        len(cand),
-                        cand[:16].hex()
-                    )
-                except Exception as exc:
-                    _LOGGER.debug("Error picking candidate: %s", exc)
-
-            frames, skip_bump, off_used = self._streams.feed_blob(dev_id, blob)
-
-            # Non-deflate blob ⇒ do NOT bump MISS
-            if not frames and skip_bump:
-                if self.debug:
-                    _LOGGER.debug("Blob had no deflate for %s — skipping MISS bump", dev_id)
-                    self._diag.maybe_log_payload_as_base64(payload)
-                self._streams.consume_skip_bump(dev_id)
-                return
-
-            if frames:
-                for frame in frames:
-                    obis = parse_obis_text(frame)
-                    if obis:
-                        self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                        self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=True)
-                return
-
-            if self._streams.consume_skip_bump(dev_id):
-                if self.debug:
-                    _LOGGER.debug("Blob had no deflate for %s — skipping MISS bump (tail)", dev_id)
-                    self._diag.maybe_log_payload_as_base64(payload)
-                return
-
-            self._diag.bump(dev_id, False, topic=topic, payload=payload, offset=off_used, had_blob=True)
-            return
-
-        # 3) RAW OBIS FALLBACK
+        # 3) RAW OBIS FALLBACK (plain text telegram in the payload)
         try:
             if (b"/" in payload) and (b"!" in payload):
                 s = payload.decode("utf-8", errors="ignore")
@@ -278,7 +336,7 @@ class TibberDispatcher:
         except Exception:
             pass
 
-        # UNKNOWN PAYLOAD
+        # 4) UNKNOWN PAYLOAD
         if self._streams.consume_skip_bump(dev_id):
             if self.debug:
                 _LOGGER.debug("Unknown payload for %s — skipping MISS bump due to skip_bump", dev_id)

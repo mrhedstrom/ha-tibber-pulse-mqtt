@@ -93,8 +93,7 @@ def _payload_to_bytes(payload) -> bytes:
 def _debug_log_rx(prefix: str, topic: str, payload: bytes, enabled: bool):
     """Log a compact RX line if debug is enabled."""
     if enabled:
-        head = payload[:16].hex()
-        _LOGGER.debug("[%s] RX topic=%s len=%d head=%s", prefix, topic, len(payload), head)
+        _LOGGER.debug("[%s] RX topic=%s full_payload=%s", prefix, topic, payload.hex())
 
 
 class HAMQTTBridge:

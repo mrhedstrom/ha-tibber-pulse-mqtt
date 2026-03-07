@@ -1,41 +1,36 @@
 import re
 from typing import Dict, Any
 
-_OBIS_LINE = re.compile(r"(\d+-\d+:\d+\.\d+\.\d+)\(([^)]+)\)")
+# Matches e.g. 1-0:1.8.0(12345.678*kWh) or 1-0:1.7.0(1234.5)
+_OBIS_ANY = re.compile(
+    r"(?P<code>\d+-\d+:\d+\.\d+\.\d+)\((?P<val>[^\)*]+)(?:\*(?P<unit>[^)]+))?\)",
+    re.MULTILINE
+)
 
 def parse_obis_text(text: str) -> Dict[str, Any]:
     """
-    Parsing OBIS-text to { code: value } where value is float if possible, else string.
+    Parse OBIS text into { code: value }, where value is float if possible, else string.
+    Also returns a "_units": { code: unit } map when units are present.
     """
     values: Dict[str, Any] = {}
     units: Dict[str, str] = {}
 
-    for line in text.splitlines():
-        m = _OBIS_LINE.search(line)
-        if not m:
-            continue
-
-        code, raw = m.groups()
-
-        if "*" in raw:
-            val, unit = raw.split("*", 1)
-            unit = unit.strip()
-            if unit:
-                units[code] = unit
-        else:
-            val, unit = raw, None
-
-        val = val.strip()
+    for m in _OBIS_ANY.finditer(text):
+        code = m.group("code")
+        raw = (m.group("val") or "").strip()
+        unit = (m.group("unit") or "").strip() or None
 
         # fix number format
-        if "," in val and "." not in val:
-            val = val.replace(",", ".")
+        if "," in raw and "." not in raw:
+            raw = raw.replace(",", ".")
 
         try:
-            f = float(val)
-            values[code] = f
+            values[code] = float(raw)
         except ValueError:
-            values[code] = val
+            values[code] = raw
+
+        if unit:
+            units[code] = unit
 
     if units:
         values["_units"] = units
