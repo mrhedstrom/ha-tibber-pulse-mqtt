@@ -2,7 +2,7 @@
 
 ## [?.?.?] Next Release
 ### Added
-- **Model-agnostic multi-frame handling** in `dispatcher`: split MQTT payloads on Tibber’s internal delimiter and process **all** frames within one publish.
+- **Model‑agnostic multi‑frame handling** in `dispatcher`: split MQTT payloads on Tibber’s internal delimiter and feed **every** inner frame (blob preferred, otherwise raw frame) to the stream manager. The quick deflate probe is now diagnostic‑only.
 - **Deflate sniffing** via `extract_zlib_payload_if_any(...)` to gate stream feeding and avoid false MISS from status/metadata-only frames.
 - **Buffer safety**: conservative cap with smart trimming to prevent unbounded memory growth on malformed telegrams.
 
@@ -13,10 +13,14 @@
 ### Improved
 - **First-chunk behavior after priming**: when a stream is just primed and no complete `/...!` frame is available yet, we mark `skip_bump=True` to avoid counting a MISS for that publish.
 - **Resilience across Pulse models (P1/HAN/KM)** by avoiding assumptions about protobuf field names and treating every length-delimited candidate generically.
+- **Sanity checks for OBIS frames**: empty or clearly invalid `/...!` fragments (e.g., “/!” or frames yielding no codes) are ignored and never write state nor mark OK. Publishes are only marked OK if at least one inner frame yields actual OBIS.
+- **Skip‑MISS behavior preserved**: if a publish advances a zlib stream but no complete OBIS is ready yet, `skip_bump` avoids false MISS. This improves robustness across Pulse P1/HAN/KM and firmware variants.
+
 
 ### Fixed
 - Eliminated intermittent “invalid distance too far back” loops by dropping the active decompressor on continuation errors and waiting for a fresh header.
 - Prevented false MISS increments on publishes that only carry status or the first part of a new stream.
+- **Rare missed candidates in multi‑frame publishes**: raw inner frames without `blob` are no longer dropped when the quick probe fails; the stream manager (header‑aware) now gets every frame and decides when to start or ignore a stream.
 
 ### Compatibility
 - No breaking changes to configuration.

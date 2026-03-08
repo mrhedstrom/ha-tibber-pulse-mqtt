@@ -1,16 +1,24 @@
 import re
 from typing import Dict, Any
 
-# Matches e.g. 1-0:1.8.0(12345.678*kWh) or 1-0:1.7.0(1234.5)
 _OBIS_ANY = re.compile(
-    r"(?P<code>\d+-\d+:\d+\.\d+\.\d+)\((?P<val>[^\)*]+)(?:\*(?P<unit>[^)]+))?\)",
+    r"(?P<code>\d+-\d+:\d+\.\d+\.\d+)\("
+    r"(?P<val>[0-9]+(?:[.,][0-9]+)?)"
+    r"(?:\*(?P<unit>[^)]+))?"
+    r"\)",
     re.MULTILINE
 )
 
 def parse_obis_text(text: str) -> Dict[str, Any]:
     """
-    Parse OBIS text into { code: value }, where value is float if possible, else string.
-    Also returns a "_units": { code: unit } map when units are present.
+    Parse OBIS telegram text into { code: value } with strict numeric parsing.
+    Returns a "_units": { code: unit } map when units are present.
+
+    Notes:
+    - Decimal comma is converted to dot.
+    - If a value cannot be parsed as float (rare with this regex), the raw string
+      is returned for diagnostics, but downstream sanity filters in sensor.py will
+      prevent spikes from reaching entity state.
     """
     values: Dict[str, Any] = {}
     units: Dict[str, str] = {}

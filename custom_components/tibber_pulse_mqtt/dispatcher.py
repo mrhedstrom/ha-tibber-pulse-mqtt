@@ -256,7 +256,6 @@ class TibberDispatcher:
         # 2) MODEL-AGNOSTIC MULTI-FRAME HANDLING (safe guards)
         any_ok = False
         any_skip = False
-        saw_non_deflate = False
 
         try:
             frames_raw = _split_tibber_frames(payload)
@@ -274,21 +273,12 @@ class TibberDispatcher:
                     except Exception:
                         blob = None
 
-                # Quick “is there any deflate” sniff (to avoid feeding non-deflate frames)
-                deflate_probe = None
-                if blob:
-                    deflate_probe = extract_zlib_payload_if_any(blob)
-                if (deflate_probe is None) and not blob:
-                    deflate_probe = extract_zlib_payload_if_any(raw_frame)
-
-                if blob is None and deflate_probe is None:
-                    # This frame is likely status/metadata or non-deflate → do not count as MISS.
-                    saw_non_deflate = True
-                    continue
-
-                # Choose the candidate to feed: prefer 'blob' if present; otherwise the raw frame.
-                candidate = blob if blob is not None else raw_frame
-
+                # Optional quick probe (debug/telemetry only, does NOT gate feeding anymore)
+                try:
+                    deflate_probe = extract_zlib_payload_if_any(blob if blob is not None else raw_frame)
+                except Exception:
+                    deflate_probe = None
+                
                 if self.debug and blob:
                     try:
                         cand = pick_best_candidate_from_blob(blob)
@@ -296,28 +286,40 @@ class TibberDispatcher:
                             _LOGGER.debug("Envelope blob best-candidate len=%d head=%s", len(cand), cand[:16].hex())
                     except Exception as exc:
                         _LOGGER.debug("Error picking candidate: %s", exc)
-
+                
+                # Feed: always feed 'blob' if present; otherwise feed the raw frame.
+                candidate = blob if blob is not None else raw_frame
                 frames, skip_bump, off_used = self._streams.feed_blob(dev_id, candidate)
-
+ 
+                
                 if frames:
+                    obis_found = False
                     for frame in frames:
                         obis = parse_obis_text(frame)
                         if obis:
+                            obis_found = True
                             self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=(blob is not None))
-                    any_ok = True
-                elif skip_bump:
-                    any_skip = True
-
+                    if obis_found:
+                        self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=(blob is not None))
+                        any_ok = True
+                    elif skip_bump:
+                        any_skip = True
+                    # else: neither OBIS nor skip flag; fallthrough to try other inner frames
+                else:                        
+                    # No frames from this candidate
+                    if skip_bump:
+                        any_skip = True
+            
             if any_ok:
                 return
-            if any_skip or saw_non_deflate:
-                # A stream likely started or the frames were genuinely non-deflate → no MISS for this publish.
-                if self._streams.consume_skip_bump(dev_id) and self.debug:
-                    _LOGGER.debug("No complete deflate/OBIS in this publish for %s — skipping MISS bump", dev_id)
-                    self._diag.maybe_log_payload_as_base64(payload)
+            if any_skip:
+                # Stream likely started or partial; don't count as MISS for this publish.
+                if self._streams.consume_skip_bump(dev_id):
+                    if self.debug:
+                        _LOGGER.debug("No complete deflate/OBIS in this publish for %s — skipping MISS bump", dev_id)
+                        self._diag.maybe_log_payload_as_base64(payload)
                 return
-
+            
         except Exception:
             # Fall through to RAW OBIS fallback and final MISS bump below
             pass
@@ -370,6 +372,7 @@ class TibberDispatcher:
             self._devices[pulse_id] = {"status": {}, "sensors": {}, "has_status": False}
         status = self._devices[pulse_id].get("status")
 
+        # Optional: update meter-id (0-0:96.1.1)
         meter = obis.get("0-0:96.1.1")
         if meter:
             meter_s = str(meter).strip()
@@ -379,14 +382,19 @@ class TibberDispatcher:
                 call_sm_on_loop(self.hass, sm.update_meter_id_for_device, pulse_id, meter_s)
 
         sm = self._get_sensor_manager() if self._sensor_manager_ready() else None
-        if sm and hasattr(sm, "set_obis_units"):
-            call_sm_on_loop(self.hass, sm.set_obis_units, obis.get("_units", {}))
+
+        # Update per-device units cache if this frame carries _units (REPLACE semantics).
+        units_map = obis.get("_units", {})
+        if sm and units_map:
+            if hasattr(sm, "set_obis_units_for_device"):
+                call_sm_on_loop(self.hass, sm.set_obis_units_for_device, pulse_id, units_map)
 
         if not self._sensor_manager_ready():
             return
 
+        # Apply each OBIS code; pass this frame's units so conversion is deterministic for this update.
         for code, value in obis.items():
             if code == "_units":
                 continue
             if sm and hasattr(sm, "add_or_update"):
-                call_sm_on_loop(self.hass, sm.add_or_update, pulse_id, code, value, status)
+                call_sm_on_loop(self.hass, sm.add_or_update, pulse_id, code, value, status, units_map or None)
