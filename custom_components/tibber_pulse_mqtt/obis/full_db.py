@@ -51,6 +51,7 @@ obis_meta = {
     "0-0:1.0.0": {},         # Date/time
     "0-0:96.1.0": {},        # Serial
     "0-0:96.1.1": {},        # Meter ID
+    "0-0:96.1.7": {},        # Meter type (e.g. Kamstrup MA304H3E)
     "0-0:42.0.0": {},        # Alt ID
     "0-0:96.13.0": {},       # Message text
     "0-0:96.13.1": {},       # Message code
