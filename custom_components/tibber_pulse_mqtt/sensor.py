@@ -6,7 +6,11 @@ from typing import Any, Dict
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.helpers.entity import DeviceInfo, async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import entity_registry as er
@@ -86,7 +90,8 @@ class SensorManager:
 
     def set_obis_units(self, units_map: dict[str, str] | None):
         """Set last-seen raw unit mapping per OBIS code (used for conversion)."""
-        self._obis_units = units_map or {}
+        if units_map:
+            self._obis_units.update(units_map)
 
     async def add_or_update(
         self,
@@ -148,7 +153,7 @@ class SensorManager:
                         meta=meta,
                         status=status or {}
                     )
-                    ent._state = scaled_value
+                    ent.set_state(scaled_value)
 
                     self._entities[unique_id] = ent
 
@@ -289,8 +294,62 @@ class TibberSensor(SensorEntity):
                     # As a last resort, ignore; HA will refresh soon anyway
                     pass
 
+    @property
+    def is_cumulative(self) -> bool:
+        """Check if this sensor is a cumulative counter (e.g. total_increasing energy)."""
+        if getattr(self, "_attr_state_class", None) == SensorStateClass.TOTAL_INCREASING:
+            return True
+        if self.meta.get("state_class") == SensorStateClass.TOTAL_INCREASING:
+            return True
+        if self.meta.get("device_class") == SensorDeviceClass.ENERGY:
+            return True
+        if hasattr(self, "_obis") and any(f":{i}.8." in self._obis for i in (1, 2, 3, 4)):
+            return True
+        return False
+
     def set_state(self, value: Any):
         """Set internal state; write only after entity is added to HA, on the HA loop."""
+        if self.is_cumulative:
+            if value is None:
+                _LOGGER.debug(
+                    "Skipping None update for cumulative sensor %s (retaining: %s)",
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            try:
+                numeric_val = float(value)
+            except (ValueError, TypeError):
+                _LOGGER.warning(
+                    "Skipping non-numeric update %r for cumulative sensor %s (retaining: %s)",
+                    value,
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            if numeric_val <= 0:
+                _LOGGER.warning(
+                    "Skipping non-positive reading (%s) for cumulative sensor %s (retaining: %s)",
+                    numeric_val,
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            if self._state is not None and numeric_val < self._state:
+                _LOGGER.warning(
+                    "Skipping decreased reading (%s < %s) for cumulative sensor %s (retaining: %s)",
+                    numeric_val,
+                    self._state,
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            value = numeric_val
+
         self._state = value
         if getattr(self, "_added_to_hass", False):
             self._schedule_state_write()
