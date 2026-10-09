@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import pytest
+from homeassistant.components.sensor import SensorStateClass
 from custom_components.tibber_pulse_mqtt.sensor import (
     TibberSensor,
     SensorManager,
@@ -31,11 +32,17 @@ class TestTibberSensor:
         )
         assert sensor_reactive.is_cumulative is True
 
-        # Unregistered OBIS register with .8. index
+        # Unmapped register without TOTAL_INCREASING metadata is not cumulative
         sensor_unmapped = TibberSensor(
             "test_unmapped", "pulse1", "1-0:1.8.3", {}, {}
         )
-        assert sensor_unmapped.is_cumulative is True
+        assert sensor_unmapped.is_cumulative is False
+
+        # Register explicitly configured with TOTAL_INCREASING is cumulative
+        sensor_custom = TibberSensor(
+            "test_custom", "pulse1", "1-0:1.8.3", {"state_class": SensorStateClass.TOTAL_INCREASING}, {}
+        )
+        assert sensor_custom.is_cumulative is True
 
         # 1.7.0 active power (measurement, not cumulative)
         sensor_power = TibberSensor(

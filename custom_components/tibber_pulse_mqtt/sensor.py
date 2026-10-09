@@ -8,7 +8,6 @@ from typing import Any, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.sensor import (
-    SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
@@ -297,14 +296,10 @@ class TibberSensor(SensorEntity):
 
     @property
     def is_cumulative(self) -> bool:
-        """Check if this sensor is a cumulative counter (e.g. total_increasing energy)."""
+        """Check if this sensor is a cumulative counter based on state_class metadata."""
         if getattr(self, "_attr_state_class", None) == SensorStateClass.TOTAL_INCREASING:
             return True
         if self.meta.get("state_class") == SensorStateClass.TOTAL_INCREASING:
-            return True
-        if self.meta.get("device_class") == SensorDeviceClass.ENERGY:
-            return True
-        if hasattr(self, "_obis") and any(f":{i}.8." in self._obis for i in (1, 2, 3, 4)):
             return True
         return False
 
