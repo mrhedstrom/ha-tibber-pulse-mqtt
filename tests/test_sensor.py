@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import pytest
 from custom_components.tibber_pulse_mqtt.sensor import (
     TibberSensor,
@@ -49,7 +50,7 @@ class TestTibberSensor:
         assert sensor_voltage.is_cumulative is False
 
     def test_cumulative_rejects_zero_and_negative(self):
-        """Verify cumulative sensor ignores <= 0, None, and invalid readings."""
+        """Verify cumulative sensor ignores <= 0, None, NaN, and invalid readings."""
         sensor = TibberSensor(
             "test_1_8_0", "pulse1", "1-0:1.8.0", obis_meta["1-0:1.8.0"], {}
         )
@@ -72,17 +73,46 @@ class TestTibberSensor:
         sensor.set_state("corrupt_value")
         assert sensor.native_value == 66413774.0
 
-    def test_cumulative_rejects_decreases(self):
-        """Verify cumulative sensor ignores decreases (e.g. from unit loss or corrupt packet)."""
+        # NaN is ignored
+        sensor.set_state(float("nan"))
+        assert sensor.native_value == 66413774.0
+        sensor.set_state("nan")
+        assert sensor.native_value == 66413774.0
+
+        # Inf / -Inf is ignored
+        sensor.set_state(float("inf"))
+        assert sensor.native_value == 66413774.0
+        sensor.set_state(float("-inf"))
+        assert sensor.native_value == 66413774.0
+
+    def test_cumulative_allows_decrease(self):
+        """Verify cumulative sensor allows decreases (Option 1: prevents lockup on prior high reading)."""
         sensor = TibberSensor(
             "test_1_8_0", "pulse1", "1-0:1.8.0", obis_meta["1-0:1.8.0"], {}
         )
         sensor.set_state(66413774.0)
         assert sensor.native_value == 66413774.0
 
-        # Decrease (e.g. 66413.774 Wh instead of 66413774 Wh) is rejected
+        # Decrease is allowed so that an earlier erroneously high reading does not permanently block updates
         sensor.set_state(66413.774)
-        assert sensor.native_value == 66413774.0
+        assert sensor.native_value == 66413.774
+
+    def test_cumulative_initial_invalid_ignored(self):
+        """Verify cumulative sensor initialized with 0.0, None, or NaN retains None initially."""
+        sensor = TibberSensor(
+            "test_1_8_0", "pulse1", "1-0:1.8.0", obis_meta["1-0:1.8.0"], {}
+        )
+        sensor.set_state(0.0)
+        assert sensor.native_value is None
+
+        sensor.set_state(float("nan"))
+        assert sensor.native_value is None
+
+        sensor.set_state(None)
+        assert sensor.native_value is None
+
+        sensor.set_state(100.0)
+        assert sensor.native_value == 100.0
 
     def test_cumulative_allows_valid_increase(self):
         """Verify cumulative sensor accepts monotonically increasing values."""
