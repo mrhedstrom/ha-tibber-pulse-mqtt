@@ -97,12 +97,12 @@ class TestTibberSensor:
         sensor = TibberSensor(
             "test_1_8_0", "pulse1", "1-0:1.8.0", obis_meta["1-0:1.8.0"], {}
         )
-        sensor.set_state(66413774.0)
-        assert sensor.native_value == 66413774.0
+        sensor.set_state(50000.0)
+        assert sensor.native_value == 50000.0
 
         # Decrease is allowed so that an earlier erroneously high reading does not permanently block updates
-        sensor.set_state(66413.774)
-        assert sensor.native_value == 66413.774
+        sensor.set_state(45000.0)
+        assert sensor.native_value == 45000.0
 
     def test_cumulative_initial_invalid_ignored(self):
         """Verify cumulative sensor initialized with 0.0, None, or NaN retains None initially."""
@@ -179,3 +179,66 @@ class TestSensorManager:
         manager.set_obis_units({"1-0:2.8.0": "kWh"})
         assert manager._obis_units["1-0:1.8.0"] == "kWh"
         assert manager._obis_units["1-0:2.8.0"] == "kWh"
+
+    def test_add_or_update_skips_until_unit_known(self):
+        """Verify sensors with target units are not updated until raw unit is known."""
+        import asyncio
+
+        async def _test():
+            entities_added = []
+            manager = SensorManager(object(), object(), lambda ents: entities_added.extend(ents))
+
+            # First attempt: unit is not yet known for 1-0:1.8.0 (target Wh)
+            await manager.add_or_update("pulse1", "1-0:1.8.0", 66487.309, {})
+            assert len(manager._entities) == 0
+            assert len(entities_added) == 0
+
+            # Set units
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+
+            # Second attempt: unit is known, entity is created with correct scaling
+            await manager.add_or_update("pulse1", "1-0:1.8.0", 66487.309, {})
+            assert len(manager._entities) == 1
+            assert len(entities_added) == 1
+            ent = manager._entities["tibber_pulse1_1-0_1_8_0"]
+            assert ent.native_value == pytest.approx(66487309.0)
+
+        asyncio.run(_test())
+
+    def test_add_or_update_existing_entity_skips_when_unit_missing(self):
+        """Verify existing entity is not overwritten with unscaled value if raw unit is missing."""
+        import asyncio
+
+        async def _test():
+            manager = SensorManager(object(), object(), lambda ents: None)
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+
+            # Initial valid update with unit known
+            await manager.add_or_update("pulse1", "1-0:1.8.0", 66487.309, {})
+            ent = manager._entities["tibber_pulse1_1-0_1_8_0"]
+            assert ent.native_value == pytest.approx(66487309.0)
+
+            # Simulate raw_unit becoming temporarily missing (e.g. cache cleared or partial frame)
+            manager._obis_units.clear()
+
+            # Attempt update without unit: should be skipped, preserving existing state
+            await manager.add_or_update("pulse1", "1-0:1.8.0", 66487.315, {})
+            assert ent.native_value == pytest.approx(66487309.0)
+
+        asyncio.run(_test())
+
+    def test_add_or_update_sensor_without_target_unit(self):
+        """Verify registers without defined target units are not blocked by the unit guard."""
+        import asyncio
+
+        async def _test():
+            entities_added = []
+            manager = SensorManager(object(), object(), lambda ents: entities_added.extend(ents))
+
+            # Register 0-0:96.1.1 (meter serial) has no target unit
+            await manager.add_or_update("pulse1", "0-0:96.1.1", "12345678", {})
+            assert len(manager._entities) == 1
+            ent = manager._entities["tibber_pulse1_0-0_96_1_1"]
+            assert ent.native_value == "12345678"
+
+        asyncio.run(_test())

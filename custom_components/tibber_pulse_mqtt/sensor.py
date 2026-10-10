@@ -114,6 +114,18 @@ class SensorManager:
         # Runtime instance lookup
         ent = self._entities.get(unique_id)
 
+        # Target unit from entity meta or OBIS database
+        target_unit = ent.meta.get("unit") if ent else obis_meta.get(obis_code, {}).get("unit")
+
+        # Ignore values until the unit is known (prevents unscaled Wh vs kWh jumps)
+        if target_unit and not raw_unit:
+            _LOGGER.debug(
+                "Skipping update for %s: target unit '%s' requires known raw unit",
+                obis_code,
+                target_unit,
+            )
+            return
+
         # If entity exists in registry but not in runtime, recreate it
         if ent is None and er_entry_entity_id:
             meta = obis_meta.get(obis_code, {})
@@ -129,12 +141,7 @@ class SensorManager:
             # HA will automatically attach entity_id via registry
             self.async_add_entities([ent])
 
-        # Compute scaled value (needed for both new + existing entities)
-        if ent:
-            target_unit = ent.meta.get("unit")
-        else:
-            target_unit = obis_meta.get(obis_code, {}).get("unit")
-
+        # Compute scaled value
         scaled_value = convert_unit_value(value, raw_unit, target_unit)
 
         # Create brand-new entity
