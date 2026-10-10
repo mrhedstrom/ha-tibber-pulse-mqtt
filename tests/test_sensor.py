@@ -56,16 +56,12 @@ class TestTibberSensor:
         )
         assert sensor_voltage.is_cumulative is False
 
-    def test_cumulative_rejects_zero_and_negative(self):
-        """Verify cumulative sensor ignores <= 0, None, NaN, and invalid readings."""
+    def test_cumulative_rejects_negative_and_invalid(self):
+        """Verify cumulative sensor ignores < 0, None, NaN, and invalid readings."""
         sensor = TibberSensor(
             "test_1_8_0", "pulse1", "1-0:1.8.0", obis_meta["1-0:1.8.0"], {}
         )
         sensor.set_state(66413774.0)
-        assert sensor.native_value == 66413774.0
-
-        # Drop to 0.0 is ignored
-        sensor.set_state(0.0)
         assert sensor.native_value == 66413774.0
 
         # Drop to negative is ignored
@@ -92,6 +88,18 @@ class TestTibberSensor:
         sensor.set_state(float("-inf"))
         assert sensor.native_value == 66413774.0
 
+    def test_cumulative_allows_zero(self):
+        """Verify cumulative sensor accepts 0.0 (e.g. export register 2.8.0 for home without solar)."""
+        sensor = TibberSensor(
+            "test_2_8_0", "pulse1", "1-0:2.8.0", obis_meta["1-0:2.8.0"], {}
+        )
+        sensor.set_state(0.0)
+        assert sensor.native_value == 0.0
+
+        # Can increase from 0.0
+        sensor.set_state(150.0)
+        assert sensor.native_value == 150.0
+
     def test_cumulative_allows_decrease(self):
         """Verify cumulative sensor allows decreases (Option 1: prevents lockup on prior high reading)."""
         sensor = TibberSensor(
@@ -105,11 +113,11 @@ class TestTibberSensor:
         assert sensor.native_value == 45000.0
 
     def test_cumulative_initial_invalid_ignored(self):
-        """Verify cumulative sensor initialized with 0.0, None, or NaN retains None initially."""
+        """Verify cumulative sensor initialized with negative, None, or NaN retains None initially."""
         sensor = TibberSensor(
             "test_1_8_0", "pulse1", "1-0:1.8.0", obis_meta["1-0:1.8.0"], {}
         )
-        sensor.set_state(0.0)
+        sensor.set_state(-5.0)
         assert sensor.native_value is None
 
         sensor.set_state(float("nan"))

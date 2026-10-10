@@ -341,9 +341,9 @@ class TibberSensor(SensorEntity):
                 )
                 return
 
-            if numeric_val <= 0:
+            if numeric_val < 0:
                 _LOGGER.warning(
-                    "Skipping non-positive reading (%s) for cumulative sensor %s (retaining: %s)",
+                    "Skipping negative reading (%s) for cumulative sensor %s (retaining: %s)",
                     numeric_val,
                     self._obis,
                     self._state,
