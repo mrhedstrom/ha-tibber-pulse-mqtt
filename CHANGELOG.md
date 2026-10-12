@@ -2,7 +2,11 @@
 
 
 ## [0.4.2] - Future release
+### Fixed
+- Fix thread safety on shutdown and reload to prevent race conditions and exceptions during Home Assistant stop/unload in DLSM/COSEM parser. Thanks @kornelione for the fix.
+
 ### Added
+- Parse raw HDLC/DLMS frames with positional mapping for Kamstrup HAN meters. Thanks @omBratteng for the PR.
 - Added automated pytest coverage for replaying raw MQTT captures through the dispatcher without running Home Assistant.
 - Added a GitHub Actions workflow to run the test suite on pushes and pull requests.
 - Raw capture fixtures can now be used to verify support for real-world meter and device payloads, including devices not yet supported by the integration.
