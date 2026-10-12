@@ -24,6 +24,7 @@ _TAG_FLOAT64 = 0x18
 _TAG_ARRAY = 0x01
 _TAG_STRUCTURE = 0x02
 _TAG_DATANOTIFICATION = 0x0F
+_TAG_VISIBLE_STRING = 0x0A
 
 # IEC 62056-62 unit codes → HA unit strings (matches obis_meta in full_db.py)
 _DLMS_UNITS: Dict[int, str] = {
@@ -170,7 +171,7 @@ def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
                 break
             val_tag = blob[pos]
             pos += 1
-            if val_tag == _TAG_OCTET_STRING:
+            if val_tag in (_TAG_OCTET_STRING, _TAG_VISIBLE_STRING):
                 if pos >= len(blob):
                     break
                 skip_len = blob[pos]

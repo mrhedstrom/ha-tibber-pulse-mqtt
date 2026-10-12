@@ -26,10 +26,9 @@ class TibberLocalHub:
         # Start dispatcher first so workers/lifecycle are ready
         await self.dispatcher.async_start()
 
-        data = self.entry.data
         topic = self.cfg.get(CONF_SUBSCRIBE, DEFAULT_TOPIC)
 
-        if data.get(CONF_BROKER_MODE) == "homeassistant":
+        if self.cfg.get(CONF_BROKER_MODE) == "homeassistant":
             self._ha_mqtt = HAMQTTBridge(self.hass)
             await self._ha_mqtt.async_subscribe(topic, self.dispatcher.on_mqtt_message)
             _LOGGER.info("Tibber Pulse MQTT listening via HA MQTT on %s", topic)
@@ -59,15 +58,15 @@ class TibberLocalHub:
             )
 
         # Robust HA-stop listener (NOT listen_once). We self-unsubscribe on first fire.
-        def _on_ha_stop(_):
+        # Must be async so HA schedules it on the event loop (sync listeners run in executor).
+        async def _on_ha_stop(_):
             if self._unsub_ha_stop is not None:
                 try:
                     self._unsub_ha_stop()
                 except Exception:
                     pass
                 self._unsub_ha_stop = None
-            # Schedule stop and return None (do not return a Task)
-            self.hass.async_create_task(self.async_stop())
+            await self.async_stop()
 
         self._unsub_ha_stop = self.hass.bus.async_listen(EVENT_HOMEASSISTANT_STOP, _on_ha_stop)
 
