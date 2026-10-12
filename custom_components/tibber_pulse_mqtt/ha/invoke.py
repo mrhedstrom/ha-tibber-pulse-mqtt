@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import inspect
-from homeassistant.core import HomeAssistant
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 def call_sm_threadsafe(hass: HomeAssistant, func, *args):

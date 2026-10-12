@@ -1,18 +1,24 @@
 from __future__ import annotations
 import logging
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.typing import ConfigType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, CONF_DEBUG_LOG_COMPONENT
-from .coordinator import TibberLocalHub
+
+try:
+    from homeassistant.helpers import config_validation as cv
+except ImportError:
+    CONFIG_SCHEMA = None
+else:
+    CONFIG_SCHEMA = cv.platform_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["sensor"]
-
-CONFIG_SCHEMA = cv.platform_only_config_schema(DOMAIN)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Nothing to do for YAML setup; we use config entries.
@@ -20,6 +26,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    from .coordinator import TibberLocalHub
+
     # Register update listener (and ensure it is removed on unload).
     unsub_update = entry.add_update_listener(_update_listener)
     entry.async_on_unload(unsub_update)

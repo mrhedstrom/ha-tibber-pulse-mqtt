@@ -9,12 +9,14 @@
                     "subscribe_topic": "MQTT-Subscribe-Topic",
                     "debug_log_component": "Debug-Logging für die Komponente aktivieren",
                     "log_missed_base64": "Fehlende Payloads protokollieren (Base64)",
-                    "log_obis": "OBIS-Codes im Log anzeigen"
+                    "log_obis": "OBIS-Codes im Log anzeigen",
+                    "save_raw_data": "Bereinigte MQTT-Rohdaten zum Teilen speichern"
                 },
                 "data_description": {
                     "debug_log_component": "Aktiviert das Debug-Loglevel für diese Integration.",
                     "log_missed_base64": "Wenn aktiviert, werden fehlende/ungültige Payloads zur Diagnose in Base64 protokolliert.",
-                    "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen."
+                    "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen.",
+                    "save_raw_data": "Startet nach einer STATUS-Nachricht und mindestens vier weiteren MQTT-Nachrichten eine lokale Aufzeichnung und speichert anschließend bis zu 100 Datennachrichten. Eine synthetische Geräte-ID ersetzt die ursprüngliche ID in STATUS und Topics. Sensible STATUS-Felder und lesbare OBIS-Identifikationsdaten werden entfernt. Nicht erkannte Payloads bleiben unverändert und können identifizierende Informationen enthalten. Prüfe die Aufzeichnung vor dem Teilen."
                 }
             },
             "external_broker": {
@@ -52,12 +54,14 @@
                     "subscribe_topic": "MQTT-Subscribe-Topic",
                     "debug_log_component": "Debug-Logging für die Komponente aktivieren",
                     "log_missed_base64": "Fehlende Payloads protokollieren (Base64)",
-                    "log_obis": "OBIS-Codes im Log anzeigen"
+                    "log_obis": "OBIS-Codes im Log anzeigen",
+                    "save_raw_data": "Bereinigte MQTT-Rohdaten zum Teilen speichern"
                 },
                 "data_description": {
                     "debug_log_component": "Aktiviert das Debug-Loglevel für diese Integration.",
                     "log_missed_base64": "Wenn aktiviert, werden fehlende/ungültige Payloads zur Diagnose in Base64 protokolliert.",
-                    "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen."
+                    "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen.",
+                    "save_raw_data": "Startet nach einer STATUS-Nachricht und mindestens vier weiteren MQTT-Nachrichten eine lokale Aufzeichnung und speichert anschließend bis zu 100 Datennachrichten. Eine synthetische Geräte-ID ersetzt die ursprüngliche ID in STATUS und Topics. Sensible STATUS-Felder und lesbare OBIS-Identifikationsdaten werden entfernt. Nicht erkannte Payloads bleiben unverändert und können identifizierende Informationen enthalten. Prüfe die Aufzeichnung vor dem Teilen."
                 }
             },
             "external_broker_options": {

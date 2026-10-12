@@ -22,10 +22,12 @@ CONF_SUBSCRIBE = "subscribe_topic"
 CONF_DEBUG_LOG_COMPONENT = "debug_log_component"
 CONF_LOG_MISSED_BASE64 = "log_missed_base64"
 CONF_LOG_OBIS = "log_obis"
+CONF_SAVE_RAW_DATA = "save_raw_data"
 
 DEFAULT_DEBUG_LOG_COMPONENT = False
 DEFAULT_LOG_MISSED_BASE64 = False
 DEFAULT_LOG_OBIS = False
+DEFAULT_SAVE_RAW_DATA = False
 
 # Defaults
 DEFAULT_PORT = 1883

@@ -9,12 +9,14 @@
                     "subscribe_topic": "MQTT subscribe topic",
                     "debug_log_component": "Enable component debug logging",
                     "log_missed_base64": "Log missed payloads (Base64)",
-                    "log_obis": "Show OBIS codes in log"
+                    "log_obis": "Show OBIS codes in log",
+                    "save_raw_data": "Save sanitized raw MQTT data for sharing"
                 },
                 "data_description": {
                     "debug_log_component": "Turns on debug-level logging for this integration.",
                     "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
-                    "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+                    "log_obis": "When enabled, parsed OBIS codes are included in the logs.",
+                    "save_raw_data": "Starts a local capture after a STATUS message and at least four other MQTT messages, then saves up to 100 data messages. A synthetic device ID replaces the original in STATUS and topics. Sensitive STATUS and readable OBIS fields are redacted, but opaque payloads are unchanged and may contain identifying information. Review captures before sharing."
                 }
             },
             "external_broker": {
@@ -52,12 +54,14 @@
                     "subscribe_topic": "MQTT subscribe topic",
                     "debug_log_component": "Enable component debug logging",
                     "log_missed_base64": "Log missed payloads (Base64)",
-                    "log_obis": "Show OBIS codes in log"
+                    "log_obis": "Show OBIS codes in log",
+                    "save_raw_data": "Save sanitized raw MQTT data for sharing"
                 },
                 "data_description": {
                     "debug_log_component": "Turns on debug-level logging for this integration.",
                     "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
-                    "log_obis": "When enabled, parsed OBIS codes are included in the logs."
+                    "log_obis": "When enabled, parsed OBIS codes are included in the logs.",
+                    "save_raw_data": "Starts a local capture after a STATUS message and at least four other MQTT messages, then saves up to 100 data messages. A synthetic device ID replaces the original in STATUS and topics. Sensitive STATUS and readable OBIS fields are redacted, but opaque payloads are unchanged and may contain identifying information. Review captures before sharing."
                 }
             },
             "external_broker_options": {

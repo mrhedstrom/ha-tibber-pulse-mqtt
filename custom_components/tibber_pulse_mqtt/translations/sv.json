@@ -9,12 +9,14 @@
                     "subscribe_topic": "MQTT subscribe-topic",
                     "debug_log_component": "Aktivera debugloggning för komponenten",
                     "log_missed_base64": "Logga missade payloads (Base64)",
-                    "log_obis": "Visa OBIS-koder i logg"
+                    "log_obis": "Visa OBIS-koder i logg",
+                    "save_raw_data": "Spara sanerade råa MQTT-data för delning"
                 },
                 "data_description": {
                     "debug_log_component": "Slår på loggnivån debug för denna integration.",
                     "log_missed_base64": "När aktiverat loggas missade/ogiltiga payloads i Base64 för felsökning.",
-                    "log_obis": "När aktiverat visas tolkade OBIS-koder i loggarna."
+                    "log_obis": "När aktiverat visas tolkade OBIS-koder i loggarna.",
+                    "save_raw_data": "Startar en lokal inspelning efter ett STATUS-meddelande och minst fyra andra MQTT-meddelanden och sparar därefter upp till 100 datameddelanden. Ett syntetiskt enhets-ID ersätter originalet i STATUS och ämnen. Känsliga STATUS-fält och läsbar OBIS-information maskeras, men ogenomskinliga payloads ändras inte och kan innehålla identifierande information. Granska inspelningen innan du delar den."
                 }
             },
             "external_broker": {
@@ -52,12 +54,14 @@
                     "subscribe_topic": "MQTT subscribe-topic",
                     "debug_log_component": "Aktivera debugloggning för komponenten",
                     "log_missed_base64": "Logga missade payloads (Base64)",
-                    "log_obis": "Visa OBIS-koder i logg"
+                    "log_obis": "Visa OBIS-koder i logg",
+                    "save_raw_data": "Spara sanerade råa MQTT-data för delning"
                 },
                 "data_description": {
                     "debug_log_component": "Slår på loggnivån debug för denna integration.",
                     "log_missed_base64": "När aktiverat loggas missade/ogiltiga payloads i Base64 för felsökning.",
-                    "log_obis": "När aktiverat visas tolkade OBIS-koder i loggarna."
+                    "log_obis": "När aktiverat visas tolkade OBIS-koder i loggarna.",
+                    "save_raw_data": "Startar en lokal inspelning efter ett STATUS-meddelande och minst fyra andra MQTT-meddelanden och sparar därefter upp till 100 datameddelanden. Ett syntetiskt enhets-ID ersätter originalet i STATUS och ämnen. Känsliga STATUS-fält och läsbar OBIS-information maskeras, men ogenomskinliga payloads ändras inte och kan innehålla identifierande information. Granska inspelningen innan du delar den."
                 }
             },
             "external_broker_options": {
