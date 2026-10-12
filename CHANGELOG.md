@@ -1,6 +1,17 @@
 # Changelog
 
 
+## [0.4.2] - Future release
+### Added
+- Added automated pytest coverage for replaying raw MQTT captures through the dispatcher without running Home Assistant.
+- Added a GitHub Actions workflow to run the test suite on pushes and pull requests.
+- Raw capture fixtures can now be used to verify support for real-world meter and device payloads, including devices not yet supported by the integration.
+- Raw capture begins after STATUS and four data messages and continues collecting up to 100 data messages; fixture tests validate decoding across the complete captured sample.
+
+### Raw capture fixtures
+- We welcome as many reviewed raw MQTT examples as users can safely share across all supported devices, meters, and firmware versions. These fixtures help expand device support and catch regressions. See the README's **Sharing raw device data** section for capture, review, and issue-submission instructions.
+
+
 ## [0.4.1]
 ### Fixed
 - Skip state writes for disabled Home Assistant entities.

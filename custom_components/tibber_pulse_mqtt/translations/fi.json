@@ -9,12 +9,14 @@
                     "subscribe_topic": "MQTT-tilausaihe",
                     "debug_log_component": "Ota komponentin debug-loki käyttöön",
                     "log_missed_base64": "Kirjaa puuttuvat payloadit (Base64)",
-                    "log_obis": "Näytä OBIS-koodit lokissa"
+                    "log_obis": "Näytä OBIS-koodit lokissa",
+                    "save_raw_data": "Tallenna anonymisoidut MQTT-raakatiedot jaettavaksi"
                 },
                 "data_description": {
                     "debug_log_component": "Ottaa käyttöön integraation debug-tasoisen lokituksen.",
                     "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
-                    "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa."
+                    "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
+                    "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 dataviestiä. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
                 }
             },
             "external_broker": {
@@ -52,12 +54,14 @@
                     "subscribe_topic": "MQTT-tilausaihe",
                     "debug_log_component": "Ota komponentin debug-loki käyttöön",
                     "log_missed_base64": "Kirjaa puuttuvat payloadit (Base64)",
-                    "log_obis": "Näytä OBIS-koodit lokissa"
+                    "log_obis": "Näytä OBIS-koodit lokissa",
+                    "save_raw_data": "Tallenna anonymisoidut MQTT-raakatiedot jaettavaksi"
                 },
                 "data_description": {
                     "debug_log_component": "Ottaa käyttöön integraation debug-tasoisen lokituksen.",
                     "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
-                    "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa."
+                    "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
+                    "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 dataviestiä. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
                 }
             },
             "external_broker_options": {

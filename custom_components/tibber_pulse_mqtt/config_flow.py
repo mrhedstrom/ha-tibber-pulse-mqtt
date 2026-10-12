@@ -30,9 +30,11 @@ from .const import (
     CONF_DEBUG_LOG_COMPONENT,
     CONF_LOG_MISSED_BASE64,
     CONF_LOG_OBIS,
+    CONF_SAVE_RAW_DATA,
     DEFAULT_DEBUG_LOG_COMPONENT,
     DEFAULT_LOG_MISSED_BASE64,
     DEFAULT_LOG_OBIS,
+    DEFAULT_SAVE_RAW_DATA,
 )
 
 # Select option lists (labels shown, values stored)
@@ -111,6 +113,7 @@ class TibberLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_DEBUG_LOG_COMPONENT: debug_enabled,
                     CONF_LOG_MISSED_BASE64: user_input.get(CONF_LOG_MISSED_BASE64, DEFAULT_LOG_MISSED_BASE64),
                     CONF_LOG_OBIS: user_input.get(CONF_LOG_OBIS, DEFAULT_LOG_OBIS),
+                    CONF_SAVE_RAW_DATA: user_input.get(CONF_SAVE_RAW_DATA, DEFAULT_SAVE_RAW_DATA),
                 }
                 return self.async_create_entry(title="Tibber Pulse MQTT (HA MQTT)", data=data)
 
@@ -121,6 +124,7 @@ class TibberLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_DEBUG_LOG_COMPONENT: debug_enabled,
                 CONF_LOG_MISSED_BASE64: user_input.get(CONF_LOG_MISSED_BASE64, DEFAULT_LOG_MISSED_BASE64),
                 CONF_LOG_OBIS: user_input.get(CONF_LOG_OBIS, DEFAULT_LOG_OBIS),
+                CONF_SAVE_RAW_DATA: user_input.get(CONF_SAVE_RAW_DATA, DEFAULT_SAVE_RAW_DATA),
             }
             return await self.async_step_external_broker()
 
@@ -131,6 +135,7 @@ class TibberLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_DEBUG_LOG_COMPONENT, default=DEFAULT_DEBUG_LOG_COMPONENT): _bool_toggle_selector(),
             vol.Required(CONF_LOG_MISSED_BASE64, default=DEFAULT_LOG_MISSED_BASE64): _bool_toggle_selector(),
             vol.Required(CONF_LOG_OBIS, default=DEFAULT_LOG_OBIS): _bool_toggle_selector(),
+            vol.Required(CONF_SAVE_RAW_DATA, default=DEFAULT_SAVE_RAW_DATA): _bool_toggle_selector(),
         })
         return self.async_show_form(step_id="user", data_schema=schema)
 
@@ -206,6 +211,7 @@ class TibberLocalOptionsFlow(config_entries.OptionsFlow):
                 CONF_DEBUG_LOG_COMPONENT: debug_enabled,
                 CONF_LOG_MISSED_BASE64: user_input.get(CONF_LOG_MISSED_BASE64, cfg.get(CONF_LOG_MISSED_BASE64, DEFAULT_LOG_MISSED_BASE64)),
                 CONF_LOG_OBIS: user_input.get(CONF_LOG_OBIS, cfg.get(CONF_LOG_OBIS, DEFAULT_LOG_OBIS)),
+                CONF_SAVE_RAW_DATA: user_input.get(CONF_SAVE_RAW_DATA, cfg.get(CONF_SAVE_RAW_DATA, DEFAULT_SAVE_RAW_DATA)),
             }
 
             if self._step1_cache[CONF_BROKER_MODE] == "external":
@@ -219,6 +225,7 @@ class TibberLocalOptionsFlow(config_entries.OptionsFlow):
             vol.Required(CONF_DEBUG_LOG_COMPONENT, default=cfg.get(CONF_DEBUG_LOG_COMPONENT, DEFAULT_DEBUG_LOG_COMPONENT)): _bool_toggle_selector(),
             vol.Required(CONF_LOG_MISSED_BASE64, default=cfg.get(CONF_LOG_MISSED_BASE64, DEFAULT_LOG_MISSED_BASE64)): _bool_toggle_selector(),
             vol.Required(CONF_LOG_OBIS, default=cfg.get(CONF_LOG_OBIS, DEFAULT_LOG_OBIS)): _bool_toggle_selector(),
+            vol.Required(CONF_SAVE_RAW_DATA, default=cfg.get(CONF_SAVE_RAW_DATA, DEFAULT_SAVE_RAW_DATA)): _bool_toggle_selector(),
         })
         return self.async_show_form(step_id="init", data_schema=schema)
 

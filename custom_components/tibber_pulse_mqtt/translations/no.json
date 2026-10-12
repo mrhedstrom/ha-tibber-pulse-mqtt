@@ -9,12 +9,14 @@
                     "subscribe_topic": "MQTT subscribe-topic",
                     "debug_log_component": "Aktiver debug-logging for komponenten",
                     "log_missed_base64": "Logg manglende payloads (Base64)",
-                    "log_obis": "Vis OBIS-koder i logg"
+                    "log_obis": "Vis OBIS-koder i logg",
+                    "save_raw_data": "Lagre anonymiserte rå MQTT-data for deling"
                 },
                 "data_description": {
                     "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
                     "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
-                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
+                    "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 datameldinger. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
                 }
             },
             "external_broker": {
@@ -52,12 +54,14 @@
                     "subscribe_topic": "MQTT subscribe-topic",
                     "debug_log_component": "Aktiver debug-logging for komponenten",
                     "log_missed_base64": "Logg manglende payloads (Base64)",
-                    "log_obis": "Vis OBIS-koder i logg"
+                    "log_obis": "Vis OBIS-koder i logg",
+                    "save_raw_data": "Lagre anonymiserte rå MQTT-data for deling"
                 },
                 "data_description": {
                     "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
                     "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
-                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene."
+                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
+                    "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 datameldinger. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
                 }
             },
             "external_broker_options": {

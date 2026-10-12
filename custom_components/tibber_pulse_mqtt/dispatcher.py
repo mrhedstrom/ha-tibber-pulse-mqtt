@@ -3,12 +3,19 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
-from typing import Dict, Any, Optional
+from typing import TYPE_CHECKING, Dict, Any, Optional
 
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.config_entries import ConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS
+try:
+    from homeassistant.core import callback
+except ImportError:
+    def callback(func):
+        return func
+
+from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS, CONF_SAVE_RAW_DATA
 
 try:
     from .protobuf import pulse_pb2
@@ -22,6 +29,7 @@ from .parsers.dlms_cosem import parse_dlms, find_dlms_frame_in_blob
 from .obis.streaming import ObisStreamManager
 from .util.diagnostics import DiagnosticsRegistry
 from .ha.invoke import call_sm_threadsafe, call_sm_on_loop
+from .raw_capture import RawMessageCapture
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +42,11 @@ class TibberDispatcher:
         self.entry = entry
         self.cfg = {**entry.data, **entry.options}
         self.debug = _LOGGER.isEnabledFor(logging.DEBUG)
+        self._raw_capture = (
+            RawMessageCapture(hass.config.path("tibber_pulse_mqtt_raw"))
+            if self.cfg.get(CONF_SAVE_RAW_DATA, False)
+            else None
+        )
 
         # Device state / mappings
         self._devices: Dict[str, Dict[str, Any]] = {}
@@ -178,6 +191,10 @@ class TibberDispatcher:
 
     def _process_payload_sync(self, dev_id: str, topic: str, payload: bytes):
         """Runs in a threadpool. Must use thread-safe hops to call HA loop APIs."""
+        if self._raw_capture:
+            is_status = payload.startswith(b"{") and b'"status"' in payload
+            self._raw_capture.record(dev_id, topic, payload, is_status=is_status)
+
         # 1) STATUS JSON
         try:
             if payload.startswith(b"{") and b'"status"' in payload:
@@ -185,6 +202,8 @@ class TibberDispatcher:
                 d = self._devices.setdefault(dev_id, {"status": {}, "sensors": {}, "has_status": False})
                 obj = json.loads(s)
                 d["status"] = obj.get("status", {}) or {}
+                if self._raw_capture:
+                    self._raw_capture.set_status(dev_id, d["status"], topic, payload)
 
                 # Extract pulse_id from STATUS
                 pulse_id = str(d["status"].get("ID") or "").strip()

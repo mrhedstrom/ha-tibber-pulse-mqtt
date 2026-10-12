@@ -9,12 +9,14 @@
                     "subscribe_topic": "MQTT subscribe-topic",
                     "debug_log_component": "Debugloggen voor component inschakelen",
                     "log_missed_base64": "Gemiste payloads loggen (Base64)",
-                    "log_obis": "OBIS-codes in log weergeven"
+                    "log_obis": "OBIS-codes in log weergeven",
+                    "save_raw_data": "Geanonimiseerde ruwe MQTT-gegevens opslaan om te delen"
                 },
                 "data_description": {
                     "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
                     "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
-                    "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen."
+                    "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
+                    "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 gegevensberichten op. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
                 }
             },
             "external_broker": {
@@ -52,12 +54,14 @@
                     "subscribe_topic": "MQTT subscribe-topic",
                     "debug_log_component": "Debugloggen voor component inschakelen",
                     "log_missed_base64": "Gemiste payloads loggen (Base64)",
-                    "log_obis": "OBIS-codes in log weergeven"
+                    "log_obis": "OBIS-codes in log weergeven",
+                    "save_raw_data": "Geanonimiseerde ruwe MQTT-gegevens opslaan om te delen"
                 },
                 "data_description": {
                     "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
                     "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
-                    "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen."
+                    "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
+                    "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 gegevensberichten op. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
                 }
             },
             "external_broker_options": {
