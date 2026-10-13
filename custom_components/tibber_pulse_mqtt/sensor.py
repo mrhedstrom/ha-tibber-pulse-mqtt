@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-import logging
 import asyncio
+import logging
+import math
 from typing import Any, Dict
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.helpers.entity import DeviceInfo, async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import entity_registry as er
@@ -86,7 +90,8 @@ class SensorManager:
 
     def set_obis_units(self, units_map: dict[str, str] | None):
         """Set last-seen raw unit mapping per OBIS code (used for conversion)."""
-        self._obis_units = units_map or {}
+        if units_map:
+            self._obis_units.update(units_map)
 
     async def add_or_update(
         self,
@@ -109,6 +114,18 @@ class SensorManager:
         # Runtime instance lookup
         ent = self._entities.get(unique_id)
 
+        # Target unit from entity meta or OBIS database
+        target_unit = ent.meta.get("unit") if ent else obis_meta.get(obis_code, {}).get("unit")
+
+        # Ignore values until the unit is known (prevents unscaled Wh vs kWh jumps)
+        if target_unit and not raw_unit:
+            _LOGGER.debug(
+                "Skipping update for %s: target unit '%s' requires known raw unit",
+                obis_code,
+                target_unit,
+            )
+            return
+
         # If entity exists in registry but not in runtime, recreate it
         if ent is None and er_entry_entity_id:
             meta = obis_meta.get(obis_code, {})
@@ -124,12 +141,7 @@ class SensorManager:
             # HA will automatically attach entity_id via registry
             self.async_add_entities([ent])
 
-        # Compute scaled value (needed for both new + existing entities)
-        if ent:
-            target_unit = ent.meta.get("unit")
-        else:
-            target_unit = obis_meta.get(obis_code, {}).get("unit")
-
+        # Compute scaled value
         scaled_value = convert_unit_value(value, raw_unit, target_unit)
 
         # Create brand-new entity
@@ -148,7 +160,7 @@ class SensorManager:
                         meta=meta,
                         status=status or {}
                     )
-                    ent._state = scaled_value
+                    ent.set_state(scaled_value)
 
                     self._entities[unique_id] = ent
 
@@ -289,8 +301,57 @@ class TibberSensor(SensorEntity):
                     # As a last resort, ignore; HA will refresh soon anyway
                     pass
 
+    @property
+    def is_cumulative(self) -> bool:
+        """Check if this sensor is a cumulative counter based on state_class metadata."""
+        if getattr(self, "_attr_state_class", None) == SensorStateClass.TOTAL_INCREASING:
+            return True
+        if self.meta.get("state_class") == SensorStateClass.TOTAL_INCREASING:
+            return True
+        return False
+
     def set_state(self, value: Any):
         """Set internal state; write only after entity is added to HA, on the HA loop."""
+        if self.is_cumulative:
+            if value is None:
+                _LOGGER.debug(
+                    "Skipping None update for cumulative sensor %s (retaining: %s)",
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            try:
+                numeric_val = float(value)
+            except (ValueError, TypeError):
+                _LOGGER.warning(
+                    "Skipping non-numeric update %r for cumulative sensor %s (retaining: %s)",
+                    value,
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            if math.isnan(numeric_val) or math.isinf(numeric_val):
+                _LOGGER.warning(
+                    "Skipping invalid numeric reading (%s) for cumulative sensor %s (retaining: %s)",
+                    numeric_val,
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            if numeric_val < 0:
+                _LOGGER.warning(
+                    "Skipping negative reading (%s) for cumulative sensor %s (retaining: %s)",
+                    numeric_val,
+                    self._obis,
+                    self._state,
+                )
+                return
+
+            value = numeric_val
+
         self._state = value
         if getattr(self, "_added_to_hass", False):
             self._schedule_state_write()
