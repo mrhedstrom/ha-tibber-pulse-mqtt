@@ -1,5 +1,6 @@
 import base64
 import json
+import threading
 from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
@@ -22,18 +23,29 @@ class ImmediateLoop:
         callback(*args)
 
 
+class ThreadSafeTestLoop:
+    def __init__(self):
+        self.callbacks = []
+        self.scheduling_threads = []
+
+    def call_soon_threadsafe(self, callback, *args):
+        self.scheduling_threads.append(threading.get_ident())
+        self.callbacks.append((callback, args))
+
+
 class RecordingSensorManager:
     def __init__(self):
         self.status = {}
         self.readings = {}
         self.reading_updates = []
         self.units = {}
+        self.meter_ids = {}
 
     def update_status_for_device(self, device_id, status):
         self.status[device_id] = status
 
     def update_meter_id_for_device(self, device_id, meter_id):
-        pass
+        self.meter_ids[device_id] = meter_id
 
     def set_obis_units(self, units):
         self.units.update(units)
@@ -112,6 +124,34 @@ def test_dispatcher_captures_unrecognized_data_messages(tmp_path):
     assert records[0]["payload_redacted"] is True
     assert [base64.b64decode(record["payload"]) for record in records[1:]] == raw_payloads
     assert all(record["payload_opaque"] is True for record in records[1:])
+
+
+def test_apply_obis_schedules_all_sensor_manager_calls_thread_safely():
+    loop = ThreadSafeTestLoop()
+    sensor_manager = RecordingSensorManager()
+    entry = SimpleNamespace(entry_id="fixture", data={}, options={})
+    hass = SimpleNamespace(loop=loop, data={DOMAIN: {"fixture": SimpleNamespace(sensor_manager=sensor_manager)}})
+    dispatcher = TibberDispatcher(hass, entry)
+    obis = {
+        "0-0:96.1.1": "meter-serial",
+        "1-0:1.8.0": 123.0,
+        "_units": {"1-0:1.8.0": "kWh"},
+    }
+
+    worker = threading.Thread(target=dispatcher._apply_obis_with_pulse_id, args=("pulse-id", obis))
+    worker.start()
+    worker.join()
+
+    assert len(loop.callbacks) == 4
+    assert set(loop.scheduling_threads) == {worker.ident}
+    for callback, args in loop.callbacks:
+        callback(*args)
+
+    assert sensor_manager.meter_ids == {"pulse-id": "meter-serial"}
+    assert sensor_manager.units == {"1-0:1.8.0": "kWh"}
+    assert {code for _device, code, _value in sensor_manager.reading_updates} == {
+        "0-0:96.1.1", "1-0:1.8.0"
+    }
 
 
 @pytest.mark.parametrize(

@@ -3,8 +3,9 @@
 
 ## [0.4.2] - Future release
 ### Fixed
-- Fix thread safety on shutdown and reload to prevent race conditions and exceptions during Home Assistant stop/unload in DLSM/COSEM parser. Thanks @kornelione for the fix.
-- Fix energy spikes due to a unit race condition on boot. The very first OBIS frame was being processed before the raw units map was populated in some cases. Thanks @tingdahl for the fix.
+- Fix sensor creation failures when decoded OBIS updates are scheduled from worker threads; route meter ID, unit, and sensor updates through the thread-safe event-loop helper. (#23)
+- Fix thread safety on shutdown and reload to prevent race conditions and exceptions during Home Assistant stop/unload in DLSM/COSEM parser. Thanks @kornelione for the fix. (#18)
+- Fix energy spikes due to a unit race condition on boot. The very first OBIS frame was being processed before the raw units map was populated in some cases. Thanks @tingdahl for the fix. (#21)
 
 ### Added
 - Parse raw HDLC/DLMS frames with positional mapping for Kamstrup HAN meters. Thanks @omBratteng for the PR.
