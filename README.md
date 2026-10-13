@@ -356,9 +356,9 @@ The integration supports multiple data formats used by different Tibber Pulse va
 - Sometimes sensors such as Pulse P1 emits raw OBIS payloads.
 - HAN devices (e.g. Aidon V2) use DLMS/COSEM and provide OBIS values directly in binary DataNotification messages.
 
-Both formats are automatically detected and decoded.
+All formats are automatically detected and decoded.
 
-While Pulse devices share common hardware, the data encoding can differ depending on meter type and firmware. Support has primarily been tested with P1 and HAN devices. If your device uses a different format, please share sample frames to help improve decoding support.
+While Pulse devices share common hardware, the data encoding can differ depending on meter type and firmware. Support has primarily been tested with P1 and HAN devices. If your device uses a different format, please [share raw device data](#sharing-raw-device-data) to help improve decoding support.
 
 ## Credits
 Tibber Pulse community work and formats
