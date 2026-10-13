@@ -373,7 +373,7 @@ class TibberDispatcher:
     def _apply_obis_with_pulse_id(self, pulse_id: str, obis: Dict[str, Any]):
         """
         Apply OBIS to the SensorManager under the canonical pulse_id device key.
-        Runs on the HA event loop.
+        SensorManager calls are scheduled thread-safely because decoding may run in an executor.
         """
         if pulse_id not in self._devices:
             self._devices[pulse_id] = {"status": {}, "sensors": {}, "has_status": False}
@@ -385,11 +385,11 @@ class TibberDispatcher:
             self._meter_id[pulse_id] = meter_s
             sm = self._get_sensor_manager() if self._sensor_manager_ready() else None
             if sm and hasattr(sm, "update_meter_id_for_device"):
-                call_sm_on_loop(self.hass, sm.update_meter_id_for_device, pulse_id, meter_s)
+                call_sm_threadsafe(self.hass, sm.update_meter_id_for_device, pulse_id, meter_s)
 
         sm = self._get_sensor_manager() if self._sensor_manager_ready() else None
         if sm and hasattr(sm, "set_obis_units"):
-            call_sm_on_loop(self.hass, sm.set_obis_units, obis.get("_units", {}))
+            call_sm_threadsafe(self.hass, sm.set_obis_units, obis.get("_units", {}))
 
         if not self._sensor_manager_ready():
             return
@@ -398,4 +398,4 @@ class TibberDispatcher:
             if code == "_units":
                 continue
             if sm and hasattr(sm, "add_or_update"):
-                call_sm_on_loop(self.hass, sm.add_or_update, pulse_id, code, value, status)
+                call_sm_threadsafe(self.hass, sm.add_or_update, pulse_id, code, value, status)
