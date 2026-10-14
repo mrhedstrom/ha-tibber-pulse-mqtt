@@ -2,7 +2,7 @@ import base64
 import json
 
 from custom_components.tibber_pulse_mqtt.raw_capture import RawMessageCapture
-from custom_components.tibber_pulse_mqtt.raw_capture import MAX_CAPTURE_DATA_MESSAGES, MIN_DATA_MESSAGES
+from custom_components.tibber_pulse_mqtt.raw_capture import MAX_CAPTURE_MESSAGES, MIN_DATA_MESSAGES
 
 
 def test_capture_waits_for_status_and_minimum_data_messages(tmp_path):
@@ -99,25 +99,124 @@ def test_repeated_status_does_not_create_new_capture_file(tmp_path):
     assert base64.b64decode(records[-1]["payload"]) == b"later reading"
 
 
+def test_repeated_status_messages_are_sanitized_and_appended(tmp_path):
+    capture = RawMessageCapture(tmp_path)
+    device_key = "topic-device"
+    topic = "tibber-pulse-topic-device/publish"
+    initial_status = {"ID": "pulse-original", "hwmodel": "Pulse P1"}
+    initial_payload = json.dumps({"status": initial_status}).encode()
+
+    capture.record(device_key, topic, initial_payload, is_status=True)
+    capture.set_status(device_key, initial_status, topic, initial_payload)
+    for index in range(MIN_DATA_MESSAGES):
+        capture.record(device_key, topic, f"reading-{index}".encode())
+
+    first_file = next(tmp_path.glob("*.jsonl"))
+    later_statuses = [
+        {"ID": "pulse-original", "hwmodel": "Pulse P1", "IP": "192.0.2.10", "ssid": "private-wifi-1"},
+        {"ID": "pulse-original", "hwmodel": "Pulse P1", "IP": "192.0.2.11", "ssid": "private-wifi-2"},
+    ]
+    for status in later_statuses:
+        payload = json.dumps({"status": status}).encode()
+        capture.record(device_key, topic, payload, is_status=True)
+        capture.set_status(device_key, status, topic, payload)
+
+    assert list(tmp_path.glob("*.jsonl")) == [first_file]
+    records = [json.loads(line) for line in first_file.read_text(encoding="utf-8").splitlines()]
+    saved_statuses = [
+        json.loads(base64.b64decode(record["payload"]))["status"]
+        for record in records
+        if record["message_type"] == "status"
+    ]
+    assert len(saved_statuses) == 3
+    synthetic_ids = {status["ID"] for status in saved_statuses}
+    assert len(synthetic_ids) == 1
+    assert next(iter(synthetic_ids)).startswith("test-")
+    assert all(status["IP"] == "[redacted]" and status["ssid"] == "[redacted]" for status in saved_statuses[1:])
+    assert "pulse-original" not in first_file.read_text(encoding="utf-8")
+    assert "private-wifi" not in first_file.read_text(encoding="utf-8")
+
+
 def test_capture_preserves_status_when_buffer_evicts_it(tmp_path):
     capture = RawMessageCapture(tmp_path)
     device_key = "topic-device"
     status_payload = b'{"status":{"ID":"pulse-1","hwmodel":"Pulse P1"}}'
     capture.record(device_key, "pulse/status", status_payload, is_status=True)
 
-    for index in range(MAX_CAPTURE_DATA_MESSAGES + 25):
+    for index in range(MAX_CAPTURE_MESSAGES + 25):
         capture.record(device_key, "pulse/data", f"message-{index}".encode())
     capture.record(device_key, "pulse/status", status_payload, is_status=True)
     capture.set_status(device_key, {"ID": "pulse-1", "hwmodel": "Pulse P1"}, "pulse/status", status_payload)
 
     capture_file = next(tmp_path.glob("Pulse_P1-*.jsonl"))
     records = [json.loads(line) for line in capture_file.read_text(encoding="utf-8").splitlines()]
-    assert sum(record["message_type"] == "data" for record in records) == MAX_CAPTURE_DATA_MESSAGES
+    assert len(records) == MAX_CAPTURE_MESSAGES
     assert any(
         record.get("payload_redacted")
         and json.loads(base64.b64decode(record["payload"])).get("status", {}).get("ID", "").startswith("test-")
         for record in records
     )
+
+
+def test_capture_caps_interleaved_status_and_data_messages_together(tmp_path):
+    capture = RawMessageCapture(tmp_path)
+    device_key = "device"
+    topic = "tibber-pulse-device/publish"
+    status = {"ID": "pulse-1", "hwmodel": "Pulse P1"}
+    status_payload = json.dumps({"status": status}).encode()
+    capture.record(device_key, topic, status_payload, is_status=True)
+    capture.set_status(device_key, status, topic, status_payload)
+
+    for index in range(MIN_DATA_MESSAGES):
+        capture.record(device_key, topic, f"data-{index}".encode())
+
+    for index in range(MAX_CAPTURE_MESSAGES * 2):
+        if index % 3 == 0:
+            next_status = {
+                "ID": "pulse-1",
+                "hwmodel": "Pulse P1",
+                "IP": f"192.0.2.{index % 250 + 1}",
+                "ssid": f"private-{index}",
+            }
+            next_payload = json.dumps({"status": next_status}).encode()
+            capture.record(device_key, topic, next_payload, is_status=True)
+            capture.set_status(device_key, next_status, topic, next_payload)
+        else:
+            capture.record(device_key, topic, f"later-data-{index}".encode())
+
+    capture_file = next(tmp_path.glob("*.jsonl"))
+    text = capture_file.read_text(encoding="utf-8")
+    records = [json.loads(line) for line in text.splitlines()]
+    assert len(records) == MAX_CAPTURE_MESSAGES
+    assert any(record["message_type"] == "status" for record in records)
+    assert any(record["message_type"] == "data" for record in records)
+    for record in records:
+        if record["message_type"] == "status":
+            saved_status = json.loads(base64.b64decode(record["payload"]))["status"]
+            assert saved_status["ID"].startswith("test-")
+            assert saved_status.get("IP", "[redacted]") == "[redacted]"
+            assert saved_status.get("ssid", "[redacted]") == "[redacted]"
+    assert "192.0.2." not in text
+    assert "private-" not in text
+
+
+def test_late_status_keeps_pre_capture_buffer_within_total_cap(tmp_path):
+    capture = RawMessageCapture(tmp_path)
+    device_key = "device"
+    topic = "tibber-pulse-device/publish"
+    for index in range(MAX_CAPTURE_MESSAGES - 1):
+        capture.record(device_key, topic, f"data-{index}".encode())
+
+    status = {"ID": "pulse-late", "hwmodel": "Pulse P1"}
+    payload = json.dumps({"status": status}).encode()
+    capture.record(device_key, topic, payload, is_status=True)
+    capture.set_status(device_key, status, topic, payload)
+
+    capture_file = next(tmp_path.glob("*.jsonl"))
+    records = [json.loads(line) for line in capture_file.read_text(encoding="utf-8").splitlines()]
+    assert len(records) == MAX_CAPTURE_MESSAGES
+    assert sum(record["message_type"] == "status" for record in records) == 1
+    assert sum(record["message_type"] == "data" for record in records) == MAX_CAPTURE_MESSAGES - 1
 
 
 def test_capture_redacts_sensitive_status_fields(tmp_path):

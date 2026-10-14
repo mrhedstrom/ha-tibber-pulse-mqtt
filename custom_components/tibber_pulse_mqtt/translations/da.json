@@ -16,7 +16,7 @@
                     "debug_log_component": "Slår debug-logniveau til for denne integration.",
                     "log_missed_base64": "Når aktiveret, logges manglende/ugyldige payloads i Base64 til fejlfinding.",
                     "log_obis": "Når aktiveret, medtages fortolkede OBIS-koder i loggene.",
-                    "save_raw_data": "Starter en lokal optagelse efter en STATUS-meddelelse og mindst fire andre MQTT-meddelelser og gemmer derefter op til 100 datameddelelser. Et syntetisk enheds-id erstatter det oprindelige i STATUS og emner. Følsomme STATUS-felter og læsbare OBIS-identifikationsdata fjernes. Ukendte payloads forbliver uændrede og kan indeholde identificerende oplysninger. Gennemgå optagelsen, før du deler den."
+                    "save_raw_data": "Starter en lokal optagelse efter en STATUS-meddelelse og mindst fire andre MQTT-meddelelser og gemmer derefter op til 100 MQTT-meddelelser i alt, inklusive STATUS. Et syntetisk enheds-id erstatter det oprindelige i STATUS og emner. Følsomme STATUS-felter og læsbare OBIS-identifikationsdata fjernes. Ukendte payloads forbliver uændrede og kan indeholde identificerende oplysninger. Gennemgå optagelsen, før du deler den."
                 }
             },
             "external_broker": {
@@ -61,7 +61,7 @@
                     "debug_log_component": "Slår debug-logniveau til for denne integration.",
                     "log_missed_base64": "Når aktiveret, logges manglende/ugyldige payloads i Base64 til fejlfinding.",
                     "log_obis": "Når aktiveret, medtages fortolkede OBIS-koder i loggene.",
-                    "save_raw_data": "Starter en lokal optagelse efter en STATUS-meddelelse og mindst fire andre MQTT-meddelelser og gemmer derefter op til 100 datameddelelser. Et syntetisk enheds-id erstatter det oprindelige i STATUS og emner. Følsomme STATUS-felter og læsbare OBIS-identifikationsdata fjernes. Ukendte payloads forbliver uændrede og kan indeholde identificerende oplysninger. Gennemgå optagelsen, før du deler den."
+                    "save_raw_data": "Starter en lokal optagelse efter en STATUS-meddelelse og mindst fire andre MQTT-meddelelser og gemmer derefter op til 100 MQTT-meddelelser i alt, inklusive STATUS. Et syntetisk enheds-id erstatter det oprindelige i STATUS og emner. Følsomme STATUS-felter og læsbare OBIS-identifikationsdata fjernes. Ukendte payloads forbliver uændrede og kan indeholde identificerende oplysninger. Gennemgå optagelsen, før du deler den."
                 }
             },
             "external_broker_options": {
