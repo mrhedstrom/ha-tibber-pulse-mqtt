@@ -12,7 +12,7 @@ from typing import Any
 _LOGGER = logging.getLogger(__name__)
 
 MIN_DATA_MESSAGES = 4
-MAX_CAPTURE_DATA_MESSAGES = 100
+MAX_CAPTURE_MESSAGES = 100
 _SAFE_STATUS_KEYS = {
     "hwmodel", "build", "hw", "dsmr", "baud", "ntc", "rssi", "uptime", "heap"
 }
@@ -30,9 +30,9 @@ class RawMessageCapture:
         self._messages: dict[str, list[dict[str, Any]]] = {}
         self._statuses: dict[str, dict[str, Any]] = {}
         self._status_messages: dict[str, dict[str, Any]] = {}
-        self._data_message_counts: dict[str, int] = {}
         self._saved_paths: dict[str, Path] = {}
-        self._saved_data_counts: dict[str, int] = {}
+        self._data_message_counts: dict[str, int] = {}
+        self._saved_message_counts: dict[str, int] = {}
         self._synthetic_ids: dict[str, str] = {}
 
     def record(self, device_key: str, topic: str, payload: bytes, *, is_status: bool = False) -> None:
@@ -42,14 +42,11 @@ class RawMessageCapture:
             message = self._sanitize_message(topic, payload, synthetic_id, is_status=is_status)
             saved_path = self._saved_paths.get(device_key)
             if saved_path:
-                if is_status:
-                    return
-                if not is_status and self._saved_data_counts[device_key] >= MAX_CAPTURE_DATA_MESSAGES:
+                if self._saved_message_counts[device_key] >= MAX_CAPTURE_MESSAGES:
                     return
                 try:
                     self._append(saved_path, [message])
-                    if not is_status:
-                        self._saved_data_counts[device_key] += 1
+                    self._saved_message_counts[device_key] += 1
                 except OSError:
                     _LOGGER.exception("Unable to append raw MQTT capture for %s", saved_path.name)
                 return
@@ -57,19 +54,9 @@ class RawMessageCapture:
             messages = self._messages.setdefault(device_key, [])
             messages.append(message)
             if not is_status:
-                count = self._data_message_counts.get(device_key, 0)
-                if count < MAX_CAPTURE_DATA_MESSAGES:
-                    self._data_message_counts[device_key] = count + 1
-                while sum(record["message_type"] == "data" for record in messages) > MAX_CAPTURE_DATA_MESSAGES:
-                    for index, record in enumerate(messages):
-                        if record["message_type"] == "data":
-                            del messages[index]
-                            break
-            while sum(record["message_type"] == "status" for record in messages) > 1:
-                for index, record in enumerate(messages):
-                    if record["message_type"] == "status":
-                        del messages[index]
-                        break
+                self._data_message_counts[device_key] = self._data_message_counts.get(device_key, 0) + 1
+            if len(messages) > MAX_CAPTURE_MESSAGES:
+                del messages[0]
             self._save_if_ready(device_key)
 
     def set_status(self, device_key: str, status: dict[str, Any], topic: str, payload: bytes) -> None:
@@ -94,10 +81,12 @@ class RawMessageCapture:
         hwmodel = hwmodel or "unknown_model"
         suffix = secrets.token_hex(5)
         path = self._directory / f"{hwmodel[:80]}-{suffix}.jsonl"
-        messages = self._messages.get(device_key, [])
+        messages = list(self._messages.get(device_key, []))
         status_message = self._status_messages[device_key]
         if status_message not in messages:
-            messages = [*messages, status_message]
+            messages.append(status_message)
+        if len(messages) > MAX_CAPTURE_MESSAGES:
+            messages = messages[-MAX_CAPTURE_MESSAGES:]
 
         try:
             self._append(path, messages)
@@ -106,7 +95,7 @@ class RawMessageCapture:
             return
 
         self._saved_paths[device_key] = path
-        self._saved_data_counts[device_key] = sum(message["message_type"] == "data" for message in messages)
+        self._saved_message_counts[device_key] = len(messages)
         self._messages.pop(device_key, None)
 
     @classmethod

@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [0.4.3]
+### Fixed
+- Sanitize and append subsequent STATUS messages in the same raw capture file, consistently pseudonymizing device IDs and redacting sensitive STATUS fields.
+- Limit each raw capture to 100 MQTT messages total, counting STATUS and data messages together and preserving their arrival order.
+
+### Raw capture fixtures
+- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
+
 ## [0.4.2]
 ### Fixed
 - Fix sensor creation failures when decoded OBIS updates are scheduled from worker threads; route meter ID, unit, and sensor updates through the thread-safe event-loop helper. (#23)
@@ -15,7 +23,7 @@
 - Raw capture begins after STATUS and four data messages and continues collecting up to 100 data messages; fixture tests validate decoding across the complete captured sample.
 
 ### Raw capture fixtures
-- We welcome as many reviewed raw MQTT examples as users can safely share across all supported devices, meters, and firmware versions. These fixtures help expand device support and catch regressions. See the README's **Sharing raw device data** section for capture, review, and issue-submission instructions.
+- We welcome as many reviewed raw MQTT examples as users can safely share across all supported devices, meters, and firmware versions. These fixtures help expand device support and catch regressions. See the README's [**Sharing raw device data**](README.md#sharing-raw-device-data) section for capture, review, and issue-submission instructions.
 
 
 ## [0.4.1]

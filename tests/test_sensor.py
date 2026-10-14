@@ -17,10 +17,12 @@ Fixes covered here:
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 from homeassistant.components.sensor import SensorStateClass
 
+from custom_components.tibber_pulse_mqtt import sensor as sensor_module
 from custom_components.tibber_pulse_mqtt.obis.full_db import obis_meta
 from custom_components.tibber_pulse_mqtt.sensor import SensorManager, TibberSensor
 
@@ -33,7 +35,11 @@ def _sensor(obis: str, meta: dict | None = None) -> TibberSensor:
 
 
 def _manager() -> SensorManager:
-    return SensorManager(object(), object(), lambda ents: None)
+    hass = SimpleNamespace(
+        data={},
+        states=SimpleNamespace(async_available=lambda entity_id: True),
+    )
+    return SensorManager(hass, object(), lambda ents: None)
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +48,16 @@ def _manager() -> SensorManager:
 
 
 class TestUnitGuard:
+    @pytest.fixture(autouse=True)
+    def _mock_entity_registry(self, monkeypatch):
+        registry = SimpleNamespace(async_get_entity_id=lambda *args: None)
+        monkeypatch.setattr(sensor_module.er, "async_get", lambda hass: registry)
+        monkeypatch.setattr(
+            sensor_module,
+            "async_generate_entity_id",
+            lambda entity_id_format, name, hass: entity_id_format.format(name),
+        )
+
     def test_restart_unit_race_produces_no_spike(self):
         """Replay the incident with the values stored in the HA recorder database.
 
@@ -82,7 +98,7 @@ class TestUnitGuard:
 
         async def _run():
             added = []
-            manager = SensorManager(object(), object(), added.extend)
+            manager = SensorManager(_manager().hass, object(), added.extend)
 
             await manager.add_or_update(DEV, "1-0:1.8.0", 66487.309, {})
             assert manager._entities == {} and added == []

@@ -55,7 +55,47 @@ class RecordingSensorManager:
         self.readings.setdefault(device_id, {})[code] = value
 
 
-def _replay_fixture(raw_file, tmp_path):
+def _load_fixture_records(raw_file):
+    records = [
+        json.loads(line)
+        for line in raw_file.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert records, f"{raw_file.name} contains no MQTT messages"
+    return records
+
+
+def _is_status_record(record):
+    if record.get("message_type") == "status":
+        return True
+    if record.get("message_type") is not None:
+        return False
+    try:
+        decoded_json = json.loads(base64.b64decode(record["payload"], validate=True))
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return isinstance(decoded_json, dict) and isinstance(decoded_json.get("status"), dict)
+
+
+def _order_fixture_records(records, status_first):
+    ordered = list(records)
+    if status_first:
+        target_index = next(
+            (index for index, record in enumerate(ordered) if _is_status_record(record)),
+            None,
+        )
+    else:
+        target_index = next(
+            (index for index, record in enumerate(ordered) if not _is_status_record(record)),
+            None,
+        )
+
+    if target_index is not None:
+        ordered.insert(0, ordered.pop(target_index))
+    return ordered
+
+
+def _replay_fixture(raw_file, tmp_path, records=None):
     sensor_manager = RecordingSensorManager()
     entry = SimpleNamespace(entry_id="fixture", data={}, options={})
     hass = SimpleNamespace(
@@ -64,22 +104,13 @@ def _replay_fixture(raw_file, tmp_path):
         data={DOMAIN: {"fixture": SimpleNamespace(sensor_manager=sensor_manager)}},
     )
     dispatcher = TibberDispatcher(hass, entry)
-    records = [json.loads(line) for line in raw_file.read_text(encoding="utf-8").splitlines() if line.strip()]
-    assert records, f"{raw_file.name} contains no MQTT messages"
+    records = _load_fixture_records(raw_file) if records is None else records
 
     per_record_updates = []
     for index, record in enumerate(records, start=1):
         topic = record["topic"]
         payload = base64.b64decode(record["payload"], validate=True)
-        try:
-            decoded_json = json.loads(payload)
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            decoded_json = None
-        is_status = record.get("message_type") == "status" or (
-            record.get("message_type") is None
-            and isinstance(decoded_json, dict)
-            and isinstance(decoded_json.get("status"), dict)
-        )
+        is_status = _is_status_record(record)
         device_key = topic.split("tibber-pulse-", 1)[-1].split("/", 1)[0]
         reading_count_before = len(sensor_manager.reading_updates)
         pending_count_before = len(dispatcher._pending_by_topic.get(device_key, []))
@@ -169,6 +200,31 @@ def test_raw_fixture_replays_through_dispatcher(raw_file, tmp_path):
         f"{raw_file.name} did not decode a STATUS message"
     )
     assert len(per_record_updates) > 0
+
+
+@pytest.mark.parametrize("raw_file", RAW_FIXTURES, ids=lambda path: path.name)
+def test_raw_fixture_dispatcher_handles_both_status_data_orders(raw_file, tmp_path):
+    records = _load_fixture_records(raw_file)
+    status_records = [record for record in records if _is_status_record(record)]
+    data_records = [record for record in records if not _is_status_record(record)]
+    assert status_records, f"{raw_file.name} contains no STATUS messages"
+    assert data_records, f"{raw_file.name} contains no data messages"
+
+    data_first_records = _order_fixture_records(records, status_first=False)
+    status_first_records = _order_fixture_records(records, status_first=True)
+    assert data_first_records[0] in data_records
+    assert status_first_records[0] == status_records[0]
+
+    data_first_manager, _records, data_first_updates = _replay_fixture(
+        raw_file, tmp_path / "data-first", data_first_records
+    )
+    status_first_manager, _records, status_first_updates = _replay_fixture(
+        raw_file, tmp_path / "status-first", status_first_records
+    )
+
+    assert len(data_first_updates) == len(data_records)
+    assert len(status_first_updates) == len(data_records)
+    assert data_first_manager.reading_updates == status_first_manager.reading_updates
 
 
 @pytest.mark.parametrize(
