@@ -6,6 +6,9 @@
 - Sanitize and append subsequent STATUS messages in the same raw capture file, consistently pseudonymizing device IDs and redacting sensitive STATUS fields.
 - Limit each raw capture to 100 MQTT messages total, counting STATUS and data messages together and preserving their arrival order.
 
+### Added
+- Test both status first and data first messages scenarios with all fixtures.
+
 ### Raw capture fixtures
 - Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
 
