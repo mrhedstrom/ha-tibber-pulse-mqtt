@@ -1,6 +1,13 @@
 # Changelog
 
 
+## [0.4.4] - Future release
+### Fixed
+- Distribute releases as HACS zip asset. Thanks @tingdahl for the fix. (#29)
+
+### Raw capture fixtures
+- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
+
 ## [0.4.3]
 ### Fixed
 - Sanitize and append subsequent STATUS messages in the same raw capture file, consistently pseudonymizing device IDs and redacting sensitive STATUS fields.
