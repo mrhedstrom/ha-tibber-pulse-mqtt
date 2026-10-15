@@ -1,5 +1,7 @@
 {
   "name": "Tibber Pulse MQTT",
+  "zip_release": true,
+  "filename": "tibber_pulse_mqtt.zip",
   "homeassistant": "2026.3.0",
   "render_readme": true
 }
