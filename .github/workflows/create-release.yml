@@ -2,12 +2,14 @@
 #
 # Workflow steps:
 # 1. Read version from the first changelog entry.
-# 2. Update manifest.json version.
-# 3. Normalize changelog header by removing any suffix
+# 2. Validate semantic version format.
+# 3. Update manifest.json version.
+# 4. Normalize changelog header by removing any suffix
 #    (e.g. "- Future release").
-# 4. Commit and push changes if required.
-# 5. Create git tag v<version>.
-# 6. Create GitHub release using the changelog section
+# 5. Extract release notes from the first changelog section.
+# 6. Commit and push changes if required.
+# 7. Create git tag v<version>.
+# 8. Create GitHub release using the changelog section
 #    as release notes.
 #
 # The companion release workflow is responsible for
@@ -48,6 +50,17 @@ jobs:
 
           echo "Found version: $VERSION"
 
+      - name: Validate semantic version
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid semantic version: $VERSION"
+            echo "Expected format: MAJOR.MINOR.PATCH (example: 0.4.4)"
+            exit 1
+          fi
+
       - name: Verify git tag does not already exist
         shell: bash
         run: |
@@ -86,29 +99,53 @@ jobs:
       - name: Normalize top changelog header
         shell: bash
         run: |
-          sed -i -E \
-            '0,/^## \[[^]]+\].*/s/^## \[([^]]+)\].*/## [\1]/' \
-            CHANGELOG.md
+          python3 <<'EOF'
+          from pathlib import Path
+          import re
+
+          path = Path("CHANGELOG.md")
+          text = path.read_text(encoding="utf-8")
+
+          text = re.sub(
+              r"^(## \[[^\]]+\]).*$",
+              r"\1",
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+
+          path.write_text(text, encoding="utf-8")
+          EOF
 
       - name: Extract release notes
         shell: bash
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          python3 <<'EOF'
+          from pathlib import Path
+          import re
 
-          awk "
-            /^## \[$VERSION\]/ {
-              found=1
-            }
+          text = Path("CHANGELOG.md").read_text(encoding="utf-8")
 
-            /^## \[/ && found && NR > 1 && !first {
-              exit
-            }
+          matches = list(
+              re.finditer(r"^## \[[^\]]+\]", text, re.MULTILINE)
+          )
 
-            found {
-              print
-              first=0
-            }
-          " CHANGELOG.md > RELEASE_NOTES.md
+          if not matches:
+              raise SystemExit("No changelog headers found")
+
+          start = matches[0].start()
+
+          if len(matches) > 1:
+              end = matches[1].start()
+              notes = text[start:end].rstrip()
+          else:
+              notes = text[start:].rstrip()
+
+          Path("RELEASE_NOTES.md").write_text(
+              notes + "\n",
+              encoding="utf-8",
+          )
+          EOF
 
           echo "===== RELEASE NOTES ====="
           cat RELEASE_NOTES.md
