@@ -1,0 +1,157 @@
+# Creates a release from the top entry in CHANGELOG.md.
+#
+# Workflow steps:
+# 1. Read version from the first changelog entry.
+# 2. Update manifest.json version.
+# 3. Normalize changelog header by removing any suffix
+#    (e.g. "- Future release").
+# 4. Commit and push changes if required.
+# 5. Create git tag v<version>.
+# 6. Create GitHub release using the changelog section
+#    as release notes.
+#
+# The companion release workflow is responsible for
+# building and uploading the HACS zip asset.
+
+name: Create GitHub Release From Changelog
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from CHANGELOG
+        id: version
+        shell: bash
+        run: |
+          HEADER=$(grep -m1 '^## \[' CHANGELOG.md)
+
+          if [ -z "$HEADER" ]; then
+            echo "No release header found in CHANGELOG.md"
+            exit 1
+          fi
+
+          VERSION=$(echo "$HEADER" | sed -E 's/^## \[([^]]+)\].*/\1/')
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          echo "Found version: $VERSION"
+
+      - name: Verify git tag does not already exist
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists"
+            exit 1
+          fi
+
+      - name: Verify GitHub release does not already exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists"
+            exit 1
+          fi
+
+      - name: Update manifest.json
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          jq \
+            --arg version "$VERSION" \
+            '.version = $version' \
+            custom_components/tibber_pulse_mqtt/manifest.json \
+            > manifest.tmp
+
+          mv manifest.tmp custom_components/tibber_pulse_mqtt/manifest.json
+
+      - name: Normalize top changelog header
+        shell: bash
+        run: |
+          sed -i -E \
+            '0,/^## \[[^]]+\].*/s/^## \[([^]]+)\].*/## [\1]/' \
+            CHANGELOG.md
+
+      - name: Extract release notes
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          awk "
+            /^## \[$VERSION\]/ {
+              found=1
+            }
+
+            /^## \[/ && found && NR > 1 && !first {
+              exit
+            }
+
+            found {
+              print
+              first=0
+            }
+          " CHANGELOG.md > RELEASE_NOTES.md
+
+          echo "===== RELEASE NOTES ====="
+          cat RELEASE_NOTES.md
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Release notes extraction failed"
+            exit 1
+          fi
+
+      - name: Commit changes if required
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add CHANGELOG.md
+          git add custom_components/tibber_pulse_mqtt/manifest.json
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Release $VERSION"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Create tag
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          gh release create \
+            "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file RELEASE_NOTES.md
