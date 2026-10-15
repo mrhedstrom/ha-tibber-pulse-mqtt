@@ -1,124 +1,73 @@
-# Creates a release from the top entry in CHANGELOG.md.
-#
-# Workflow steps:
-# 1. Read version from the first changelog entry.
-# 2. Validate semantic version format.
-# 3. Update manifest.json version.
-# 4. Normalize changelog header by removing any suffix
-#    (e.g. "- Future release").
-# 5. Extract release notes from the first changelog section.
-# 6. Commit and push changes if required.
-# 7. Create git tag v<version>.
-# 8. Create GitHub release using the changelog section
-#    as release notes.
-#
-# The companion release workflow is responsible for
-# building and uploading the HACS zip asset.
-
-name: Create GitHub Release From Changelog
+name: Create Release
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types:
+      - closed
 
 permissions:
   contents: write
 
 jobs:
-  create-release:
+  release:
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'release')
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout merged main
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Extract version from CHANGELOG
         id: version
-        shell: bash
         run: |
           HEADER=$(grep -m1 '^## \[' CHANGELOG.md)
-
-          if [ -z "$HEADER" ]; then
-            echo "No release header found in CHANGELOG.md"
-            exit 1
-          fi
 
           VERSION=$(echo "$HEADER" | sed -E 's/^## \[([^]]+)\].*/\1/')
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          echo "Found version: $VERSION"
-
       - name: Validate semantic version
-        shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid semantic version: $VERSION"
-            echo "Expected format: MAJOR.MINOR.PATCH (example: 0.4.4)"
+            echo "Invalid semantic version"
             exit 1
           fi
 
-      - name: Verify git tag does not already exist
-        shell: bash
+      - name: Verify PR version matches changelog version
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          CHANGELOG_VERSION="${{ steps.version.outputs.version }}"
 
-          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "Tag v$VERSION already exists"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          PR_VERSION=$(echo "$PR_TITLE" | sed -E 's/^Release ([0-9]+\.[0-9]+\.[0-9]+)$/\1/')
+
+          if [ "$CHANGELOG_VERSION" != "$PR_VERSION" ]; then
+            echo "Version mismatch"
+            echo "PR version:        $PR_VERSION"
+            echo "CHANGELOG version: $CHANGELOG_VERSION"
             exit 1
           fi
 
-      - name: Verify GitHub release does not already exist
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
+      - name: Verify version in manifest
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
-          if gh release view "v$VERSION" >/dev/null 2>&1; then
-            echo "Release v$VERSION already exists"
+          MANIFEST_VERSION=$(jq -r .version \
+            custom_components/tibber_pulse_mqtt/manifest.json)
+
+          if [ "$VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "Manifest version mismatch"
             exit 1
           fi
-
-      - name: Update manifest.json
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
-          jq \
-            --arg version "$VERSION" \
-            '.version = $version' \
-            custom_components/tibber_pulse_mqtt/manifest.json \
-            > manifest.tmp
-
-          mv manifest.tmp custom_components/tibber_pulse_mqtt/manifest.json
-
-      - name: Normalize top changelog header
-        shell: bash
-        run: |
-          python3 <<'EOF'
-          from pathlib import Path
-          import re
-
-          path = Path("CHANGELOG.md")
-          text = path.read_text(encoding="utf-8")
-
-          text = re.sub(
-              r"^(## \[[^\]]+\]).*$",
-              r"\1",
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-
-          path.write_text(text, encoding="utf-8")
-          EOF
 
       - name: Extract release notes
-        shell: bash
         run: |
           python3 <<'EOF'
           from pathlib import Path
@@ -127,11 +76,12 @@ jobs:
           text = Path("CHANGELOG.md").read_text(encoding="utf-8")
 
           matches = list(
-              re.finditer(r"^## \[[^\]]+\]", text, re.MULTILINE)
+              re.finditer(
+                  r"^## \[[^\]]+\]",
+                  text,
+                  re.MULTILINE,
+              )
           )
-
-          if not matches:
-              raise SystemExit("No changelog headers found")
 
           start = matches[0].start()
 
@@ -147,34 +97,7 @@ jobs:
           )
           EOF
 
-          echo "===== RELEASE NOTES ====="
-          cat RELEASE_NOTES.md
-
-          if [ ! -s RELEASE_NOTES.md ]; then
-            echo "Release notes extraction failed"
-            exit 1
-          fi
-
-      - name: Commit changes if required
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add CHANGELOG.md
-          git add custom_components/tibber_pulse_mqtt/manifest.json
-
-          if ! git diff --cached --quiet; then
-            git commit -m "Release $VERSION"
-            git push
-          else
-            echo "No changes to commit"
-          fi
-
       - name: Create tag
-        shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
@@ -184,7 +107,6 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
