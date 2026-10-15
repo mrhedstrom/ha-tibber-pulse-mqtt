@@ -129,5 +129,4 @@ jobs:
             --base main \
             --head "release/$VERSION" \
             --title "Release $VERSION" \
-            --body "Automated release preparation." \
-            --label release
+            --body "Automated release preparation."
