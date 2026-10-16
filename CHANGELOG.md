@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.5] - Future release
+<!-- Add sections for new features, fixes, and improvements -->
+
+### Raw capture fixtures
+- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
 
 ## [0.4.4]
 ### Fixed
