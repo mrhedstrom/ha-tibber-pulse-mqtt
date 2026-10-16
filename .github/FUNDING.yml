@@ -1,1 +1,5 @@
-custom: ["https://www.paypal.me/mrhedstrom1"]
+custom:
+  [
+    "https://www.paypal.me/mrhedstrom1",
+    "https://app.swish.nu/1/p/sw/?sw=0704542533&cur=SEK&msg=Tibber%20Pulse%20MQTT&edit=amt,msg&src=qr"
+  ]
