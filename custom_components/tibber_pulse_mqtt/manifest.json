@@ -1,8 +1,12 @@
 {
   "domain": "tibber_pulse_mqtt",
   "name": "Tibber Pulse MQTT",
-  "after_dependencies": ["mqtt"],
-  "codeowners": ["@mrhedstrom"],
+  "after_dependencies": [
+    "mqtt"
+  ],
+  "codeowners": [
+    "@mrhedstrom"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt",
   "integration_type": "hub",
@@ -15,5 +19,5 @@
     "paho-mqtt>=1.6.1",
     "protobuf>=4.25.0"
   ],
-  "version": "0.4.3"
+  "version": "0.4.4"
 }

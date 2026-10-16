@@ -1,7 +1,7 @@
 # Changelog
 
 
-## [0.4.4] - Future release
+## [0.4.4]
 ### Fixed
 - Distribute releases as HACS zip asset. Thanks @tingdahl for the fix. (#29)
 
