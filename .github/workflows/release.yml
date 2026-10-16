@@ -5,23 +5,93 @@ on:
     types:
       - published
 
+  workflow_run:
+    workflows:
+      - Create Release
+    types:
+      - completed
+
 permissions:
   contents: write
 
 jobs:
   release_zip_file:
     name: Build & Upload HACS zip release
+    if: >
+      github.event_name == 'release' ||
+      github.event.workflow_run.conclusion == 'success'
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+
+            TAG="${{ github.event.release.tag_name }}"
+
+          else
+
+            TAG=$(gh release list \
+              --limit 1 \
+              --json tagName \
+              --jq '.[0].tagName')
+
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          echo "Using release tag: $TAG"
+
+      - name: Verify release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release view "${{ steps.tag.outputs.tag }}"
+
+      - name: Check if zip asset already exists
+        id: asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          if gh release view "${{ steps.tag.outputs.tag }}" \
+            --json assets \
+            --jq '.assets[].name' \
+            | grep -qx "tibber_pulse_mqtt.zip"
+          then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "ZIP asset already exists."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "ZIP asset not found."
+          fi
 
       - name: Build zip archive
+        if: steps.asset.outputs.exists == 'false'
+        shell: bash
         run: |
           cd "${{ github.workspace }}/custom_components/tibber_pulse_mqtt"
-          zip -r "${{ github.workspace }}/tibber_pulse_mqtt.zip" . -x "*__pycache__*" -x "*.pyc"
+
+          zip -r \
+            "${{ github.workspace }}/tibber_pulse_mqtt.zip" \
+            . \
+            -x "*__pycache__*" \
+            -x "*.pyc"
 
       - name: Upload zip to GitHub Release
+        if: steps.asset.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
           files: ${{ github.workspace }}/tibber_pulse_mqtt.zip
