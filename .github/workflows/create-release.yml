@@ -83,13 +83,16 @@ jobs:
               )
           )
 
-          start = matches[0].start()
+          if not matches:
+              raise SystemExit("No changelog headers found")
+
+          start = matches[0].end()
 
           if len(matches) > 1:
               end = matches[1].start()
-              notes = text[start:end].rstrip()
+              notes = text[start:end].strip()
           else:
-              notes = text[start:].rstrip()
+              notes = text[start:].strip()
 
           Path("RELEASE_NOTES.md").write_text(
               notes + "\n",
