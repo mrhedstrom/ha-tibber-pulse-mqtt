@@ -3,15 +3,17 @@
 ## [0.4.5] - Future release
 <!-- Add sections for new features, fixes, and improvements -->
 
-### Raw capture fixtures
-- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data). Shared captures are added to the automated test suite, helping ensure your device, meter, and firmware version continue working in future releases.
+> [!IMPORTANT]
+> **Help keep your meter supported.**
+> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
 ## [0.4.4]
 ### Fixed
 - Distribute releases as HACS zip asset. Thanks @tingdahl for the fix. (#29)
 
-### Raw capture fixtures
-- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
+> [!IMPORTANT]
+> **Help keep your meter supported.**
+> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
 ## [0.4.3]
 ### Fixed
@@ -21,8 +23,9 @@
 ### Added
 - Test both status first and data first messages scenarios with all fixtures.
 
-### Raw capture fixtures
-- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
+> [!IMPORTANT]
+> **Help keep your meter supported.**
+> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
 ## [0.4.2]
 ### Fixed
@@ -38,7 +41,7 @@
 - Raw capture begins after STATUS and four data messages and continues collecting up to 100 data messages; fixture tests validate decoding across the complete captured sample.
 
 ### Raw capture fixtures
-- We welcome as many reviewed raw MQTT examples as users can safely share across all supported devices, meters, and firmware versions. These fixtures help expand device support and catch regressions. See the README's [**Sharing raw device data**](README.md#sharing-raw-device-data) section for capture, review, and issue-submission instructions.
+- We welcome as many reviewed raw MQTT examples as users can safely share across all supported devices, meters, and firmware versions. These fixtures help expand device support and catch regressions. See the README's [**Sharing raw device data**](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data) section for capture, review, and issue-submission instructions.
 
 
 ## [0.4.1]

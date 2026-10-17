@@ -272,6 +272,11 @@ After restarting Home Assistant and configured pulse to send mqtt to local broke
 No YAML configuration is required.
 All configuration is done through the Home Assistant user interface.
 
+
+> [!IMPORTANT]
+> **Help keep your meter supported.**
+> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures.
+
 ### Sharing raw device data
 
 Enable **Save sanitized raw MQTT data for sharing** to create sanitized MQTT captures for troubleshooting, new device support, and regression testing.
@@ -286,7 +291,7 @@ Sensitive identifiers are redacted where possible, but you should always review 
 2. Wait for data to be collected.
 3. Locate the generated .jsonl file in `<Home Assistant config>/tibber_pulse_mqtt_raw/`. On Home Assistant OS, the usual path is `/config/tibber_pulse_mqtt_raw/`.
 4. Review the file before sharing.
-5. Create a **Raw Capture** issue and attach the file.
+5. Create a [Raw Capture issue](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/issues/new?assignees=&labels=raw+capture&projects=&template=raw-capture.md) and attach the .jsonl file.
 6. Disable the option to stop capturing.
 
 ## Topics
