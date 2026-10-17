@@ -1,5 +1,7 @@
-# Home Assistant Tibber Pulse (P1, HAN, KM) MQTT integration
-Local MQTT integration for Tibber Pulse devices (P1, HAN, KM). Decodes compressed protobuf envelopes, parses OBIS data, and exposes real‑time **native HA sensor entities** in Home Assistant (no MQTT Discovery, no extra topics, no cloud dependencies). Supports multiple Pulse devices. Can also be forwarded to Tibber Cloud via an external MQTT bridge to keep data in both HA and Tibber.
+# Tibber Pulse MQTT for Tibber Pulse devices (P1, HAN, KM)
+Tibber Pulse MQTT is a local Home Assistant integration for Tibber Pulse devices (P1, HAN, KM). Decodes compressed protobuf envelopes, parses OBIS data, and exposes real‑time **native HA sensor entities** in Home Assistant (no MQTT Discovery, no extra topics, no cloud dependencies). Supports multiple Pulse devices. Can also be forwarded to Tibber Cloud via an external MQTT bridge to keep data in both HA and Tibber.
+
+Please note; *this integration is not official and not supported by the tibber development team.*
 
 For Tibber pulse IR devices, have a look at [marq24/ha-tibber-pulse-local](https://github.com/marq24/ha-tibber-pulse-local)
 
@@ -267,33 +269,19 @@ All configuration is done through the Home Assistant user interface.
 
 ### Sharing raw device data
 
-To help add support for devices and meters—and maintain compatibility with devices that are already supported—enable **Save sanitized raw MQTT data for sharing** in the integration options. Captures from existing devices let tests detect regressions and differences across models, meter variants, and firmware versions. The integration starts saving JSONL captures after it has parsed a STATUS message and received at least four other MQTT messages, then keeps appending up to 100 MQTT messages total, counting STATUS and data messages together. This threshold does not depend on decoding their data, so captures can help diagnose unsupported device formats. A random, HA-compatible synthetic device ID is generated per captured device and used consistently in STATUS and MQTT topics, so fixtures can be replayed as realistic devices without exposing the original ID. Sensitive STATUS fields and known identity/date/free-text values in readable OBIS text are redacted, while useful model and firmware fields are retained. Unknown binary or compressed payloads cannot be safely sanitized without potentially breaking decoding; they are preserved unchanged and marked `payload_opaque`. Such data, and ordinary meter readings, may still be identifying. Always review a capture before sharing it. Disable the option to stop capturing.
+Enable **Save sanitized raw MQTT data for sharing** to create sanitized MQTT captures for troubleshooting, new device support, and regression testing.
 
-#### Finding and contributing captures
+Since developers cannot test every device, meter, and firmware combination, shared captures help maintain compatibility across all supported devices.
 
-1. In Home Assistant, open **Settings > Devices & services > Integrations > Tibber Pulse MQTT > Configure** and enable **Save sanitized raw MQTT data for sharing**.
-2. Allow the device to send a STATUS message and at least four other MQTT messages to start the capture. It continues collecting up to 100 MQTT messages total, with every STATUS and data message counting toward that limit. The capture is written under `<Home Assistant config>/tibber_pulse_mqtt_raw/`. On Home Assistant OS, the usual path is `/config/tibber_pulse_mqtt_raw/`.
-3. Download the `.jsonl` file using your preferred Home Assistant file access method and review it carefully. Sanitization is best-effort: opaque binary/compressed payloads and readings may still expose identifying information. Do not share it unless you are comfortable with its contents.
-4. If you are comfortable sharing it, open a GitHub issue in this repository and attach the reviewed `.jsonl` file. Use the title **Raw capture: [device model] - [brief issue or behavior]**, for example, **Raw capture: Tibber Pulse HAN / Aidon - unsupported OBIS data**. A maintainer can add the capture to `tests/fixtures/raw/`; the automated suite replays the full file through the dispatcher and verifies that every data message is decoded into OBIS readings (including readings queued until STATUS arrives). Issue attachments may be publicly visible.
-5. Include the following details in the issue, omitting personal or account information:
+Sensitive identifiers are redacted where possible, but you should always review captures before sharing them. Disable the option to stop capturing.
 
-   - Device type/model (Pulse P1, HAN, or KM):
-   - Meter manufacturer and model, if known:
-   - Firmware/build version, if known:
-   - Home Assistant and integration versions:
-   - What behavior or unsupported data the capture demonstrates:
-   - Confirmation that the capture was reviewed and is safe to share:
+#### Finding and sharing captures
 
-### Running tests locally
-
-Tests do not start or connect to a Home Assistant instance, and do not install the Home Assistant Python package. They use fake runtime objects and only require Python 3.14.2 or newer, pytest, and protobuf. From the repository root, create and activate a virtual environment, then install the test requirements and run pytest:
-
-```powershell
-py -3.14 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements_test.txt
-python -m pytest -q
-```
+1. Enable **Save sanitized raw MQTT data for sharing** in the integration options.
+2. Wait for data to be collected.
+3. Locate the generated .jsonl file in `<Home Assistant config>/tibber_pulse_mqtt_raw/`. On Home Assistant OS, the usual path is `/config/tibber_pulse_mqtt_raw/`.
+4. Review the file before sharing.
+5. Create a **Raw Capture** issue and attach the file.
 
 ## Topics
 By default, this integration subscribes to: `tibber-pulse-+/publish`  
