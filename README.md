@@ -1,9 +1,14 @@
 # Tibber Pulse MQTT for Home Assistant (P1, HAN, KM)
-Tibber Pulse MQTT is a local Home Assistant integration for Tibber Pulse devices (P1, HAN, KM). Decodes compressed protobuf envelopes, parses OBIS data, and exposes real‑time **native HA sensor entities** in Home Assistant (no MQTT Discovery, no extra topics, no cloud dependencies). Supports multiple Pulse devices. Can also be forwarded to Tibber Cloud via an external MQTT bridge to keep data in both HA and Tibber.
+Tibber Pulse MQTT is a local Home Assistant integration for Tibber Pulse devices (P1, HAN, KM). 
 
-Please note; *this integration is not official and not supported by the tibber development team.*
+It decodes compressed protobuf envelopes, parses OBIS data, and exposes real-time **native Home Assistant sensors**. No MQTT Discovery, extra topics, **or cloud dependencies** are required.
 
-For Tibber pulse IR devices, have a look at [marq24/ha-tibber-pulse-local](https://github.com/marq24/ha-tibber-pulse-local)
+The integration supports multiple Pulse devices and can optionally forward data to Tibber Cloud through an external MQTT bridge, making data available in both Home Assistant and Tibber.
+
+> [!WARNING]
+> This is an unofficial integration and is not affiliated with or supported by Tibber.
+
+For Tibber Pulse IR devices, see [marq24/ha-tibber-pulse-local](https://github.com/marq24/ha-tibber-pulse-local)
 
 ## Features
 - Works with Home Assistant MQTT (built-in) or **external broker**
