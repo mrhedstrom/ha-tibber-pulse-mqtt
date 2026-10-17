@@ -4,7 +4,7 @@
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### Raw capture fixtures
-- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data) to help keep all devices, meters, and firmware versions supported.
+- Please share reviewed raw meter captures using the [README instructions](README.md#sharing-raw-device-data). Shared captures are added to the automated test suite, helping ensure your device, meter, and firmware version continue working in future releases.
 
 ## [0.4.4]
 ### Fixed

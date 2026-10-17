@@ -276,9 +276,9 @@ All configuration is done through the Home Assistant user interface.
 
 Enable **Save sanitized raw MQTT data for sharing** to create sanitized MQTT captures for troubleshooting, new device support, and regression testing.
 
-Since developers cannot test every device, meter, and firmware combination, shared captures help maintain compatibility across all supported devices.
+Because developers do not have access to every device and meter combination, shared captures help expand test coverage. Captures are added to the automated test suite and replayed during development, helping ensure both new and existing devices continue working in future releases.
 
-Sensitive identifiers are redacted where possible, but you should always review captures before sharing them. Disable the option to stop capturing.
+Sensitive identifiers are redacted where possible, but you should always review captures before sharing them.
 
 #### Finding and sharing captures
 
@@ -287,6 +287,7 @@ Sensitive identifiers are redacted where possible, but you should always review 
 3. Locate the generated .jsonl file in `<Home Assistant config>/tibber_pulse_mqtt_raw/`. On Home Assistant OS, the usual path is `/config/tibber_pulse_mqtt_raw/`.
 4. Review the file before sharing.
 5. Create a **Raw Capture** issue and attach the file.
+6. Disable the option to stop capturing.
 
 ## Topics
 By default, this integration subscribes to: `tibber-pulse-+/publish`  
