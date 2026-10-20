@@ -20,6 +20,25 @@ from .obis.full_db import obis_meta
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _metadata_for_obis(obis_code: str) -> dict:
+    """Use standard 1-0 metadata for meters reporting the 1-1 channel."""
+    meta = obis_meta.get(obis_code)
+    if meta is not None:
+        return meta
+    if obis_code.startswith("1-1:"):
+        return obis_meta.get("1-0:" + obis_code[4:], {})
+    return {}
+
+
+def _translation_key_for_obis(obis_code: str) -> str:
+    """Map a 1-1 channel to the existing translated 1-0 sensor name."""
+    translated_code = obis_code
+    if obis_code.startswith("1-1:"):
+        translated_code = "1-0:" + obis_code[4:]
+    return translated_code.replace(":", "_").replace(".", "_")
+
+
 # --- Unit conversion: OBIS -> target (full_db.py) ---
 UNIT_SCALE = {
     ("kWh",  "Wh"):    1000.0,
@@ -115,7 +134,7 @@ class SensorManager:
         ent = self._entities.get(unique_id)
 
         # Target unit from entity meta or OBIS database
-        target_unit = ent.meta.get("unit") if ent else obis_meta.get(obis_code, {}).get("unit")
+        target_unit = ent.meta.get("unit") if ent else _metadata_for_obis(obis_code).get("unit")
 
         # Ignore values until the unit is known (prevents unscaled Wh vs kWh jumps)
         if target_unit and not raw_unit:
@@ -128,7 +147,7 @@ class SensorManager:
 
         # If entity exists in registry but not in runtime, recreate it
         if ent is None and er_entry_entity_id:
-            meta = obis_meta.get(obis_code, {})
+            meta = _metadata_for_obis(obis_code)
             ent = TibberSensor(
                 unique_id=unique_id,
                 dev_id=dev_id,
@@ -151,7 +170,7 @@ class SensorManager:
                 if unique_id in self._entities:
                     ent = self._entities[unique_id]
                 else:
-                    meta = obis_meta.get(obis_code, {})
+                    meta = _metadata_for_obis(obis_code)
 
                     ent = TibberSensor(
                         unique_id=unique_id,
@@ -213,13 +232,13 @@ class TibberSensor(SensorEntity):
     ):
         self._attr_unique_id = unique_id
         self.has_entity_name = True
-        self._attr_translation_key = obis_code.replace(':','_').replace('.','_')
+        self._attr_translation_key = _translation_key_for_obis(obis_code)
 
         self._dev_id = dev_id          # Canonical device key = pulse_id
         self._obis = obis_code
         self._status = status or {}
 
-        self.meta = meta or {}
+        self.meta = meta or _metadata_for_obis(obis_code)
 
         self._state = None
         self._meter_id = None

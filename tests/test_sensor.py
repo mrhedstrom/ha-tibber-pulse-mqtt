@@ -134,6 +134,21 @@ class TestUnitGuard:
 
         asyncio.run(_run())
 
+    def test_1_1_channel_reuses_1_0_name_and_metadata(self):
+        """Kamstrup 1-1 readings use the translated name and metadata for 1-0."""
+
+        async def _run():
+            manager = _manager()
+            manager.set_obis_units({"1-1:1.7.0": "W"})
+            await manager.add_or_update(DEV, "1-1:1.7.0", 3574.0, {})
+
+            ent = manager._entities[f"tibber_{DEV}_1-1_1_7_0"]
+            assert ent._attr_translation_key == "1-0_1_7_0"
+            assert ent.meta == obis_meta["1-0:1.7.0"]
+            assert ent.native_value == pytest.approx(3574.0)
+
+        asyncio.run(_run())
+
 
 # ---------------------------------------------------------------------------
 # 2. Unit cache persistence

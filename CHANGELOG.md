@@ -5,6 +5,11 @@
 
 ### Added
 - Decode Kamstrup HAN `Kamstrup_V0001` flat DLMS structures with embedded OBIS codes.
+- Decode numeric values in two-member DLMS ARRAY records that omit scaler/unit metadata.
+
+### Fixed
+- Preserve the MQTT topic as the device key for forwarded topics and try each nested DLMS frame until one decodes.
+- Keep missed-payload Base64 diagnostics on a single log line.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**

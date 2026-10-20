@@ -46,6 +46,32 @@ _IMPLICIT_SCALE: Dict[str, float] = {
     "1-0:71.7.0": 0.01,
 }
 
+_FLAT_UNITS: Dict[str, str] = {
+    "1-0:1.7.0": "W",
+    "1-0:2.7.0": "W",
+    "1-0:3.7.0": "VAr",
+    "1-0:4.7.0": "VAr",
+    "1-0:14.7.0": "Hz",
+    "1-0:21.7.0": "W",
+    "1-0:22.7.0": "W",
+    "1-0:23.7.0": "VAr",
+    "1-0:24.7.0": "VAr",
+    "1-0:31.7.0": "A",
+    "1-0:32.7.0": "V",
+    "1-0:41.7.0": "W",
+    "1-0:42.7.0": "W",
+    "1-0:43.7.0": "VAr",
+    "1-0:44.7.0": "VAr",
+    "1-0:51.7.0": "A",
+    "1-0:52.7.0": "V",
+    "1-0:61.7.0": "W",
+    "1-0:62.7.0": "W",
+    "1-0:63.7.0": "VAr",
+    "1-0:64.7.0": "VAr",
+    "1-0:71.7.0": "A",
+    "1-0:72.7.0": "V",
+}
+
 
 def _scale_flat_value(obis_code: str, value: float) -> float:
     canonical_code = "1-0:" + obis_code[4:] if obis_code.startswith("1-1:") else obis_code
@@ -223,6 +249,10 @@ def _parse_flat_structure(data: bytes, pos: int) -> Optional[tuple[Dict[str, Any
             if numeric is not None:
                 value, pos = numeric
                 result[obis_code] = _scale_flat_value(obis_code, value)
+                canonical_code = "1-0:" + obis_code[4:] if obis_code.startswith("1-1:") else obis_code
+                unit = _FLAT_UNITS.get(canonical_code)
+                if unit:
+                    units[obis_code] = unit
                 members_read += 1
                 continue
         next_pos = _skip_element(data, pos)
@@ -475,6 +505,16 @@ def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
         if num_members == 2:
             if pos >= len(blob):
                 break
+            numeric = _read_numeric(blob, pos)
+            if numeric is not None:
+                raw_val, pos = numeric
+                result[obis_code] = raw_val
+                canonical_code = "1-0:" + obis_code[4:] if obis_code.startswith("1-1:") else obis_code
+                unit = _FLAT_UNITS.get(canonical_code)
+                if unit:
+                    units[obis_code] = unit
+                continue
+
             val_tag = blob[pos]
             pos += 1
             if val_tag in (_TAG_OCTET_STRING, _TAG_VISIBLE_STRING):

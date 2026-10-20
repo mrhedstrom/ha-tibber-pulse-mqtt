@@ -126,6 +126,34 @@ def _replay_fixture(raw_file, tmp_path, records=None):
     return sensor_manager, records, per_record_updates
 
 
+def test_forwarded_topic_is_used_as_device_key(monkeypatch):
+    entry = SimpleNamespace(entry_id="fixture", data={}, options={})
+    hass = SimpleNamespace(loop=ImmediateLoop(), data={})
+    dispatcher = TibberDispatcher(hass, entry)
+
+    class CapturingQueue:
+        def __init__(self):
+            self.items = []
+
+        def full(self):
+            return False
+
+        def put_nowait(self, item):
+            self.items.append(item)
+
+    queue = CapturingQueue()
+    monkeypatch.setattr(
+        dispatcher,
+        "_ensure_worker",
+        lambda dev_id: dispatcher._queues.setdefault(dev_id, queue),
+    )
+    payload = b"sample"
+
+    dispatcher.on_mqtt_message("Tibber", payload)
+
+    assert queue.items == [("Tibber", "Tibber", payload)]
+
+
 def test_dispatcher_captures_unrecognized_data_messages(tmp_path):
     device_key = "topic-device"
     topic = f"tibber-pulse-{device_key}/publish"

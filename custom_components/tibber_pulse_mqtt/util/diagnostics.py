@@ -59,7 +59,7 @@ class DiagnosticsRegistry:
     def maybe_log_payload_as_base64(self, payload: Optional[bytes]) -> None:
         if self._cfg.get("log_missed_base64", False) and isinstance(payload, (bytes, bytearray)):
             try:
-                self._logger.debug("Base64 payload:\n%s", base64.b64encode(payload).decode())
+                self._logger.debug("Base64 payload=%s", base64.b64encode(payload).decode())
             except Exception:
                 pass
 

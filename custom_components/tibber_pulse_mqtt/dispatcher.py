@@ -24,7 +24,7 @@ except Exception:
 
 from .parsers.pulse_envelope import pick_best_candidate_from_blob, decode_multi_chunk_stream, split_obis_frames
 from .parsers.obis_text import parse_obis_text
-from .parsers.dlms_cosem import parse_dlms, find_dlms_frame_in_blob
+from .parsers.dlms_cosem import parse_dlms, iter_dlms_frames_in_blob
 
 from .obis.streaming import ObisStreamManager
 from .util.diagnostics import DiagnosticsRegistry
@@ -111,6 +111,8 @@ class TibberDispatcher:
         try:
             if "/publish" in topic and "tibber-pulse-" in topic:
                 dev_id = topic.split("tibber-pulse-", 1)[1].split("/", 1)[0]
+            elif topic:
+                dev_id = topic
         except Exception:
             pass
 
@@ -248,16 +250,15 @@ class TibberDispatcher:
         if blob:
             # DLMS/COSEM binary path (Aidon V2 and similar HAN meters).
             # Checked before feed_blob to avoid wasted deflate attempts on binary frames.
-            hdlc_frame = find_dlms_frame_in_blob(blob)
-            if hdlc_frame:
-                try:
+            try:
+                for hdlc_frame in iter_dlms_frames_in_blob(blob):
                     obis = parse_dlms(hdlc_frame)
                     if obis:
                         self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
                         self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
                         return
-                except Exception:
-                    pass
+            except Exception:
+                pass
 
             multi_text = decode_multi_chunk_stream(payload)
             if multi_text:
