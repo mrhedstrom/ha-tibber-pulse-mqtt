@@ -55,7 +55,7 @@ _DLMS_UNITS: Dict[int, str] = {
 # Add new meters by extending this registry; no parser changes required.
 # ---------------------------------------------------------------------------
 KAMSTRUP_LISTS: Dict[str, Dict[int, list]] = {
-    # Kamstrup (Norwegian HAN, list id "KFM_001")
+    # Kaifa (Norwegian HAN, list id "KFM_001")
     "KFM": {
         # Short list: active power only
         1: [
@@ -76,6 +76,27 @@ KAMSTRUP_LISTS: Dict[str, Dict[int, list]] = {
             (10, "1-0:32.7.0", "V", 0.1),      # voltage L1
             (11, "1-0:52.7.0", "V", 0.1),      # voltage L2
             (12, "1-0:72.7.0", "V", 0.1),      # voltage L3
+        ],
+        # Hourly list (18 members): full list + meter clock + energy registers
+        18: [
+            (0, None, "skip"),                 # list id "KFM_001"
+            (1, "0-0:96.1.0", "str"),          # meter GS1 id
+            (2, "0-0:96.1.7", "str"),          # meter type
+            (3, "1-0:1.7.0", "W", 1.0),        # active power +
+            (4, "1-0:2.7.0", "W", 1.0),        # active power -
+            (5, "1-0:3.7.0", "VAr", 1.0),      # reactive power +
+            (6, "1-0:4.7.0", "VAr", 1.0),      # reactive power -
+            (7, "1-0:31.7.0", "A", 0.001),     # current L1 (mA)
+            (8, "1-0:51.7.0", "A", 0.001),     # current L2 (mA)
+            (9, "1-0:71.7.0", "A", 0.001),     # current L3 (mA)
+            (10, "1-0:32.7.0", "V", 0.1),      # voltage L1
+            (11, "1-0:52.7.0", "V", 0.1),      # voltage L2
+            (12, "1-0:72.7.0", "V", 0.1),      # voltage L3
+            (13, None, "skip"),                # meter clock (octet-string)
+            (14, "1-0:1.8.0", "Wh", 1.0),      # active energy import
+            (15, "1-0:2.8.0", "Wh", 1.0),      # active energy export
+            (16, "1-0:3.8.0", "VArh", 1.0),    # reactive energy import
+            (17, "1-0:4.8.0", "VArh", 1.0),    # reactive energy export
         ],
     },
 }
