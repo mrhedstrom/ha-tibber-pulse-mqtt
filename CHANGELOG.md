@@ -7,23 +7,14 @@
 > **Help keep your meter supported.**
 > Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
-
 ## [0.4.5]
 ### Added
 - Decode the hourly Kaifa HAN list (18 members), adding cumulative import/export energy sensors for 3-phase Kaifa meters. Thanks @sailedev for the PR. (#38)
 - Added a raw capture fixture from a Kaifa MA304H3E (Pulse HAN), including an hourly list. Thanks @sailedev for the PR. (#38)
 
-> [!IMPORTANT]
-> **Help keep your meter supported.**
-> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
-
 ## [0.4.4]
 ### Fixed
 - Distribute releases as HACS zip asset. Thanks @tingdahl for the fix. (#29)
-
-> [!IMPORTANT]
-> **Help keep your meter supported.**
-> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
 ## [0.4.3]
 ### Fixed
@@ -32,10 +23,6 @@
 
 ### Added
 - Test both status first and data first messages scenarios with all fixtures.
-
-> [!IMPORTANT]
-> **Help keep your meter supported.**
-> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
 ## [0.4.2]
 ### Fixed
