@@ -264,7 +264,8 @@ def test_raw_fixture_has_sufficient_decoded_obis_coverage(raw_file, tmp_path):
     sensor_manager, _records, per_record_updates = _replay_fixture(raw_file, tmp_path)
 
     code_counts = Counter(code for _device, code, _value in sensor_manager.reading_updates)
-    assert len(code_counts) >= 20, f"{raw_file.name} should exercise at least 20 distinct OBIS codes"
+    # Norwegian Kaifa HAN lists carry 16 distinct OBIS codes in total
+    assert len(code_counts) >= 16, f"{raw_file.name} should exercise at least 16 distinct OBIS codes"
     assert all(isinstance(value, (float, int, str)) for _device, _code, value in sensor_manager.reading_updates)
     expected_codes = {
         "1-0:1.8.0",  # imported energy
@@ -275,8 +276,9 @@ def test_raw_fixture_has_sufficient_decoded_obis_coverage(raw_file, tmp_path):
     }
     assert expected_codes <= code_counts.keys(), f"{raw_file.name} is missing expected energy/electrical readings"
     assert sensor_manager.units, f"{raw_file.name} did not provide OBIS unit mappings"
-    assert all(status.get("hwmodel") for status in sensor_manager.status.values()), (
-        f"{raw_file.name} did not decode STATUS hardware model"
+    # Pulse HAN firmware reports only the hardware revision (Hw), not hwmodel
+    assert all(status.get("hwmodel") or status.get("Hw") for status in sensor_manager.status.values()), (
+        f"{raw_file.name} did not decode STATUS hardware model or revision"
     )
     assert len(per_record_updates) == sum(record.get("message_type") != "status" for record in _records)
 
@@ -285,15 +287,16 @@ def test_raw_fixture_has_sufficient_decoded_obis_coverage(raw_file, tmp_path):
 def test_raw_fixture_normalizes_units_for_known_obis_codes(raw_file, tmp_path):
     sensor_manager, _records, _per_record_updates = _replay_fixture(raw_file, tmp_path)
 
+    # P1 meters report kWh/kW, HAN meters such as Kaifa report Wh/W; sensors convert either
     expected_units = {
-        "1-0:1.8.0": "kWh",
-        "1-0:2.8.0": "kWh",
-        "1-0:1.7.0": "kW",
-        "1-0:32.7.0": "V",
-        "1-0:31.7.0": "A",
+        "1-0:1.8.0": {"kWh", "Wh"},
+        "1-0:2.8.0": {"kWh", "Wh"},
+        "1-0:1.7.0": {"kW", "W"},
+        "1-0:32.7.0": {"V"},
+        "1-0:31.7.0": {"A"},
     }
     for code, expected_unit in expected_units.items():
-        assert sensor_manager.units.get(code) == expected_unit, (
+        assert sensor_manager.units.get(code) in expected_unit, (
             f"{raw_file.name} has unexpected normalized unit for OBIS code {code}"
         )
 
