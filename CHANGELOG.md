@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.5] - Future release
+## [0.4.5]
 <!-- Add sections for new features, fixes, and improvements -->
 ### Added
 - Decode the hourly Kaifa HAN list (18 members), adding cumulative import/export energy sensors for 3-phase Kaifa meters. Thanks @sailedev for the PR. (#38)
