@@ -3,8 +3,8 @@
 ## [0.4.5] - Future release
 <!-- Add sections for new features, fixes, and improvements -->
 ### Added
-- Decode the hourly Kaifa HAN list (18 members), adding cumulative import/export energy sensors for 3-phase Kaifa meters.
-- Added a raw capture fixture from a Kaifa MA304H3E (Pulse HAN), including an hourly list.
+- Decode the hourly Kaifa HAN list (18 members), adding cumulative import/export energy sensors for 3-phase Kaifa meters. Thanks @sailedev for the PR. (#38)
+- Added a raw capture fixture from a Kaifa MA304H3E (Pulse HAN), including an hourly list. Thanks @sailedev for the PR. (#38)
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
