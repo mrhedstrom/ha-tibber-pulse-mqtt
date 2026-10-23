@@ -154,24 +154,6 @@
             "1-0_14_7_0": {
                 "name": "Verkkotaajuus"
             },
-            "0-0_1_0_0": {
-                "name": "Päivämäärä/Aika"
-            },
-            "0-0_96_1_0": {
-                "name": "Sarjanumero"
-            },
-            "0-0_96_1_1": {
-                "name": "Mittari-ID"
-            },
-            "0-0_42_0_0": {
-                "name": "Vaihtoehtoinen ID"
-            },
-            "0-0_96_13_0": {
-                "name": "Viesti"
-            },
-            "0-0_96_13_1": {
-                "name": "Viestikoodi"
-            },
             "1-0_3_8_0": {
                 "name": "Loisenergian tuonti"
             },
