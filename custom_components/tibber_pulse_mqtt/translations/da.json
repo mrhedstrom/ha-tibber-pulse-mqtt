@@ -154,24 +154,6 @@
             "1-0_14_7_0": {
                 "name": "Netfrekvens"
             },
-            "0-0_1_0_0": {
-                "name": "Dato/Tid"
-            },
-            "0-0_96_1_0": {
-                "name": "Serienummer"
-            },
-            "0-0_96_1_1": {
-                "name": "Måler-ID"
-            },
-            "0-0_42_0_0": {
-                "name": "Alternativt ID"
-            },
-            "0-0_96_13_0": {
-                "name": "Besked"
-            },
-            "0-0_96_13_1": {
-                "name": "Beskedkode"
-            },
             "1-0_3_8_0": {
                 "name": "Reaktiv energi import"
             },

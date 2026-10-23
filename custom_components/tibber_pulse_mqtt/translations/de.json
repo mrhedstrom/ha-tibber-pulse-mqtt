@@ -154,24 +154,6 @@
             "1-0_14_7_0": {
                 "name": "Netzfrequenz"
             },
-            "0-0_1_0_0": {
-                "name": "Datum/Zeit"
-            },
-            "0-0_96_1_0": {
-                "name": "Seriennummer"
-            },
-            "0-0_96_1_1": {
-                "name": "Zähler-ID"
-            },
-            "0-0_42_0_0": {
-                "name": "Alternativ-ID"
-            },
-            "0-0_96_13_0": {
-                "name": "Nachricht"
-            },
-            "0-0_96_13_1": {
-                "name": "Nachrichtencode"
-            },
             "1-0_3_8_0": {
                 "name": "Blindenergie Import"
             },

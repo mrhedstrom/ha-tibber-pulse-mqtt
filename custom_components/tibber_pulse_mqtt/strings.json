@@ -154,24 +154,6 @@
             "1-0_14_7_0": {
                 "name": "Grid frequency"
             },
-            "0-0_1_0_0": {
-                "name": "Date/Time"
-            },
-            "0-0_96_1_0": {
-                "name": "Serial number"
-            },
-            "0-0_96_1_1": {
-                "name": "Meter ID"
-            },
-            "0-0_42_0_0": {
-                "name": "Alternative ID"
-            },
-            "0-0_96_13_0": {
-                "name": "Message"
-            },
-            "0-0_96_13_1": {
-                "name": "Message code"
-            },
             "1-0_3_8_0": {
                 "name": "Reactive energy import"
             },
