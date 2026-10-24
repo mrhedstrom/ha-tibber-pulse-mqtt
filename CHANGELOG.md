@@ -2,18 +2,23 @@
 
 ## [0.4.6] - Future release
 <!-- Add sections for new features, fixes, and improvements -->
-### Changed
-- Identifier and time-related OBIS codes are now exposed as device attributes instead of sensor entities. This reduces the number of entities created for each device and avoids unnecessary history and activity updates.
 
-  The following OBIS values are now exposed as device attributes:
+### Breaking Changes
 
+- The following OBIS values are now exposed as device attributes instead of sensor entities:
   - `0-0:1.0.0` (Date/Time)
   - `0-0:96.1.0` (Serial Number)
   - `0-0:96.1.1` (Meter ID)
   - `0-0:96.1.7` (Meter Type)
   - `0-0:42.0.0` (Alternative ID)
 
-- Existing entities for the OBIS values listed above will become unavailable after upgrading. Users may remove the old entities from the entity registry if desired. Removing the entities will also clean up their associated history data over time.
+- Existing entities for these OBIS values will become unavailable after upgrading. Users with dashboards, automations, templates, or other references to these entities must update their configuration accordingly.
+
+### Changed
+
+- Identifier and time-related OBIS values are now exposed as device attributes instead of sensor entities.
+- Reduced the number of entities created per device.
+- Reduced unnecessary history and device activity updates caused by metadata-only values.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
