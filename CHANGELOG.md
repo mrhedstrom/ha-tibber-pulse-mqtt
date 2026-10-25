@@ -14,28 +14,26 @@
 
 - Existing entities for these OBIS values will become unavailable after upgrading. Users with dashboards, automations, templates, or other references to these entities must update their configuration accordingly.
 
-### Added
-- Added automatic unsupported meter detection based on decode success rate.
-- Added automatic raw capture collection for unsupported meters.
-- Added Repairs with direct links to:
-  - Download raw capture files
-  - Documentation
-  - Pre-filled GitHub issue creation
-- Added support for creating raw captures even when no status message is received.
-- Added a dedicated download endpoint for raw capture files with cache-control headers to ensure the latest version is always downloaded.
+### New
 
-### Changed
+- Added automatic detection of unsupported meters.
+- Added automatic collection of diagnostic captures when an unsupported meter is detected.
+- Added Repairs that make it easy to:
+  - Download diagnostic captures
+  - Read troubleshooting documentation
+  - Create a pre-filled GitHub issue
+- Added support for collecting diagnostic captures even from devices that do not provide status messages.
 
-- Identifier and time-related OBIS values are now exposed as device attributes instead of sensor entities.
+### Improvements
+
 - Reduced the number of entities created per device.
-- Reduced unnecessary history and device activity updates caused by metadata-only values.
-- Raw capture files are now stored under `www/tibber_pulse_mqtt/raw/`.
-- Raw captures can now be downloaded directly from the generated Repair.
-- Raw captures without a status message now require 15 data messages before a capture file is created.
+- Reduced unnecessary database growth and history updates caused by identifier and metadata-only values.
 - Improved the workflow for reporting unsupported meters and sharing diagnostic captures.
+- Diagnostic capture files remain updated while data is being collected, making it easier to gather useful troubleshooting information before submitting a report.
 
-### Fixed
-- Fixed raw capture collection for devices that do not provide status messages.
+### Fixes
+
+- Fixed downloading of updated diagnostic captures by preventing stale cached files from being served.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
