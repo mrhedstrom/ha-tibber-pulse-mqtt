@@ -94,7 +94,12 @@ class RawMessageCapture:
         hwmodel = re.sub(
             r"[^A-Za-z0-9._-]+",
             "_",
-            str(status.get("hwmodel") or "unknown_model"),
+            str(
+                status.get("hwmodel")
+                or status.get("Hw")
+                or status.get("hw")
+                or "unknown_model"
+            ),
         ).strip("._-")
         hwmodel = hwmodel or "unknown_model"
 
