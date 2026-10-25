@@ -537,7 +537,7 @@ class TibberDispatcher:
 {device_model}
 
 Meter manufacturer and model, if known:
-[Please fill in]
+<!-- Please fill in -->
 
 Firmware/build version, if known:
 {firmware}
