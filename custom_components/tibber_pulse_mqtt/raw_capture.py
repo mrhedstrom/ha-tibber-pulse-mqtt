@@ -7,7 +7,7 @@ import re
 import secrets
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,8 +24,13 @@ _OBIS_CODE = re.compile(r"\d+-\d+:\d+\.\d+\.\d+")
 class RawMessageCapture:
     """Save raw MQTT messages after a device has supplied enough useful data."""
 
-    def __init__(self, directory: str | Path):
+    def __init__(
+        self,
+        directory: str | Path,
+        on_capture_saved: Callable[[str, Path], None] | None = None,
+    ):
         self._directory = Path(directory)
+        self._on_capture_saved = on_capture_saved
         self._lock = threading.Lock()
         self._messages: dict[str, list[dict[str, Any]]] = {}
         self._statuses: dict[str, dict[str, Any]] = {}
@@ -97,6 +102,12 @@ class RawMessageCapture:
         self._saved_paths[device_key] = path
         self._saved_message_counts[device_key] = len(messages)
         self._messages.pop(device_key, None)
+
+        if self._on_capture_saved is not None:
+            try:
+                self._on_capture_saved(device_key, path)
+            except Exception:
+                _LOGGER.exception("Raw capture saved callback failed for %s", device_key)
 
     @classmethod
     def _sanitize_message(cls, topic: str, payload: bytes, synthetic_id: str, *, is_status: bool) -> dict[str, Any]:

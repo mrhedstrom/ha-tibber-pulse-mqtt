@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
+from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
 if TYPE_CHECKING:
@@ -31,7 +33,20 @@ from .util.diagnostics import DiagnosticsRegistry
 from .ha.invoke import call_sm_threadsafe, call_sm_on_loop
 from .raw_capture import RawMessageCapture
 
+from urllib.parse import urlencode
+
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.network import get_url
+from homeassistant.loader import async_get_integration
+
 _LOGGER = logging.getLogger(__name__)
+
+MIN_DECODE_SAMPLES = 5
+MAX_FAILED_RATIO = 0.50
+DOCS_URL = "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data"
+ISSUE_URL = "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/issues/new"
+RAW_CAPTURE_DIR = "www/tibber_pulse_mqtt/raw"
+RAW_CAPTURE_URL = "/local/tibber_pulse_mqtt/raw"
 
 
 class TibberDispatcher:
@@ -42,11 +57,16 @@ class TibberDispatcher:
         self.entry = entry
         self.cfg = {**entry.data, **entry.options}
         self.debug = _LOGGER.isEnabledFor(logging.DEBUG)
-        self._raw_capture = (
-            RawMessageCapture(hass.config.path("tibber_pulse_mqtt_raw"))
-            if self.cfg.get(CONF_SAVE_RAW_DATA, False)
-            else None
+        self._integration_version = "Unknown"
+        self._raw_capture: RawMessageCapture | None = None
+        self._decode_stats: dict[str, dict[str, int]] = defaultdict(
+            lambda: {"ok": 0, "failed": 0}
         )
+        self._automatic_capture_devices: set[str] = set()
+        self._reported_capture_devices: set[str] = set()
+
+        if self.cfg.get(CONF_SAVE_RAW_DATA, False):
+            self._enable_raw_capture()
 
         # Device state / mappings
         self._devices: Dict[str, Dict[str, Any]] = {}
@@ -77,6 +97,11 @@ class TibberDispatcher:
     async def async_start(self) -> None:
         """Prepare dispatcher to start receiving work."""
         self._stop_event.clear()
+        try:
+            integration = await async_get_integration(self.hass, DOMAIN)
+            self._integration_version = integration.version or "Unknown"
+        except Exception:
+            _LOGGER.exception("Unable to determine integration version")
 
     async def async_stop(self) -> None:
         """Cancel and await all workers; drain queues and clear references."""
@@ -191,7 +216,7 @@ class TibberDispatcher:
 
     def _process_payload_sync(self, dev_id: str, topic: str, payload: bytes):
         """Runs in a threadpool. Must use thread-safe hops to call HA loop APIs."""
-        if self._raw_capture:
+        if self._raw_capture and self._should_capture(dev_id):
             is_status = payload.startswith(b"{") and b'"status"' in payload
             self._raw_capture.record(dev_id, topic, payload, is_status=is_status)
 
@@ -202,7 +227,7 @@ class TibberDispatcher:
                 d = self._devices.setdefault(dev_id, {"status": {}, "sensors": {}, "has_status": False})
                 obj = json.loads(s)
                 d["status"] = obj.get("status", {}) or {}
-                if self._raw_capture:
+                if self._raw_capture and self._should_capture(dev_id):
                     self._raw_capture.set_status(dev_id, d["status"], topic, payload)
 
                 # Extract pulse_id from STATUS
@@ -231,7 +256,7 @@ class TibberDispatcher:
                 if self.debug:
                     _LOGGER.debug("STATUS UPDATE %s", s)
 
-                self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=None, zerr=None)
+                self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=None, zerr=None)
                 return
         except Exception:
             pass
@@ -254,7 +279,7 @@ class TibberDispatcher:
                     obis = parse_dlms(hdlc_frame)
                     if obis:
                         self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                        self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
+                        self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
                         return
                 except Exception:
                     pass
@@ -274,7 +299,7 @@ class TibberDispatcher:
                             "multi-chunk decode OK for %s (%d bytes, %d frames)",
                             dev_id, len(multi_text), len(obis_frames)
                         )
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True)
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True)
                     return
 
             if self.debug:
@@ -304,7 +329,7 @@ class TibberDispatcher:
                     obis = parse_obis_text(frame)
                     if obis:
                         self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                        self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=True)
+                        self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=True)
                 return
 
             if self._streams.consume_skip_bump(dev_id):
@@ -313,7 +338,7 @@ class TibberDispatcher:
                     self._diag.maybe_log_payload_as_base64(payload)
                 return
 
-            self._diag.bump(dev_id, False, topic=topic, payload=payload, offset=off_used, had_blob=True)
+            self._bump_decode(dev_id, False, topic=topic, payload=payload, offset=off_used, had_blob=True)
             return
 
         # 2.5) RAW DLMS/COSEM FRAME (not protobuf-wrapped)
@@ -324,7 +349,7 @@ class TibberDispatcher:
                 obis = parse_dlms(payload)
                 if obis:
                     self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
                     if self.debug:
                         _LOGGER.debug("RAW DLMS decoded for %s: %d codes", dev_id, len(obis) - 1)
                     return
@@ -338,7 +363,7 @@ class TibberDispatcher:
                 obis = parse_obis_text(s)
                 if obis:
                     self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
                     if self.debug and self.cfg.get(CONF_LOG_OBIS, False):
                         _LOGGER.debug("RAW OBIS:\n%s", s)
                     return
@@ -352,7 +377,193 @@ class TibberDispatcher:
                 self._diag.maybe_log_payload_as_base64(payload)
             return
 
-        self._diag.bump(dev_id, False, topic=topic, payload=payload, offset=None, had_blob=False)
+        self._bump_decode(dev_id, False, topic=topic, payload=payload, offset=None, had_blob=False)
+    
+    # ------------------------ Logging and raw captures -------------------------
+
+    def _bump_decode(self, dev_id: str, success: bool, **kwargs: Any) -> None:
+        """Update diagnostics and enable a capture if decoding fails too often."""
+        self._diag.bump(dev_id, success, **kwargs)
+
+        stats = self._decode_stats[dev_id]
+        stats["ok" if success else "failed"] += 1
+        total = stats["ok"] + stats["failed"]
+
+        if (
+            total >= MIN_DECODE_SAMPLES
+            and stats["failed"] / total > MAX_FAILED_RATIO
+            and dev_id not in self._automatic_capture_devices
+        ):
+            self.hass.loop.call_soon_threadsafe(
+                self._register_automatic_capture,
+                dev_id,
+            )
+
+    @callback
+    def _register_automatic_capture(self, dev_id: str) -> None:
+        if dev_id in self._automatic_capture_devices:
+            return
+
+        self._automatic_capture_devices.add(dev_id)
+        self._enable_automatic_raw_capture(dev_id)
+
+    def _should_capture(self, dev_id: str) -> bool:
+        """Return whether messages for this device should be captured."""
+        return bool(
+            self.cfg.get(CONF_SAVE_RAW_DATA, False)
+            or dev_id in self._automatic_capture_devices
+        )
+
+    def _enable_raw_capture(self) -> None:
+        """Create the raw capture writer if it is not already active."""
+        if self._raw_capture is None:
+            self._raw_capture = RawMessageCapture(
+                self.hass.config.path(RAW_CAPTURE_DIR),
+                on_capture_saved=self._on_raw_capture_saved,
+            )
+
+    def _enable_automatic_raw_capture(self, dev_id: str) -> None:
+        """Temporarily start raw capture after excessive decode failures."""
+        self._enable_raw_capture()
+
+        stats = self._decode_stats[dev_id]
+        total = stats["ok"] + stats["failed"]
+        failed_ratio = stats["failed"] / total if total else 0.0
+
+        _LOGGER.warning(
+            "Raw capture enabled temporarily for %s because %d of %d "
+            "payloads failed to decode (%.1f%%)",
+            dev_id,
+            stats["failed"],
+            total,
+            failed_ratio * 100,
+        )
+
+    @callback
+    def _on_raw_capture_saved(self, device_key: str, path: Path) -> None:
+        """Schedule UI feedback when RawMessageCapture has completed a file."""
+        self.hass.loop.call_soon_threadsafe(
+            self.hass.async_create_task,
+            self._async_report_saved_capture(device_key, path),
+        )
+
+    async def _async_report_saved_capture(self, device_key: str, path: Path) -> None:
+        """Create a translated repair."""
+        if device_key in self._reported_capture_devices:
+            return
+        self._reported_capture_devices.add(device_key)
+
+        unsupported_meter = (
+            device_key in self._automatic_capture_devices
+        )
+
+        issue_url = self._build_github_issue_url(
+            device_key=device_key,
+            path=path,
+            unsupported_meter=unsupported_meter,
+        )
+
+        placeholders = {
+            "device": device_key,
+            "download_url": f"{get_url(self.hass)}{RAW_CAPTURE_URL}/{path.name}",
+            "documentation_url": DOCS_URL,
+            "issue_url": issue_url,
+        }
+
+        if device_key in self._automatic_capture_devices:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                f"unsupported_meter_{self.entry.entry_id}_{path.stem}",
+                is_fixable=False,
+                is_persistent=True,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="unsupported_meter",
+                translation_placeholders=placeholders,
+            )
+            return
+
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            f"raw_capture_saved_{self.entry.entry_id}_{path.stem}",
+            is_fixable=False,
+            is_persistent=True,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="raw_capture_saved",
+            translation_placeholders=placeholders,
+        )
+
+    def _build_github_issue_url(
+        self,
+        device_key: str,
+        path: Path,
+        unsupported_meter: bool,
+    ) -> str:
+        """Build a pre-filled GitHub issue URL."""
+
+        status = self._devices.get(device_key, {}).get("status", {})
+
+        device_model = str(
+            status.get("hwmodel")
+            or status.get("Hw")
+            or status.get("hw")
+            or "[device model]"
+        )
+
+        firmware = str(
+            status.get("Build")
+            or status.get("build")
+            or "[firmware version]"
+        )
+
+        integration_version = self._integration_version
+
+        brief = (
+            "Unsupported meter"
+            if unsupported_meter
+            else "Working Ok"
+        )
+
+        behaviour = (
+            "More than 50% of received payloads could not be decoded by the integration."
+            if unsupported_meter
+            else "Working meter capture provided for compatibility verification."
+        )
+
+        title = f"Raw capture: {device_model} - {brief}"
+
+        body = f"""Device type/model (Pulse P1, HAN, or KM):
+{device_model}
+
+Meter manufacturer and model, if known:
+[Please fill in]
+
+Firmware/build version, if known:
+{firmware}
+
+Integration version:
+{integration_version}
+
+Raw capture file:
+{path.name}
+
+<!-- don't forget to upload the file to the issue -->
+
+What behavior or unsupported data the capture demonstrates:
+{behaviour}
+"""
+
+        params = urlencode(
+            {
+                "labels": "raw capture",
+                "template": "raw_capture.md",
+                "title": title,
+                "body": body,
+            }
+        )
+
+        return f"{ISSUE_URL}?{params}"
 
     # ------------------------------ Apply to HA --------------------------------
 
