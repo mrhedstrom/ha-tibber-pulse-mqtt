@@ -1,189 +1,199 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Tibber Pulse MQTT",
-                "description": "Configureer MQTT en foutopsporing voor Tibber Pulse MQTT.",
-                "data": {
-                    "broker_mode": "MQTT-brokermodus",
-                    "subscribe_topic": "MQTT subscribe-topic",
-                    "debug_log_component": "Debugloggen voor component inschakelen",
-                    "log_missed_base64": "Gemiste payloads loggen (Base64)",
-                    "log_obis": "OBIS-codes in log weergeven",
-                    "save_raw_data": "Geanonimiseerde ruwe MQTT-gegevens opslaan om te delen"
-                },
-                "data_description": {
-                    "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
-                    "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
-                    "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
-                    "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 MQTT-berichten in totaal op, inclusief STATUS. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
-                }
-            },
-            "external_broker": {
-                "title": "Externe MQTT-broker",
-                "description": "Voer verbindingsgegevens in voor je externe MQTT-broker.",
-                "data": {
-                    "host": "MQTT-host",
-                    "port": "MQTT-poort",
-                    "username": "Gebruikersnaam",
-                    "password": "Wachtwoord",
-                    "client_id": "Client-ID",
-                    "tls": "TLS gebruiken"
-                }
-            },
-            "external_tls": {
-                "title": "Externe MQTT TLS",
-                "description": "Configureer TLS voor de externe broker.",
-                "data": {
-                    "cafile": "Pad naar CA-bestand",
-                    "certfile": "Pad naar clientcertificaat",
-                    "keyfile": "Pad naar clientsleutel",
-                    "tls_version": "TLS-versie",
-                    "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Configureer MQTT en foutopsporing voor Tibber Pulse MQTT.",
+        "data": {
+          "broker_mode": "MQTT-brokermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "debug_log_component": "Debugloggen voor component inschakelen",
+          "log_missed_base64": "Gemiste payloads loggen (Base64)",
+          "log_obis": "OBIS-codes in log weergeven",
+          "save_raw_data": "Geanonimiseerde ruwe MQTT-gegevens opslaan om te delen"
+        },
+        "data_description": {
+          "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
+          "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
+          "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
+          "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 MQTT-berichten in totaal op, inclusief STATUS. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
         }
-    },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Tibber Pulse MQTT - Opties",
-                "description": "MQTT- en debugopties bewerken.",
-                "data": {
-                    "broker_mode": "MQTT-brokermodus",
-                    "subscribe_topic": "MQTT subscribe-topic",
-                    "debug_log_component": "Debugloggen voor component inschakelen",
-                    "log_missed_base64": "Gemiste payloads loggen (Base64)",
-                    "log_obis": "OBIS-codes in log weergeven",
-                    "save_raw_data": "Geanonimiseerde ruwe MQTT-gegevens opslaan om te delen"
-                },
-                "data_description": {
-                    "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
-                    "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
-                    "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
-                    "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 MQTT-berichten in totaal op, inclusief STATUS. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
-                }
-            },
-            "external_broker_options": {
-                "title": "Externe MQTT-broker - Opties",
-                "description": "Bewerk verbindingsgegevens voor je externe MQTT-broker.",
-                "data": {
-                    "host": "MQTT-host",
-                    "port": "MQTT-poort",
-                    "username": "Gebruikersnaam",
-                    "password": "Wachtwoord",
-                    "client_id": "Client-ID",
-                    "tls": "TLS gebruiken"
-                }
-            },
-            "external_tls_options": {
-                "title": "Externe MQTT TLS - Opties",
-                "description": "Bewerk TLS-instellingen voor de externe broker.",
-                "data": {
-                    "cafile": "Pad naar CA-bestand",
-                    "certfile": "Pad naar clientcertificaat",
-                    "keyfile": "Pad naar clientsleutel",
-                    "tls_version": "TLS-versie",
-                    "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
-                }
-            }
+      },
+      "external_broker": {
+        "title": "Externe MQTT-broker",
+        "description": "Voer verbindingsgegevens in voor je externe MQTT-broker.",
+        "data": {
+          "host": "MQTT-host",
+          "port": "MQTT-poort",
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord",
+          "client_id": "Client-ID",
+          "tls": "TLS gebruiken"
         }
-    },
-    "entity": {
-        "sensor": {
-            "1-0_1_8_0": {
-                "name": "Totale energie-import"
-            },
-            "1-0_1_8_1": {
-                "name": "Energie-import (T1)"
-            },
-            "1-0_1_8_2": {
-                "name": "Energie-import (T2)"
-            },
-            "1-0_2_8_0": {
-                "name": "Totale energie-export"
-            },
-            "1-0_2_8_1": {
-                "name": "Energie-export (T1)"
-            },
-            "1-0_2_8_2": {
-                "name": "Energie-export (T2)"
-            },
-            "1-0_1_7_0": {
-                "name": "Actief vermogen (totaal)"
-            },
-            "1-0_2_7_0": {
-                "name": "Actief vermogen uit (totaal)"
-            },
-            "1-0_21_7_0": {
-                "name": "Actief vermogen L1"
-            },
-            "1-0_22_7_0": {
-                "name": "Actief vermogen uit L1"
-            },
-            "1-0_41_7_0": {
-                "name": "Actief vermogen L2"
-            },
-            "1-0_42_7_0": {
-                "name": "Actief vermogen uit L2"
-            },
-            "1-0_61_7_0": {
-                "name": "Actief vermogen L3"
-            },
-            "1-0_62_7_0": {
-                "name": "Actief vermogen uit L3"
-            },
-            "1-0_32_7_0": {
-                "name": "Spanning L1"
-            },
-            "1-0_52_7_0": {
-                "name": "Spanning L2"
-            },
-            "1-0_72_7_0": {
-                "name": "Spanning L3"
-            },
-            "1-0_31_7_0": {
-                "name": "Stroom L1"
-            },
-            "1-0_51_7_0": {
-                "name": "Stroom L2"
-            },
-            "1-0_71_7_0": {
-                "name": "Stroom L3"
-            },
-            "1-0_14_7_0": {
-                "name": "Netfrequentie"
-            },
-            "1-0_3_8_0": {
-                "name": "Reactieve energie-import"
-            },
-            "1-0_4_8_0": {
-                "name": "Reactieve energie-export"
-            },
-            "1-0_3_7_0": {
-                "name": "Reactief vermogen (in)"
-            },
-            "1-0_4_7_0": {
-                "name": "Reactief vermogen (uit)"
-            },
-            "1-0_23_7_0": {
-                "name": "Reactief vermogen L1 (in)"
-            },
-            "1-0_24_7_0": {
-                "name": "Reactief vermogen L1 (uit)"
-            },
-            "1-0_43_7_0": {
-                "name": "Reactief vermogen L2 (in)"
-            },
-            "1-0_44_7_0": {
-                "name": "Reactief vermogen L2 (uit)"
-            },
-            "1-0_63_7_0": {
-                "name": "Reactief vermogen L3 (in)"
-            },
-            "1-0_64_7_0": {
-                "name": "Reactief vermogen L3 (uit)"
-            }
+      },
+      "external_tls": {
+        "title": "Externe MQTT TLS",
+        "description": "Configureer TLS voor de externe broker.",
+        "data": {
+          "cafile": "Pad naar CA-bestand",
+          "certfile": "Pad naar clientcertificaat",
+          "keyfile": "Pad naar clientsleutel",
+          "tls_version": "TLS-versie",
+          "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
         }
+      }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Opties",
+        "description": "MQTT- en debugopties bewerken.",
+        "data": {
+          "broker_mode": "MQTT-brokermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "debug_log_component": "Debugloggen voor component inschakelen",
+          "log_missed_base64": "Gemiste payloads loggen (Base64)",
+          "log_obis": "OBIS-codes in log weergeven",
+          "save_raw_data": "Geanonimiseerde ruwe MQTT-gegevens opslaan om te delen"
+        },
+        "data_description": {
+          "debug_log_component": "Schakelt het debug-logniveau in voor deze integratie.",
+          "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
+          "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
+          "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 MQTT-berichten in totaal op, inclusief STATUS. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
+        }
+      },
+      "external_broker_options": {
+        "title": "Externe MQTT-broker - Opties",
+        "description": "Bewerk verbindingsgegevens voor je externe MQTT-broker.",
+        "data": {
+          "host": "MQTT-host",
+          "port": "MQTT-poort",
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord",
+          "client_id": "Client-ID",
+          "tls": "TLS gebruiken"
+        }
+      },
+      "external_tls_options": {
+        "title": "Externe MQTT TLS - Opties",
+        "description": "Bewerk TLS-instellingen voor de externe broker.",
+        "data": {
+          "cafile": "Pad naar CA-bestand",
+          "certfile": "Pad naar clientcertificaat",
+          "keyfile": "Pad naar clientsleutel",
+          "tls_version": "TLS-versie",
+          "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "1-0_1_8_0": {
+        "name": "Totale energie-import"
+      },
+      "1-0_1_8_1": {
+        "name": "Energie-import (T1)"
+      },
+      "1-0_1_8_2": {
+        "name": "Energie-import (T2)"
+      },
+      "1-0_2_8_0": {
+        "name": "Totale energie-export"
+      },
+      "1-0_2_8_1": {
+        "name": "Energie-export (T1)"
+      },
+      "1-0_2_8_2": {
+        "name": "Energie-export (T2)"
+      },
+      "1-0_1_7_0": {
+        "name": "Actief vermogen (totaal)"
+      },
+      "1-0_2_7_0": {
+        "name": "Actief vermogen uit (totaal)"
+      },
+      "1-0_21_7_0": {
+        "name": "Actief vermogen L1"
+      },
+      "1-0_22_7_0": {
+        "name": "Actief vermogen uit L1"
+      },
+      "1-0_41_7_0": {
+        "name": "Actief vermogen L2"
+      },
+      "1-0_42_7_0": {
+        "name": "Actief vermogen uit L2"
+      },
+      "1-0_61_7_0": {
+        "name": "Actief vermogen L3"
+      },
+      "1-0_62_7_0": {
+        "name": "Actief vermogen uit L3"
+      },
+      "1-0_32_7_0": {
+        "name": "Spanning L1"
+      },
+      "1-0_52_7_0": {
+        "name": "Spanning L2"
+      },
+      "1-0_72_7_0": {
+        "name": "Spanning L3"
+      },
+      "1-0_31_7_0": {
+        "name": "Stroom L1"
+      },
+      "1-0_51_7_0": {
+        "name": "Stroom L2"
+      },
+      "1-0_71_7_0": {
+        "name": "Stroom L3"
+      },
+      "1-0_14_7_0": {
+        "name": "Netfrequentie"
+      },
+      "1-0_3_8_0": {
+        "name": "Reactieve energie-import"
+      },
+      "1-0_4_8_0": {
+        "name": "Reactieve energie-export"
+      },
+      "1-0_3_7_0": {
+        "name": "Reactief vermogen (in)"
+      },
+      "1-0_4_7_0": {
+        "name": "Reactief vermogen (uit)"
+      },
+      "1-0_23_7_0": {
+        "name": "Reactief vermogen L1 (in)"
+      },
+      "1-0_24_7_0": {
+        "name": "Reactief vermogen L1 (uit)"
+      },
+      "1-0_43_7_0": {
+        "name": "Reactief vermogen L2 (in)"
+      },
+      "1-0_44_7_0": {
+        "name": "Reactief vermogen L2 (uit)"
+      },
+      "1-0_63_7_0": {
+        "name": "Reactief vermogen L3 (in)"
+      },
+      "1-0_64_7_0": {
+        "name": "Reactief vermogen L3 (uit)"
+      }
+    }
+  },
+  "issues": {
+    "unsupported_meter": {
+      "title": "Elektriciteitsmeter wordt nog niet ondersteund",
+      "description": "Meer dan de helft van de ontvangen berichten van {device} kon niet worden gedecodeerd. Raw capture is daarom automatisch ingeschakeld en er worden nu diagnostische gegevens verzameld.\n\nU kunt helpen ondersteuning voor deze meter toe te voegen door een GitHub-issue aan te maken en het raw capture-bestand bij te voegen. Ingestuurde captures worden gebruikt om de ondersteuning voor meters te verbeteren en worden toegevoegd aan de geautomatiseerde testset om toekomstige regressies te helpen voorkomen.\n\nLaat het capturebestand enige tijd gegevens verzamelen voordat u het downloadt.\n\nOpmerking: als het downloaden niet start wanneer u op de link klikt, klik dan met de rechtermuisknop op de link en kies 'Link opslaan als...' of 'Link openen in nieuw tabblad'.\n\n{download_url} | {documentation_url} | {issue_url}"
+    },
+    "raw_capture_saved": {
+      "title": "Raw capture beschikbaar",
+      "description": "Er wordt een raw capture verzameld voor {device} en deze kan via onderstaande link worden gedownload. Het bestand wordt tijdens het verzamelen voortdurend bijgewerkt met nieuwe berichten.\n\nOpmerking: als het downloaden niet start wanneer u op de link klikt, klik dan met de rechtermuisknop op de link en kies 'Link opslaan als...' of 'Link openen in nieuw tabblad'.\n\n{download_url} | {documentation_url} | {issue_url}"
+    }
+  }
 }

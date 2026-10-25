@@ -14,11 +14,26 @@
 
 - Existing entities for these OBIS values will become unavailable after upgrading. Users with dashboards, automations, templates, or other references to these entities must update their configuration accordingly.
 
-### Changed
+### New
 
-- Identifier and time-related OBIS values are now exposed as device attributes instead of sensor entities.
+- Added automatic detection of unsupported meters.
+- Added automatic collection of diagnostic captures when an unsupported meter is detected.
+- Added Repairs that make it easy to:
+  - Download diagnostic captures
+  - Read troubleshooting documentation
+  - Create a pre-filled GitHub issue
+- Added support for collecting diagnostic captures even from devices that do not provide status messages.
+
+### Improvements
+
 - Reduced the number of entities created per device.
-- Reduced unnecessary history and device activity updates caused by metadata-only values.
+- Reduced unnecessary database growth and history updates caused by identifier and metadata-only values.
+- Improved the workflow for reporting unsupported meters and sharing diagnostic captures.
+- Diagnostic capture files remain updated while data is being collected, making it easier to gather useful troubleshooting information before submitting a report.
+
+### Fixes
+
+- Fixed downloading of updated diagnostic captures by preventing stale cached files from being served.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**

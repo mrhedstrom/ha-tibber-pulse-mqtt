@@ -7,11 +7,12 @@ import re
 import secrets
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
 
 MIN_DATA_MESSAGES = 4
+MIN_DATA_MESSAGES_WITHOUT_STATUS = 15
 MAX_CAPTURE_MESSAGES = 100
 _SAFE_STATUS_KEYS = {
     "hwmodel", "build", "hw", "dsmr", "baud", "ntc", "rssi", "uptime", "heap"
@@ -24,8 +25,13 @@ _OBIS_CODE = re.compile(r"\d+-\d+:\d+\.\d+\.\d+")
 class RawMessageCapture:
     """Save raw MQTT messages after a device has supplied enough useful data."""
 
-    def __init__(self, directory: str | Path):
+    def __init__(
+        self,
+        directory: str | Path,
+        on_capture_saved: Callable[[str, Path], None] | None = None,
+    ):
         self._directory = Path(directory)
+        self._on_capture_saved = on_capture_saved
         self._lock = threading.Lock()
         self._messages: dict[str, list[dict[str, Any]]] = {}
         self._statuses: dict[str, dict[str, Any]] = {}
@@ -70,33 +76,66 @@ class RawMessageCapture:
             self._save_if_ready(device_key)
 
     def _save_if_ready(self, device_key: str) -> None:
+        """Create a capture file once enough data messages have been collected."""
         if device_key in self._saved_paths:
             return
 
-        status = self._statuses.get(device_key)
-        if not status or self._data_message_counts.get(device_key, 0) < MIN_DATA_MESSAGES:
+        status = self._statuses.get(device_key, {})
+
+        required_messages = (
+            MIN_DATA_MESSAGES
+            if status
+            else MIN_DATA_MESSAGES_WITHOUT_STATUS
+        )
+
+        if self._data_message_counts.get(device_key, 0) < required_messages:
             return
 
-        hwmodel = re.sub(r"[^A-Za-z0-9._-]+", "_", str(status.get("hwmodel") or "unknown_model")).strip("._-")
+        hwmodel = re.sub(
+            r"[^A-Za-z0-9._-]+",
+            "_",
+            str(
+                status.get("hwmodel")
+                or status.get("Hw")
+                or status.get("hw")
+                or "unknown_model"
+            ),
+        ).strip("._-")
         hwmodel = hwmodel or "unknown_model"
+
         suffix = secrets.token_hex(5)
         path = self._directory / f"{hwmodel[:80]}-{suffix}.jsonl"
+
         messages = list(self._messages.get(device_key, []))
-        status_message = self._status_messages[device_key]
-        if status_message not in messages:
+
+        status_message = self._status_messages.get(device_key)
+        if status_message is not None and status_message not in messages:
             messages.append(status_message)
+
         if len(messages) > MAX_CAPTURE_MESSAGES:
             messages = messages[-MAX_CAPTURE_MESSAGES:]
 
         try:
             self._append(path, messages)
         except OSError:
-            _LOGGER.exception("Unable to save raw MQTT capture for %s", hwmodel)
+            _LOGGER.exception(
+                "Unable to save raw MQTT capture for %s",
+                hwmodel,
+            )
             return
 
         self._saved_paths[device_key] = path
         self._saved_message_counts[device_key] = len(messages)
         self._messages.pop(device_key, None)
+
+        if self._on_capture_saved is not None:
+            try:
+                self._on_capture_saved(device_key, path)
+            except Exception:
+                _LOGGER.exception(
+                    "Raw capture saved callback failed for %s",
+                    device_key,
+                )
 
     @classmethod
     def _sanitize_message(cls, topic: str, payload: bytes, synthetic_id: str, *, is_status: bool) -> dict[str, Any]:

@@ -8,13 +8,14 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, CONF_DEBUG_LOG_COMPONENT
+from .views import RawCaptureDownloadView
 
 try:
     from homeassistant.helpers import config_validation as cv
 except ImportError:
     CONFIG_SCHEMA = None
 else:
-    CONFIG_SCHEMA = cv.platform_only_config_schema(DOMAIN)
+    CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +28,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .coordinator import TibberLocalHub
+
+    # Register the raw capture download view for serving raw captures.
+    hass.http.register_view(
+        RawCaptureDownloadView(hass)
+    )
 
     # Register update listener (and ensure it is removed on unload).
     unsub_update = entry.add_update_listener(_update_listener)
