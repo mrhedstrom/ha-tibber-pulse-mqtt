@@ -1,6 +1,9 @@
 {
   "domain": "tibber_pulse_mqtt",
   "name": "Tibber Pulse MQTT",
+  "dependencies": [
+    "http"
+  ],
   "after_dependencies": [
     "mqtt"
   ],

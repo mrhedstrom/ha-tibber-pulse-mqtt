@@ -15,7 +15,7 @@ try:
 except ImportError:
     CONFIG_SCHEMA = None
 else:
-    CONFIG_SCHEMA = cv.platform_only_config_schema(DOMAIN)
+    CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
