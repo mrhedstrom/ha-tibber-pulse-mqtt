@@ -1,9 +1,6 @@
 {
   "domain": "tibber_pulse_mqtt",
   "name": "Tibber Pulse MQTT",
-  "dependencies": [
-    "http"
-  ],
   "after_dependencies": [
     "mqtt"
   ],
@@ -11,6 +8,9 @@
     "@mrhedstrom"
   ],
   "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt",
   "integration_type": "hub",
   "iot_class": "local_push",
