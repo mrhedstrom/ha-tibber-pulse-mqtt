@@ -32,6 +32,7 @@ from .obis.streaming import ObisStreamManager
 from .util.diagnostics import DiagnosticsRegistry
 from .ha.invoke import call_sm_threadsafe, call_sm_on_loop
 from .raw_capture import RawMessageCapture
+from .raw_capture_manager import RawCaptureManager
 
 from urllib.parse import urlencode
 
@@ -57,22 +58,18 @@ class TibberDispatcher:
         self.entry = entry
         self.cfg = {**entry.data, **entry.options}
         self.debug = _LOGGER.isEnabledFor(logging.DEBUG)
-        self._integration_version = "Unknown"
-        self._raw_capture: RawMessageCapture | None = None
-        self._decode_stats: dict[str, dict[str, int]] = defaultdict(
-            lambda: {"ok": 0, "failed": 0}
-        )
-        self._automatic_capture_devices: set[str] = set()
-        self._reported_capture_devices: set[str] = set()
-
-        if self.cfg.get(CONF_SAVE_RAW_DATA, False):
-            self._enable_raw_capture()
-
+        
         # Device state / mappings
         self._devices: Dict[str, Dict[str, Any]] = {}
         self._topic_to_pulse: Dict[str, str] = {}
         self._pending_by_topic: Dict[str, list] = {}
         self._meter_id: Dict[str, str] = {}
+
+        self._capture_manager = RawCaptureManager(
+            hass,
+            entry,
+            self._devices,
+        )
 
         # Async worker infrastructure
         self._queues: dict[str, asyncio.Queue[tuple[str, str, bytes]]] = {}
@@ -97,11 +94,7 @@ class TibberDispatcher:
     async def async_start(self) -> None:
         """Prepare dispatcher to start receiving work."""
         self._stop_event.clear()
-        try:
-            integration = await async_get_integration(self.hass, DOMAIN)
-            self._integration_version = integration.version or "Unknown"
-        except Exception:
-            _LOGGER.exception("Unable to determine integration version")
+        await self._capture_manager.async_initialize()
 
     async def async_stop(self) -> None:
         """Cancel and await all workers; drain queues and clear references."""
@@ -216,9 +209,11 @@ class TibberDispatcher:
 
     def _process_payload_sync(self, dev_id: str, topic: str, payload: bytes):
         """Runs in a threadpool. Must use thread-safe hops to call HA loop APIs."""
-        if self._raw_capture and self._should_capture(dev_id):
+
+        capture = self._capture_manager.capture()
+        if capture and self._capture_manager.should_capture(dev_id):
             is_status = payload.startswith(b"{") and b'"status"' in payload
-            self._raw_capture.record(dev_id, topic, payload, is_status=is_status)
+            capture.record(dev_id, topic, payload, is_status=is_status)
 
         # 1) STATUS JSON
         try:
@@ -227,8 +222,8 @@ class TibberDispatcher:
                 d = self._devices.setdefault(dev_id, {"status": {}, "sensors": {}, "has_status": False})
                 obj = json.loads(s)
                 d["status"] = obj.get("status", {}) or {}
-                if self._raw_capture and self._should_capture(dev_id):
-                    self._raw_capture.set_status(dev_id, d["status"], topic, payload)
+                if capture and self._capture_manager.should_capture(dev_id):
+                    capture.set_status(dev_id, d["status"], topic, payload)
 
                 # Extract pulse_id from STATUS
                 pulse_id = str(d["status"].get("ID") or "").strip()
@@ -385,185 +380,10 @@ class TibberDispatcher:
         """Update diagnostics and enable a capture if decoding fails too often."""
         self._diag.bump(dev_id, success, **kwargs)
 
-        stats = self._decode_stats[dev_id]
-        stats["ok" if success else "failed"] += 1
-        total = stats["ok"] + stats["failed"]
-
-        if (
-            total >= MIN_DECODE_SAMPLES
-            and stats["failed"] / total > MAX_FAILED_RATIO
-            and dev_id not in self._automatic_capture_devices
-        ):
-            self.hass.loop.call_soon_threadsafe(
-                self._register_automatic_capture,
-                dev_id,
-            )
-
-    @callback
-    def _register_automatic_capture(self, dev_id: str) -> None:
-        if dev_id in self._automatic_capture_devices:
-            return
-
-        self._automatic_capture_devices.add(dev_id)
-        self._enable_automatic_raw_capture(dev_id)
-
-    def _should_capture(self, dev_id: str) -> bool:
-        """Return whether messages for this device should be captured."""
-        return bool(
-            self.cfg.get(CONF_SAVE_RAW_DATA, False)
-            or dev_id in self._automatic_capture_devices
-        )
-
-    def _enable_raw_capture(self) -> None:
-        """Create the raw capture writer if it is not already active."""
-        if self._raw_capture is None:
-            self._raw_capture = RawMessageCapture(
-                self.hass.config.path(RAW_CAPTURE_DIR),
-                on_capture_saved=self._on_raw_capture_saved,
-            )
-
-    def _enable_automatic_raw_capture(self, dev_id: str) -> None:
-        """Temporarily start raw capture after excessive decode failures."""
-        self._enable_raw_capture()
-
-        stats = self._decode_stats[dev_id]
-        total = stats["ok"] + stats["failed"]
-        failed_ratio = stats["failed"] / total if total else 0.0
-
-        _LOGGER.warning(
-            "Raw capture enabled temporarily for %s because %d of %d "
-            "payloads failed to decode (%.1f%%)",
+        self._capture_manager.record_decode_result(
             dev_id,
-            stats["failed"],
-            total,
-            failed_ratio * 100,
+            success,
         )
-
-    @callback
-    def _on_raw_capture_saved(self, device_key: str, path: Path) -> None:
-        """Schedule UI feedback when RawMessageCapture has completed a file."""
-        self.hass.loop.call_soon_threadsafe(
-            self.hass.async_create_task,
-            self._async_report_saved_capture(device_key, path),
-        )
-
-    async def _async_report_saved_capture(self, device_key: str, path: Path) -> None:
-        """Create a translated repair."""
-        if device_key in self._reported_capture_devices:
-            return
-        self._reported_capture_devices.add(device_key)
-
-        unsupported_meter = (
-            device_key in self._automatic_capture_devices
-        )
-
-        issue_url = self._build_github_issue_url(
-            device_key=device_key,
-            path=path,
-            unsupported_meter=unsupported_meter,
-        )
-
-        placeholders = {
-            "device": device_key,
-            "download_url": f"{get_url(self.hass)}{RAW_CAPTURE_URL}/{path.name}",
-            "documentation_url": DOCS_URL,
-            "issue_url": issue_url,
-        }
-
-        if device_key in self._automatic_capture_devices:
-            ir.async_create_issue(
-                self.hass,
-                DOMAIN,
-                f"unsupported_meter_{self.entry.entry_id}_{path.stem}",
-                is_fixable=False,
-                is_persistent=True,
-                severity=ir.IssueSeverity.WARNING,
-                translation_key="unsupported_meter",
-                translation_placeholders=placeholders,
-            )
-            return
-
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            f"raw_capture_saved_{self.entry.entry_id}_{path.stem}",
-            is_fixable=False,
-            is_persistent=True,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key="raw_capture_saved",
-            translation_placeholders=placeholders,
-        )
-
-    def _build_github_issue_url(
-        self,
-        device_key: str,
-        path: Path,
-        unsupported_meter: bool,
-    ) -> str:
-        """Build a pre-filled GitHub issue URL."""
-
-        status = self._devices.get(device_key, {}).get("status", {})
-
-        device_model = str(
-            status.get("hwmodel")
-            or status.get("Hw")
-            or status.get("hw")
-            or "[device model]"
-        )
-
-        firmware = str(
-            status.get("Build")
-            or status.get("build")
-            or "[firmware version]"
-        )
-
-        integration_version = self._integration_version
-
-        brief = (
-            "Unsupported meter"
-            if unsupported_meter
-            else "Working Ok"
-        )
-
-        behaviour = (
-            "More than 50% of received payloads could not be decoded by the integration."
-            if unsupported_meter
-            else "Working meter capture provided for compatibility verification."
-        )
-
-        title = f"Raw capture: {device_model} - {brief}"
-
-        body = f"""Device type/model (Pulse P1, HAN, or KM):
-{device_model}
-
-Meter manufacturer and model, if known:
-<!-- Please fill in -->
-
-Firmware/build version, if known:
-{firmware}
-
-Integration version:
-{integration_version}
-
-Raw capture file:
-{path.name}
-
-<!-- don't forget to upload the file to the issue -->
-
-What behavior or unsupported data the capture demonstrates:
-{behaviour}
-"""
-
-        params = urlencode(
-            {
-                "labels": "raw capture",
-                "template": "raw_capture.md",
-                "title": title,
-                "body": body,
-            }
-        )
-
-        return f"{ISSUE_URL}?{params}"
 
     # ------------------------------ Apply to HA --------------------------------
 

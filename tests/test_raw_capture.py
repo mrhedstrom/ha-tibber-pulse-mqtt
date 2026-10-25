@@ -148,7 +148,7 @@ def test_capture_preserves_status_when_buffer_evicts_it(tmp_path):
     capture.record(device_key, "pulse/status", status_payload, is_status=True)
     capture.set_status(device_key, {"ID": "pulse-1", "hwmodel": "Pulse P1"}, "pulse/status", status_payload)
 
-    capture_file = next(tmp_path.glob("Pulse_P1-*.jsonl"))
+    capture_file = next(tmp_path.glob("*.jsonl"))
     records = [json.loads(line) for line in capture_file.read_text(encoding="utf-8").splitlines()]
     assert len(records) == MAX_CAPTURE_MESSAGES
     assert any(

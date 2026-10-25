@@ -15,11 +15,14 @@
 - Existing entities for these OBIS values will become unavailable after upgrading. Users with dashboards, automations, templates, or other references to these entities must update their configuration accordingly.
 
 ### Added
-
-- Added Home Assistant Repairs for generated raw captures with direct links to download the capture, view documentation, and create a GitHub issue.
-- Added automatic detection of unsupported meters.
-- Added automatic raw capture collection when decoding repeatedly fails, making it easier to add support for new devices and meters.
-- Added pre-filled GitHub issue creation for raw capture submissions.
+- Added automatic unsupported meter detection based on decode success rate.
+- Added automatic raw capture collection for unsupported meters.
+- Added Repairs with direct links to:
+  - Download raw capture files
+  - Documentation
+  - Pre-filled GitHub issue creation
+- Added support for creating raw captures even when no status message is received.
+- Added a dedicated download endpoint for raw capture files with cache-control headers to ensure the latest version is always downloaded.
 
 ### Changed
 
@@ -28,7 +31,11 @@
 - Reduced unnecessary history and device activity updates caused by metadata-only values.
 - Raw capture files are now stored under `www/tibber_pulse_mqtt/raw/`.
 - Raw captures can now be downloaded directly from the generated Repair.
+- Raw captures without a status message now require 15 data messages before a capture file is created.
 - Improved the workflow for reporting unsupported meters and sharing diagnostic captures.
+
+### Fixed
+- Fixed raw capture collection for devices that do not provide status messages.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
