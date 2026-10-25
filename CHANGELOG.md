@@ -17,17 +17,20 @@
 ### New
 
 - Added automatic detection of unsupported meters.
-- Added automatic collection of diagnostic captures when an unsupported meter is detected.
+- Added automatic collection of local diagnostic captures when an unsupported meter is detected.
 - Added Repairs that make it easy to:
   - Download diagnostic captures
-  - Read troubleshooting documentation
-  - Create a pre-filled GitHub issue
+  - Read documentation
+  - Create a pre-filled GitHub issue from data collected in the diagnostic capture
 - Added support for collecting diagnostic captures even from devices that do not provide status messages.
+
+> [!NOTE]
+> Diagnostic data is never shared automatically. Capture files are stored locally in Home Assistant and are only shared if you explicitly choose to download and attach them to a GitHub issue.
 
 ### Improvements
 
 - Reduced the number of entities created per device.
-- Reduced unnecessary database growth and history updates caused by identifier and metadata-only values.
+- Reduced unnecessary database growth and history updates caused by date/time, identifier and metadata-only values.
 - Improved the workflow for reporting unsupported meters and sharing diagnostic captures.
 - Diagnostic capture files remain updated while data is being collected, making it easier to gather useful troubleshooting information before submitting a report.
 
