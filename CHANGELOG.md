@@ -1,7 +1,14 @@
 # Changelog
 
-## [0.4.6]
+## [0.4.7] - Future Release
 <!-- Add sections for new features, fixes, and improvements -->
+
+
+> [!IMPORTANT]
+> **Help keep your meter supported.**
+> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
+
+## [0.4.6]
 
 ### Breaking Changes
 
@@ -39,10 +46,6 @@
 ### Fixes
 
 - Fixed downloading of updated diagnostic captures by preventing stale cached files from being served.
-
-> [!IMPORTANT]
-> **Help keep your meter supported.**
-> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
 
 ## [0.4.5]
 ### Added
