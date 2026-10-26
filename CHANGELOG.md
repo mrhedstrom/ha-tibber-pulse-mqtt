@@ -22,7 +22,7 @@
   - Download diagnostic captures
   - Read documentation
   - Create a pre-filled GitHub issue from data collected in the diagnostic capture
-  - When repair is marked as fixed, the local diagnostic capture is deleted.
+  - When repair is marked as fixed, the local diagnostic capture is deleted and raw captures are disabled.
 - Added support for collecting diagnostic captures even from devices that do not provide status messages.
 - Added new repair type to clean up old local diagnostic captures that are no longer needed.
 

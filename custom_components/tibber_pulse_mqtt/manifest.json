@@ -18,7 +18,6 @@
   "loggers": [
     "custom_components.tibber_pulse_mqtt"
   ],
-  "repairs_flow": true,
   "requirements": [
     "paho-mqtt>=1.6.1",
     "protobuf>=4.25.0"

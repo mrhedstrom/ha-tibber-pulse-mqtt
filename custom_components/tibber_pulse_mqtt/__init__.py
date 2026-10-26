@@ -10,12 +10,9 @@ if TYPE_CHECKING:
 from .const import DOMAIN, CONF_DEBUG_LOG_COMPONENT
 from .views import RawCaptureDownloadView
 
-try:
-    from homeassistant.helpers import config_validation as cv
-except ImportError:
-    CONFIG_SCHEMA = None
-else:
-    CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+from homeassistant.helpers import config_validation as cv
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
