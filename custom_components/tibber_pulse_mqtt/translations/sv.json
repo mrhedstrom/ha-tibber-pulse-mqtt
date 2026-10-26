@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Gamla raw capture-filer hittades",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Radera gamla raw capture-filer",
+            "description": "{count} raw capture-filer är äldre än {days} dagar och använder ungefär {size} MB diskutrymme.\n\nOm du fortsätter kommer dessa filer att raderas permanent."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Elmätaren stöds inte ännu",
-      "description": "Mer än hälften av de mottagna meddelandena från {device} kunde inte tolkas. Raw capture aktiverades därför automatiskt och diagnostikdata samlas nu in.\n\nDu kan hjälpa till att få stöd för denna mätare genom att skapa ett GitHub-ärende och bifoga raw capture-filen. Delade captures används för att förbättra stödet för elmätare och läggs till i den automatiserade testsviten för att minska risken för framtida regressioner.\n\nLåt gärna capture-filen samla in data en stund innan du laddar ner den.\n\nObs! Om nedladdningen inte startar när du klickar på länken, högerklicka på länken och välj \"Spara länk som...\" eller \"Öppna länk i ny flik\".\n\n[Ladda ner raw capture]({download_url}) | [Dokumentation]({documentation_url}) | [Skapa ett GitHub-ärende]({issue_url})"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Avsluta insamling för okänd mätare",
+            "description": "Mer än hälften av de mottagna meddelandena från {device} kunde inte tolkas. Raw capture aktiverades därför automatiskt och diagnostikdata samlas nu in.\n\nDu kan hjälpa till att få stöd för denna mätare genom att skapa ett GitHub-ärende och bifoga raw capture-filen. Delade captures används för att förbättra stödet för elmätare och läggs till i den automatiserade testsviten för att minska risken för framtida regressioner.\n\nLåt gärna capture-filen samla in data en stund innan du laddar ner den.\n\nObs! Om nedladdningen inte startar när du klickar på länken, högerklicka på länken och välj \"Spara länk som...\" eller \"Öppna länk i ny flik\".\n\n[Ladda ner raw capture]({download_url}) | [Dokumentation]({documentation_url}) | [Skapa ett GitHub-ärende]({issue_url})\n\nKontrollera först att du har laddat ner den senaste raw capture-filen och skapat ett GitHub-ärende.\n\nNär du bekräftar stoppas insamlingen och den lokala capture-filen raderas permanent."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw capture tillgänglig",
-      "description": "En raw capture för {device} samlas in och kan laddas ner via länken nedan. Filen fortsätter att uppdateras med nya meddelanden medan insamlingen pågår.\n\nObs! Om nedladdningen inte startar när du klickar på länken, högerklicka på länken och välj \"Spara länk som...\" eller \"Öppna länk i ny flik\".\n\n[Ladda ner raw capture]({download_url}) | [Dokumentation]({documentation_url}) | [Skapa ett GitHub-ärende]({issue_url})"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Avsluta insamling för enhet",
+            "description": "En raw capture för {device} samlas in och kan laddas ner via länken nedan. Filen fortsätter att uppdateras med nya meddelanden medan insamlingen pågår.\n\nObs! Om nedladdningen inte startar när du klickar på länken, högerklicka på länken och välj \"Spara länk som...\" eller \"Öppna länk i ny flik\".\n\n[Ladda ner raw capture]({download_url}) | [Dokumentation]({documentation_url}) | [Skapa ett GitHub-ärende]({issue_url})\n\nKontrollera först att du har laddat ner den senaste raw capture-filen och skapat ett GitHub-ärende.\n\nNär du bekräftar stoppas insamlingen och den lokala capture-filen raderas permanent."
+          }
+        }
+      }
     }
   }
 }

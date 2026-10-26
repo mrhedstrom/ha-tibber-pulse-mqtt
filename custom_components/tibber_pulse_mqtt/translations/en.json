@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Old raw capture files found",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Delete old raw captures",
+            "description": "{count} raw capture files are older than {days} days and use approximately {size} MB of disk space.\n\nIf you continue, these files will be permanently deleted."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Electricity meter is not yet supported",
-      "description": "More than half of the received messages from {device} could not be decoded. Raw capture was therefore enabled automatically and diagnostic data is now being collected.\n\nYou can help add support for this meter by creating a GitHub issue and attaching the raw capture file. Submitted captures are used to improve meter support and are added to the automated test suite to help prevent future regressions.\n\nPlease allow the capture file to collect data for a while before downloading it.\n\nNote: If the download does not start when clicking the link, right-click the link and choose \"Save link as...\" or \"Open link in new tab\".\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Finish unsupported meter capture",
+            "description": "More than half of the received messages from {device} could not be decoded. Raw capture was therefore enabled automatically and diagnostic data is now being collected.\n\nYou can help add support for this meter by creating a GitHub issue and attaching the raw capture file. Submitted captures are used to improve meter support and are added to the automated test suite to help prevent future regressions.\n\nPlease allow the capture file to collect data for a while before downloading it.\n\nNote: If the download does not start when clicking the link, right-click the link and choose \"Save link as...\" or \"Open link in new tab\".\n\n[Download raw capture]({download_url}) | [Documentation]({documentation_url}) | [Create GitHub issue]({issue_url})\n\nBefore continuing, make sure you have downloaded the latest raw capture and created a GitHub issue.\n\nWhen you confirm, capture collection will stop and the local capture file will be permanently deleted."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw capture available",
-      "description": "A raw capture for {device} is being collected and can be downloaded using the link below. The file will continue to be updated with new messages while collection is active.\n\nNote: If the download does not start when clicking the link, right-click the link and choose \"Save link as...\" or \"Open link in new tab\".\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Finish meter capture",
+            "description": "A raw capture for {device} is being collected and can be downloaded using the link below. The file will continue to be updated with new messages while collection is active.\n\nNote: If the download does not start when clicking the link, right-click the link and choose \"Save link as...\" or \"Open link in new tab\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nBefore continuing, make sure you have downloaded the latest raw capture and created a GitHub issue.\n\nWhen you confirm, capture collection will stop and the local capture file will be permanently deleted."
+          }
+        }
+      }
     }
   }
 }

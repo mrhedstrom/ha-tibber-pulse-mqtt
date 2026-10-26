@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Gamle raw capture-filer fundet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Slet gamle raw capture-filer",
+            "description": "{count} raw capture-filer er ældre end {days} dage og bruger cirka {size} MB diskplads.\n\nHvis du fortsætter, vil disse filer blive slettet permanent."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Elmåleren understøttes endnu ikke",
-      "description": "Mere end halvdelen af de modtagne meddelelser fra {device} kunne ikke fortolkes. Raw capture blev derfor automatisk aktiveret, og diagnostiske data indsamles nu.\n\nDu kan hjælpe med at få understøttelse af denne måler ved at oprette en GitHub-issue og vedhæfte raw capture-filen. Indsendte captures bruges til at forbedre understøttelsen af elmålere og tilføjes til den automatiserede testpakke for at reducere risikoen for fremtidige regressioner.\n\nLad gerne capture-filen indsamle data i et stykke tid, før du downloader den.\n\nBemærk: Hvis downloaden ikke starter, når du klikker på linket, kan du højreklikke på linket og vælge \"Gem link som...\" eller \"Åbn link i ny fane\".\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Afslut indsamling for ikke-understøttet måler",
+            "description": "Mere end halvdelen af de modtagne meddelelser fra {device} kunne ikke fortolkes. Raw capture blev derfor automatisk aktiveret, og diagnostiske data indsamles nu.\n\nDu kan hjælpe med at få understøttelse af denne måler ved at oprette en GitHub-issue og vedhæfte raw capture-filen. Indsendte captures bruges til at forbedre understøttelsen af elmålere og tilføjes til den automatiserede testpakke for at reducere risikoen for fremtidige regressioner.\n\nLad gerne capture-filen indsamle data i et stykke tid, før du downloader den.\n\nBemærk: Hvis downloaden ikke starter, når du klikker på linket, kan du højreklikke på linket og vælge \"Gem link som...\" eller \"Åbn link i ny fane\".\n\n[Læs på raw capture]({download_url}) | [Dokumentation]({documentation_url}) | [Opret en GitHub-issue]({issue_url})\n\nKontrollér først, at du har downloadet den seneste raw capture-fil og oprettet en GitHub-issue.\n\nNår du bekræfter, stoppes indsamlingen, og den lokale capture-fil slettes permanent."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw capture tilgængelig",
-      "description": "En raw capture for {device} indsamles og kan downloades via linket nedenfor. Filen vil fortsætte med at blive opdateret med nye meddelelser, mens indsamlingen er aktiv.\n\nBemærk: Hvis downloaden ikke starter, når du klikker på linket, kan du højreklikke på linket og vælge \"Gem link som...\" eller \"Åbn link i ny fane\".\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Afslut målerindsamling",
+            "description": "En raw capture for {device} indsamles og kan downloades via linket nedenfor. Filen vil fortsætte med at blive opdateret med nye meddelelser, mens indsamlingen er aktiv.\n\nBemærk: Hvis downloaden ikke starter, når du klikker på linket, kan du højreklikke på linket og vælge \"Gem link som...\" eller \"Åbn link i ny fane\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nKontrollér først, at du har downloadet den seneste raw capture-fil og oprettet en GitHub-issue.\n\nNår du bekræfter, stoppes indsamlingen, og den lokale capture-fil slettes permanent."
+          }
+        }
+      }
     }
   }
 }

@@ -1,15 +1,26 @@
 from __future__ import annotations
 
+import logging
+
 from collections import defaultdict
 from pathlib import Path
 from urllib.parse import urlencode
+from datetime import datetime, timedelta
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.loader import async_get_integration
 from homeassistant.helpers.network import get_url
 
-from .const import DOMAIN, CONF_SAVE_RAW_DATA
+from .const import (
+    DOMAIN,
+    CONF_SAVE_RAW_DATA,
+    RAW_CAPTURE_DIR,
+    RAW_CAPTURE_API_URL,
+    CAPTURE_RETENTION_DAYS,
+    CAPTURE_WARNING_FILES,
+    CAPTURE_WARNING_SIZE_MB,
+)
 from .raw_capture import RawMessageCapture
 
 MIN_DECODE_SAMPLES = 5
@@ -24,9 +35,7 @@ ISSUE_URL = (
     "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/issues/new"
 )
 
-RAW_CAPTURE_DIR = "www/tibber_pulse_mqtt/raw"
-RAW_CAPTURE_API_URL = "/api/tibber_pulse_mqtt/raw_capture"
-
+_LOGGER = logging.getLogger(__name__)
 
 class RawCaptureManager:
     """Manage automatic raw captures and Repairs."""
@@ -49,6 +58,7 @@ class RawCaptureManager:
         )
 
         self._automatic_capture_devices: set[str] = set()
+        self._resolved_devices: set[str] = set()
         self._created_issue_ids: set[str] = set()
         self._integration_version = "Unknown"
 
@@ -58,6 +68,7 @@ class RawCaptureManager:
     async def async_initialize(self) -> None:
         integration = await async_get_integration(self.hass, DOMAIN)
         self._integration_version = integration.version or "Unknown"
+        await self.async_check_old_captures()
 
     def enable_manual_capture(self) -> None:
         self._ensure_raw_capture()
@@ -80,7 +91,8 @@ class RawCaptureManager:
         total = stats["ok"] + stats["failed"]
 
         if (
-            total >= MIN_DECODE_SAMPLES
+            dev_id not in self._resolved_devices
+            and total >= MIN_DECODE_SAMPLES
             and stats["failed"] / total
             > MAX_FAILED_RATIO
         ):
@@ -99,6 +111,7 @@ class RawCaptureManager:
 
         self._automatic_capture_devices.add(dev_id)
         self._ensure_raw_capture()
+        _LOGGER.info("Automatic raw capture enabled for unsupported device %s", dev_id)
 
     def _ensure_raw_capture(self) -> None:
         if self._raw_capture is not None:
@@ -158,11 +171,16 @@ class RawCaptureManager:
                 self.hass,
                 DOMAIN,
                 f"unsupported_meter_{path.stem}",
-                is_fixable=False,
+                is_fixable=True,
                 is_persistent=True,
                 severity=ir.IssueSeverity.WARNING,
                 translation_key="unsupported_meter",
                 translation_placeholders=placeholders,
+                data={
+                    "entry_id": self.entry.entry_id,
+                    "device_key": device_key,
+                    "capture_path": str(path),
+                },
             )
             return
 
@@ -170,12 +188,19 @@ class RawCaptureManager:
             self.hass,
             DOMAIN,
             f"raw_capture_saved_{path.stem}",
-            is_fixable=False,
+            is_fixable=True,
             is_persistent=True,
             severity=ir.IssueSeverity.WARNING,
             translation_key="raw_capture_saved",
             translation_placeholders=placeholders,
+            data={
+                "entry_id": self.entry.entry_id,
+                "device_key": device_key,
+                "capture_path": str(path),
+            },
         )
+
+        await self.async_check_old_captures()
 
     def _build_github_issue_url(
         self,
@@ -248,4 +273,137 @@ What behavior or unsupported data the capture demonstrates:
                     "body": body,
                 }
             )
+        )
+
+    async def async_resolve_captured_meter(
+        self,
+        issue_id: str,
+        device_key: str,
+        path_str: str,
+    ) -> None:
+        """Stop capture and delete the capture file."""
+
+        if path_str:
+            path = Path(path_str)
+            try:
+                await self.hass.async_add_executor_job(
+                    self._delete_capture_file,
+                    path,
+                )
+            except OSError:
+                _LOGGER.warning(
+                    "Unable to delete capture %s",
+                    path,
+                )
+        
+        self._resolved_devices.add(device_key)
+        if device_key in self._automatic_capture_devices:
+            self._automatic_capture_devices.discard(device_key)
+
+        if (
+            not self._automatic_capture_devices
+        ):
+            self._raw_capture = None
+
+        if (
+            not self._automatic_capture_devices
+            and self.entry.options.get(CONF_SAVE_RAW_DATA, False)
+        ):
+            options = {
+                **self.entry.options,
+                CONF_SAVE_RAW_DATA: False,
+            }
+
+            self.hass.config_entries.async_update_entry(
+                self.entry,
+                options=options,
+            )
+
+        ir.async_delete_issue(
+            self.hass,
+            DOMAIN,
+            issue_id,
+        )
+
+    def _delete_capture_file(
+        self,
+        path: Path,
+    ) -> None:
+        path.unlink(missing_ok=True)
+
+    async def async_check_old_captures(self) -> None:
+        """Create a repair if old captures consume disk space."""
+
+        count, total_size_mb, old_files = (
+            await self.hass.async_add_executor_job(
+                self._analyze_capture_files
+            )
+        )
+
+        if (
+            not old_files
+            or (
+                len(old_files) < CAPTURE_WARNING_FILES
+                and total_size_mb < CAPTURE_WARNING_SIZE_MB
+            )
+        ):
+            ir.async_delete_issue(
+                self.hass,
+                DOMAIN,
+                "old_raw_captures",
+            )
+            return
+
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            "old_raw_captures",
+            is_fixable=True,
+            is_persistent=True,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="old_raw_captures",
+            translation_placeholders={
+                "count": str(len(old_files)),
+                "size": f"{total_size_mb:.1f}",
+                "days": str(CAPTURE_RETENTION_DAYS),
+            },
+        )
+
+    def _analyze_capture_files(
+        self,
+    ) -> tuple[int, float, list[Path]]:
+
+        capture_dir = Path(
+            self.hass.config.path(RAW_CAPTURE_DIR)
+        )
+
+        if not capture_dir.exists():
+            return 0, 0.0, []
+
+        files = list(
+            capture_dir.glob("*.jsonl")
+        )
+
+        total_size_mb = (
+            sum(f.stat().st_size for f in files)
+            / 1024
+            / 1024
+        )
+
+        cutoff = datetime.now() - timedelta(
+            days=CAPTURE_RETENTION_DAYS
+        )
+
+        old_files = [
+            f
+            for f in files
+            if datetime.fromtimestamp(
+                f.stat().st_mtime
+            ) < cutoff
+        ]
+
+        return (
+            len(files),
+            total_size_mb,
+            old_files,
         )

@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Vanhoja raw capture -tiedostoja löytyi",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Poista vanhat raw capture -tiedostot",
+            "description": "{count} raw capture -tiedostoa on yli {days} päivää vanhoja ja ne käyttävät noin {size} Mt levytilaa.\n\nJos jatkat, nämä tiedostot poistetaan pysyvästi."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Sähkömittaria ei vielä tueta",
-      "description": "Yli puolta laitteelta {device} vastaanotetuista viesteistä ei voitu tulkita. Raw capture otettiin siksi automaattisesti käyttöön, ja diagnostiikkatietoja kerätään nyt.\n\nVoit auttaa lisäämään tuen tälle mittarille luomalla GitHub-ongelman ja liittämällä mukaan raw capture -tiedoston. Lähetettyjä capture-tiedostoja käytetään mittarituen parantamiseen, ja ne lisätään automaattiseen testijoukkoon tulevien regressioiden ehkäisemiseksi.\n\nAnna capture-tiedoston kerätä tietoja jonkin aikaa ennen sen lataamista.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Lopeta tuntemattoman mittarin tiedonkeruu",
+            "description": "Yli puolta laitteelta {device} vastaanotetuista viesteistä ei voitu tulkita. Raw capture otettiin siksi automaattisesti käyttöön, ja diagnostiikkatietoja kerätään nyt.\n\nVoit auttaa lisäämään tuen tälle mittarille luomalla GitHub-ongelman ja liittämällä mukaan raw capture -tiedoston. Lähetettyjä capture-tiedostoja käytetään mittarituen parantamiseen, ja ne lisätään automaattiseen testijoukkoon tulevien regressioiden ehkäisemiseksi.\n\nAnna capture-tiedoston kerätä tietoja jonkin aikaa ennen sen lataamista.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n[Lataa raw capture]({download_url}) | [Dokumentaatio]({documentation_url}) | [Luo GitHub-ongelma]({issue_url})\n\nVarmista ensin, että olet ladannut uusimman raw capture -tiedoston ja luonut GitHub-ongelman.\n\nKun vahvistat, tiedonkeruu lopetetaan ja paikallinen capture-tiedosto poistetaan pysyvästi."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw capture saatavilla",
-      "description": "Laitteelle {device} kerätään raw capture -tiedostoa, jonka voi ladata alla olevasta linkistä. Tiedostoa päivitetään uusilla viesteillä niin kauan kuin keräys on käynnissä.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Viimeistele mittarin tiedonkeruu",
+            "description": "Laitteelle {device} kerätään raw capture -tiedostoa, jonka voi ladata alla olevasta linkistä. Tiedostoa päivitetään uusilla viesteillä niin kauan kuin keräys on käynnissä.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nVarmista ensin, että olet ladannut uusimman raw capture -tiedoston ja luonut GitHub-ongelman.\n\nKun vahvistat, tiedonkeruu lopetetaan ja paikallinen capture-tiedosto poistetaan pysyvästi."
+          }
+        }
+      }
     }
   }
 }
