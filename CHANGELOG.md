@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.6] - Future release
+## [0.4.6]
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### Breaking Changes
