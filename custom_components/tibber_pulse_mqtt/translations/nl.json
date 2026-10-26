@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Oude raw capture-bestanden gevonden",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Oude raw capture-bestanden verwijderen",
+            "description": "{count} raw capture-bestanden zijn ouder dan {days} dagen en gebruiken ongeveer {size} MB schijfruimte.\n\nAls u doorgaat, worden deze bestanden permanent verwijderd."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Elektriciteitsmeter wordt nog niet ondersteund",
-      "description": "Meer dan de helft van de ontvangen berichten van {device} kon niet worden gedecodeerd. Raw capture is daarom automatisch ingeschakeld en er worden nu diagnostische gegevens verzameld.\n\nU kunt helpen ondersteuning voor deze meter toe te voegen door een GitHub-issue aan te maken en het raw capture-bestand bij te voegen. Ingestuurde captures worden gebruikt om de ondersteuning voor meters te verbeteren en worden toegevoegd aan de geautomatiseerde testset om toekomstige regressies te helpen voorkomen.\n\nLaat het capturebestand enige tijd gegevens verzamelen voordat u het downloadt.\n\nOpmerking: als het downloaden niet start wanneer u op de link klikt, klik dan met de rechtermuisknop op de link en kies 'Link opslaan als...' of 'Link openen in nieuw tabblad'.\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Verzameling voor niet-ondersteunde meter afronden",
+            "description": "Meer dan de helft van de ontvangen berichten van {device} kon niet worden gedecodeerd. Raw capture is daarom automatisch ingeschakeld en er worden nu diagnostische gegevens verzameld.\n\nU kunt helpen ondersteuning voor deze meter toe te voegen door een GitHub-issue aan te maken en het raw capture-bestand bij te voegen. Ingestuurde captures worden gebruikt om de ondersteuning voor meters te verbeteren en worden toegevoegd aan de geautomatiseerde testset om toekomstige regressies te helpen voorkomen.\n\nLaat het capturebestand enige tijd gegevens verzamelen voordat u het downloadt.\n\nOpmerking: als het downloaden niet start wanneer u op de link klikt, klik dan met de rechtermuisknop op de link en kies 'Link opslaan als...' of 'Link openen in nieuw tabblad'.\n\n[Download raw capture]({download_url}) | [Documentatie]({documentation_url}) | [GitHub-issue aanmaken]({issue_url})\n\nControleer eerst of u het meest recente raw capture-bestand hebt gedownload en een GitHub-issue hebt aangemaakt.\n\nWanneer u bevestigt, wordt de verzameling gestopt en wordt het lokale capture-bestand permanent verwijderd."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw capture beschikbaar",
-      "description": "Er wordt een raw capture verzameld voor {device} en deze kan via onderstaande link worden gedownload. Het bestand wordt tijdens het verzamelen voortdurend bijgewerkt met nieuwe berichten.\n\nOpmerking: als het downloaden niet start wanneer u op de link klikt, klik dan met de rechtermuisknop op de link en kies 'Link opslaan als...' of 'Link openen in nieuw tabblad'.\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Meterverzameling afronden",
+            "description": "Er wordt een raw capture verzameld voor {device} en deze kan via onderstaande link worden gedownload. Het bestand wordt tijdens het verzamelen voortdurend bijgewerkt met nieuwe berichten.\n\nOpmerking: als het downloaden niet start wanneer u op de link klikt, klik dan met de rechtermuisknop op de link en kies 'Link opslaan als...' of 'Link openen in nieuw tabblad'.\n\n{download_url} | {documentation_url} | {issue_url}\n\nControleer eerst of u het meest recente raw capture-bestand hebt gedownload en een GitHub-issue hebt aangemaakt.\n\nWanneer u bevestigt, wordt de verzameling gestopt en wordt het lokale capture-bestand permanent verwijderd."
+          }
+        }
+      }
     }
   }
 }

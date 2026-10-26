@@ -17,7 +17,7 @@ except ImportError:
     def callback(func):
         return func
 
-from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS, CONF_SAVE_RAW_DATA
+from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS
 
 try:
     from .protobuf import pulse_pb2
@@ -42,14 +42,6 @@ from homeassistant.loader import async_get_integration
 
 _LOGGER = logging.getLogger(__name__)
 
-MIN_DECODE_SAMPLES = 5
-MAX_FAILED_RATIO = 0.50
-DOCS_URL = "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data"
-ISSUE_URL = "https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/issues/new"
-RAW_CAPTURE_DIR = "www/tibber_pulse_mqtt/raw"
-RAW_CAPTURE_URL = "/local/tibber_pulse_mqtt/raw"
-
-
 class TibberDispatcher:
     """Receives MQTT payloads, decodes Tibber Pulse messages and pushes OBIS to SensorManager."""
 
@@ -65,6 +57,7 @@ class TibberDispatcher:
         self._pending_by_topic: Dict[str, list] = {}
         self._meter_id: Dict[str, str] = {}
 
+        # RawCaptureManager
         self._capture_manager = RawCaptureManager(
             hass,
             entry,
@@ -88,6 +81,11 @@ class TibberDispatcher:
         di_cfg = dict(self.cfg)
         di_cfg["log_missed_base64"] = bool(self.cfg.get(CONF_LOG_MISSED_BASE64, False))
         self._diag = DiagnosticsRegistry(_LOGGER, di_cfg, self.debug)
+
+    @property
+    def capture_manager(self) -> RawCaptureManager:
+        """Return raw capture manager."""
+        return self._capture_manager
 
     # ----------------------------- Lifecycle -----------------------------------
 

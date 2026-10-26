@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Gamle raw capture-filer funnet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Slett gamle raw capture-filer",
+            "description": "{count} raw capture-filer er eldre enn {days} dager og bruker omtrent {size} MB diskplass.\n\nHvis du fortsetter, vil disse filene bli permanent slettet."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Strømmåleren støttes ikke ennå",
-      "description": "Mer enn halvparten av meldingene mottatt fra {device} kunne ikke tolkes. Raw capture ble derfor aktivert automatisk, og diagnostikkdata samles nå inn.\n\nDu kan hjelpe til med å legge til støtte for denne måleren ved å opprette en GitHub-sak og legge ved raw capture-filen. Innsendte captures brukes til å forbedre støtten for strømmålere og legges til i den automatiserte testpakken for å bidra til å forhindre fremtidige regresjoner.\n\nLa gjerne capture-filen samle inn data en stund før du laster den ned.\n\nMerk: Hvis nedlastingen ikke starter når du klikker på lenken, høyreklikk på lenken og velg «Lagre lenke som ...» eller «Åpne lenke i ny fane».\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Avslutt innsamling for ikke-støttet måler",
+            "description": "Mer enn halvparten av meldingene mottatt fra {device} kunne ikke tolkes. Raw capture ble derfor aktivert automatisk, og diagnostikkdata samles nå inn.\n\nDu kan hjelpe til med å legge til støtte for denne måleren ved å opprette en GitHub-sak og legge ved raw capture-filen. Innsendte captures brukes til å forbedre støtten for strømmålere og legges til i den automatiserte testpakken for å bidra til å forhindre fremtidige regresjoner.\n\nLa gjerne capture-filen samle inn data en stund før du laster den ned.\n\nMerk: Hvis nedlastingen ikke starter når du klikker på lenken, høyreklikk på lenken og velg «Lagre lenke som ...» eller «Åpne lenke i ny fane».\n\n[Last ned raw capture]({download_url}) | [Dokumentasjon]({documentation_url}) | [Opprett GitHub-sak]({issue_url})\n\nKontroller først at du har lastet ned den nyeste raw capture-filen og opprettet en GitHub-sak.\n\nNår du bekrefter, stoppes innsamlingen og den lokale capture-filen slettes permanent."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw capture tilgjengelig",
-      "description": "En raw capture for {device} samles inn og kan lastes ned via lenken nedenfor. Filen vil fortsette å bli oppdatert med nye meldinger mens innsamlingen pågår.\n\nMerk: Hvis nedlastingen ikke starter når du klikker på lenken, høyreklikk på lenken og velg «Lagre lenke som ...» eller «Åpne lenke i ny fane».\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Fullfør innsamling fra måler",
+            "description": "En raw capture for {device} samles inn og kan lastes ned via lenken nedenfor. Filen vil fortsette å bli oppdatert med nye meldinger mens innsamlingen pågår.\n\nMerk: Hvis nedlastingen ikke starter når du klikker på lenken, høyreklikk på lenken og velg «Lagre lenke som ...» eller «Åpne lenke i ny fane».\n\n{download_url} | {documentation_url} | {issue_url}\n\nKontroller først at du har lastet ned den nyeste raw capture-filen og opprettet en GitHub-sak.\n\nNår du bekrefter, stoppes innsamlingen og den lokale capture-filen slettes permanent."
+          }
+        }
+      }
     }
   }
 }

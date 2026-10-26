@@ -187,13 +187,38 @@
     }
   },
   "issues": {
+    "old_raw_captures": {
+      "title": "Alte Raw-Capture-Dateien gefunden",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Alte Raw-Captures löschen",
+            "description": "{count} Raw-Capture-Dateien sind älter als {days} Tage und belegen etwa {size} MB Speicherplatz.\n\nWenn Sie fortfahren, werden diese Dateien dauerhaft gelöscht."
+          }
+        }
+      }
+    },
     "unsupported_meter": {
       "title": "Stromzähler wird noch nicht unterstützt",
-      "description": "Mehr als die Hälfte der von {device} empfangenen Nachrichten konnte nicht dekodiert werden. Raw Capture wurde daher automatisch aktiviert und Diagnosedaten werden nun gesammelt.\n\nSie können helfen, Unterstützung für diesen Zähler hinzuzufügen, indem Sie ein GitHub-Issue erstellen und die Raw-Capture-Datei anhängen. Eingesandte Captures werden verwendet, um die Unterstützung für Stromzähler zu verbessern, und in die automatisierte Testsuite aufgenommen, um zukünftige Regressionen zu verhindern.\n\nBitte lassen Sie die Capture-Datei zunächst einige Zeit Daten sammeln, bevor Sie sie herunterladen.\n\nHinweis: Falls der Download beim Anklicken des Links nicht startet, klicken Sie mit der rechten Maustaste auf den Link und wählen Sie „Link speichern unter...“ oder „Link in neuem Tab öffnen“.\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Erfassung für nicht unterstützten Zähler beenden",
+            "description": "Mehr als die Hälfte der von {device} empfangenen Nachrichten konnte nicht dekodiert werden. Raw Capture wurde daher automatisch aktiviert und Diagnosedaten werden nun gesammelt.\n\nSie können helfen, Unterstützung für diesen Zähler hinzuzufügen, indem Sie ein GitHub-Issue erstellen und die Raw-Capture-Datei anhängen. Eingesandte Captures werden verwendet, um die Unterstützung für Stromzähler zu verbessern, und in die automatisierte Testsuite aufgenommen, um zukünftige Regressionen zu verhindern.\n\nBitte lassen Sie die Capture-Datei zunächst einige Zeit Daten sammeln, bevor Sie sie herunterladen.\n\nHinweis: Falls der Download beim Anklicken des Links nicht startet, klicken Sie mit der rechten Maustaste auf den Link und wählen Sie „Link speichern unter...“ oder „Link in neuem Tab öffnen“.\n\n[Raw Capture herunterladen]({download_url}) | [Dokumentation]({documentation_url}) | [GitHub-Issue erstellen]({issue_url})\n\nStellen Sie zunächst sicher, dass Sie die neueste Raw-Capture-Datei heruntergeladen und ein GitHub-Issue erstellt haben.\n\nNach der Bestätigung wird die Erfassung beendet und die lokale Capture-Datei dauerhaft gelöscht."
+          }
+        }
+      }
     },
     "raw_capture_saved": {
       "title": "Raw Capture verfügbar",
-      "description": "Für {device} wird derzeit eine Raw Capture gesammelt und kann über den untenstehenden Link heruntergeladen werden. Die Datei wird während der Erfassung fortlaufend mit neuen Nachrichten aktualisiert.\n\nHinweis: Falls der Download beim Anklicken des Links nicht startet, klicken Sie mit der rechten Maustaste auf den Link und wählen Sie „Link speichern unter...“ oder „Link in neuem Tab öffnen“.\n\n{download_url} | {documentation_url} | {issue_url}"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Zählererfassung abschließen",
+            "description": "Für {device} wird derzeit eine Raw Capture gesammelt und kann über den untenstehenden Link heruntergeladen werden. Die Datei wird während der Erfassung fortlaufend mit neuen Nachrichten aktualisiert.\n\nHinweis: Falls der Download beim Anklicken des Links nicht startet, klicken Sie mit der rechten Maustaste auf den Link und wählen Sie „Link speichern unter...“ oder „Link in neuem Tab öffnen“.\n\n{download_url} | {documentation_url} | {issue_url}\n\nStellen Sie zunächst sicher, dass Sie die neueste Raw-Capture-Datei heruntergeladen und ein GitHub-Issue erstellt haben.\n\nNach der Bestätigung wird die Erfassung beendet und die lokale Capture-Datei dauerhaft gelöscht."
+          }
+        }
+      }
     }
   }
 }

@@ -34,3 +34,10 @@ DEFAULT_PORT = 1883
 DEFAULT_TLS_PORT = 8883
 DEFAULT_TOPIC = "tibber-pulse-+/publish"
 DEFAULT_DEBUG = False
+
+# Constants for raw capture management
+RAW_CAPTURE_DIR = "www/tibber_pulse_mqtt/raw"
+RAW_CAPTURE_API_URL = "/api/tibber_pulse_mqtt/raw_capture"
+CAPTURE_RETENTION_DAYS = 10
+CAPTURE_WARNING_FILES = 5
+CAPTURE_WARNING_SIZE_MB = 25
