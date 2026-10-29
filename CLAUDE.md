@@ -243,9 +243,9 @@ Never base permanent identifiers on MQTT topics or topic suffixes.
 
 ### DeviceInfo
 
-Use Pulse ID as the primary device identifier.
+Pulse ID is the primary device identifier.
 
-When meter serial information is available through OBIS data it may be added as a device connection.
+When available, meter serial information extracted from OBIS data may be exposed as a device attribute but must not replace Pulse ID as the device identifier.
 
 ### Entity Persistence
 
