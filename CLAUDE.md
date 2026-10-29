@@ -48,7 +48,7 @@ Avoid:
 ## Testing Guidelines
 - **Framework:** Always use `pytest` for testing. Prefer fixtures over setup/teardown methods.
 - **Raw Data Capture Tests:** Tests must always be written for raw data captures stored in the `\tests\fixtures\raw` folder through the dispatcher when applicable. This is to preserve support across device types, meters, and firmware versions.
-	-For startup and message-order behavior, test both STATUS-before-data and data-before-STATUS when relevant.
+	- For startup and message-order behavior, test both STATUS-before-data and data-before-STATUS when relevant.
 	- Create reusable test helpers to replay all raw fixtures and simulate message ordering, rather than duplicating fixture-loading and dispatch logic across tests.
 - **Unit Tests:** You may only use unit tests when raw data capture testing is not applicable. Use hard-coded synthetic input only when the behavior under test is independent of the incoming payload data.
 - **Coverage:** Aim for high test coverage on all new business logic.
