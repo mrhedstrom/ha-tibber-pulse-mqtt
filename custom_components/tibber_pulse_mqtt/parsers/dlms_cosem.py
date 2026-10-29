@@ -47,6 +47,10 @@ _IMPLICIT_SCALE: Dict[str, float] = {
 }
 
 _FLAT_UNITS: Dict[str, str] = {
+    "1-0:1.8.0": "Wh",
+    "1-0:2.8.0": "Wh",
+    "1-0:3.8.0": "VArh",
+    "1-0:4.8.0": "VArh",
     "1-0:1.7.0": "W",
     "1-0:2.7.0": "W",
     "1-0:3.7.0": "VAr",

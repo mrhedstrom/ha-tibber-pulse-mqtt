@@ -8,6 +8,7 @@
 - Decode numeric values in two-member DLMS ARRAY records that omit scaler/unit metadata.
 
 ### Fixed
+- Map active and reactive energy units for Kamstrup flat DLMS data so cumulative energy sensors keep updating.
 - Preserve the MQTT topic as the device key for forwarded topics and try each nested DLMS frame until one decodes.
 - Keep missed-payload Base64 diagnostics on a single log line.
 
