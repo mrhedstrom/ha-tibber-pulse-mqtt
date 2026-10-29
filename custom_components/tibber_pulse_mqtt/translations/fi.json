@@ -1,207 +1,224 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Tibber Pulse MQTT",
-                "description": "Määritä Tibber Pulse MQTT:n MQTT-asetukset ja vianmääritys.",
-                "data": {
-                    "broker_mode": "MQTT-välityspalvelimen tila",
-                    "subscribe_topic": "MQTT-tilausaihe",
-                    "debug_log_component": "Ota komponentin debug-loki käyttöön",
-                    "log_missed_base64": "Kirjaa puuttuvat payloadit (Base64)",
-                    "log_obis": "Näytä OBIS-koodit lokissa",
-                    "save_raw_data": "Tallenna anonymisoidut MQTT-raakatiedot jaettavaksi"
-                },
-                "data_description": {
-                    "debug_log_component": "Ottaa käyttöön integraation debug-tasoisen lokituksen.",
-                    "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
-                    "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
-                    "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 MQTT-viestiä yhteensä, STATUS-viestit mukaan lukien. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
-                }
-            },
-            "external_broker": {
-                "title": "Ulkoinen MQTT-välityspalvelin",
-                "description": "Syötä ulkoisen MQTT-välityspalvelimen yhteystiedot.",
-                "data": {
-                    "host": "MQTT-isäntä",
-                    "port": "MQTT-portti",
-                    "username": "Käyttäjänimi",
-                    "password": "Salasana",
-                    "client_id": "Client ID",
-                    "tls": "Käytä TLS:ää"
-                }
-            },
-            "external_tls": {
-                "title": "Ulkoinen MQTT TLS",
-                "description": "Määritä TLS-asetukset ulkoiselle välityspalvelimelle.",
-                "data": {
-                    "cafile": "CA-tiedoston polku",
-                    "certfile": "Asiakassertifikaatin polku",
-                    "keyfile": "Asiakasavaimen polku",
-                    "tls_version": "TLS-versio",
-                    "tls_insecure": "Salli epävarma TLS (ohita varmenne)"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Määritä Tibber Pulse MQTT:n MQTT-asetukset ja vianmääritys.",
+        "data": {
+          "broker_mode": "MQTT-välityspalvelimen tila",
+          "subscribe_topic": "MQTT-tilausaihe",
+          "debug_log_component": "Ota komponentin debug-loki käyttöön",
+          "log_missed_base64": "Kirjaa puuttuvat payloadit (Base64)",
+          "log_obis": "Näytä OBIS-koodit lokissa",
+          "save_raw_data": "Tallenna anonymisoidut MQTT-raakatiedot jaettavaksi"
+        },
+        "data_description": {
+          "debug_log_component": "Ottaa käyttöön integraation debug-tasoisen lokituksen.",
+          "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
+          "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
+          "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 MQTT-viestiä yhteensä, STATUS-viestit mukaan lukien. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
         }
-    },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Tibber Pulse MQTT - Asetukset",
-                "description": "Muokkaa MQTT- ja vianmääritysvaihtoehtoja.",
-                "data": {
-                    "broker_mode": "MQTT-välityspalvelimen tila",
-                    "subscribe_topic": "MQTT-tilausaihe",
-                    "debug_log_component": "Ota komponentin debug-loki käyttöön",
-                    "log_missed_base64": "Kirjaa puuttuvat payloadit (Base64)",
-                    "log_obis": "Näytä OBIS-koodit lokissa",
-                    "save_raw_data": "Tallenna anonymisoidut MQTT-raakatiedot jaettavaksi"
-                },
-                "data_description": {
-                    "debug_log_component": "Ottaa käyttöön integraation debug-tasoisen lokituksen.",
-                    "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
-                    "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
-                    "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 MQTT-viestiä yhteensä, STATUS-viestit mukaan lukien. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
-                }
-            },
-            "external_broker_options": {
-                "title": "Ulkoinen MQTT-välityspalvelin – Asetukset",
-                "description": "Muokkaa ulkoisen MQTT-välityspalvelimen yhteystietoja.",
-                "data": {
-                    "host": "MQTT-isäntä",
-                    "port": "MQTT-portti",
-                    "username": "Käyttäjänimi",
-                    "password": "Salasana",
-                    "client_id": "Client ID",
-                    "tls": "Käytä TLS:ää"
-                }
-            },
-            "external_tls_options": {
-                "title": "Ulkoinen MQTT TLS – Asetukset",
-                "description": "Muokkaa ulkoisen välityspalvelimen TLS-asetuksia.",
-                "data": {
-                    "cafile": "CA-tiedoston polku",
-                    "certfile": "Asiakassertifikaatin polku",
-                    "keyfile": "Asiakasavaimen polku",
-                    "tls_version": "TLS-versio",
-                    "tls_insecure": "Salli epävarma TLS (ohita varmenne)"
-                }
-            }
+      },
+      "external_broker": {
+        "title": "Ulkoinen MQTT-välityspalvelin",
+        "description": "Syötä ulkoisen MQTT-välityspalvelimen yhteystiedot.",
+        "data": {
+          "host": "MQTT-isäntä",
+          "port": "MQTT-portti",
+          "username": "Käyttäjänimi",
+          "password": "Salasana",
+          "client_id": "Client ID",
+          "tls": "Käytä TLS:ää"
         }
-    },
-    "entity": {
-        "sensor": {
-            "1-0_1_8_0": {
-                "name": "Kokonaisenergiantuonti"
-            },
-            "1-0_1_8_1": {
-                "name": "Energiantuonti (T1)"
-            },
-            "1-0_1_8_2": {
-                "name": "Energiantuonti (T2)"
-            },
-            "1-0_2_8_0": {
-                "name": "Kokonaisenergia­vienti"
-            },
-            "1-0_2_8_1": {
-                "name": "Energiavienti (T1)"
-            },
-            "1-0_2_8_2": {
-                "name": "Energiavienti (T2)"
-            },
-            "1-0_1_7_0": {
-                "name": "Aktiiviteho (kokonais)"
-            },
-            "1-0_2_7_0": {
-                "name": "Aktiiviteho ulos (kokonais)"
-            },
-            "1-0_21_7_0": {
-                "name": "Aktiiviteho L1"
-            },
-            "1-0_22_7_0": {
-                "name": "Aktiiviteho ulos L1"
-            },
-            "1-0_41_7_0": {
-                "name": "Aktiiviteho L2"
-            },
-            "1-0_42_7_0": {
-                "name": "Aktiiviteho ulos L2"
-            },
-            "1-0_61_7_0": {
-                "name": "Aktiiviteho L3"
-            },
-            "1-0_62_7_0": {
-                "name": "Aktiiviteho ulos L3"
-            },
-            "1-0_32_7_0": {
-                "name": "Jännite L1"
-            },
-            "1-0_52_7_0": {
-                "name": "Jännite L2"
-            },
-            "1-0_72_7_0": {
-                "name": "Jännite L3"
-            },
-            "1-0_31_7_0": {
-                "name": "Virta L1"
-            },
-            "1-0_51_7_0": {
-                "name": "Virta L2"
-            },
-            "1-0_71_7_0": {
-                "name": "Virta L3"
-            },
-            "1-0_14_7_0": {
-                "name": "Verkkotaajuus"
-            },
-            "0-0_1_0_0": {
-                "name": "Päivämäärä/Aika"
-            },
-            "0-0_96_1_0": {
-                "name": "Sarjanumero"
-            },
-            "0-0_96_1_1": {
-                "name": "Mittari-ID"
-            },
-            "0-0_42_0_0": {
-                "name": "Vaihtoehtoinen ID"
-            },
-            "0-0_96_13_0": {
-                "name": "Viesti"
-            },
-            "0-0_96_13_1": {
-                "name": "Viestikoodi"
-            },
-            "1-0_3_8_0": {
-                "name": "Loisenergian tuonti"
-            },
-            "1-0_4_8_0": {
-                "name": "Loisenergian vienti"
-            },
-            "1-0_3_7_0": {
-                "name": "Loisteho (sisään)"
-            },
-            "1-0_4_7_0": {
-                "name": "Loisteho (ulos)"
-            },
-            "1-0_23_7_0": {
-                "name": "Loisteho L1 (sisään)"
-            },
-            "1-0_24_7_0": {
-                "name": "Loisteho L1 (ulos)"
-            },
-            "1-0_43_7_0": {
-                "name": "Loisteho L2 (sisään)"
-            },
-            "1-0_44_7_0": {
-                "name": "Loisteho L2 (ulos)"
-            },
-            "1-0_63_7_0": {
-                "name": "Loisteho L3 (sisään)"
-            },
-            "1-0_64_7_0": {
-                "name": "Loisteho L3 (ulos)"
-            }
+      },
+      "external_tls": {
+        "title": "Ulkoinen MQTT TLS",
+        "description": "Määritä TLS-asetukset ulkoiselle välityspalvelimelle.",
+        "data": {
+          "cafile": "CA-tiedoston polku",
+          "certfile": "Asiakassertifikaatin polku",
+          "keyfile": "Asiakasavaimen polku",
+          "tls_version": "TLS-versio",
+          "tls_insecure": "Salli epävarma TLS (ohita varmenne)"
         }
+      }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Asetukset",
+        "description": "Muokkaa MQTT- ja vianmääritysvaihtoehtoja.",
+        "data": {
+          "broker_mode": "MQTT-välityspalvelimen tila",
+          "subscribe_topic": "MQTT-tilausaihe",
+          "debug_log_component": "Ota komponentin debug-loki käyttöön",
+          "log_missed_base64": "Kirjaa puuttuvat payloadit (Base64)",
+          "log_obis": "Näytä OBIS-koodit lokissa",
+          "save_raw_data": "Tallenna anonymisoidut MQTT-raakatiedot jaettavaksi"
+        },
+        "data_description": {
+          "debug_log_component": "Ottaa käyttöön integraation debug-tasoisen lokituksen.",
+          "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
+          "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
+          "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 MQTT-viestiä yhteensä, STATUS-viestit mukaan lukien. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
+        }
+      },
+      "external_broker_options": {
+        "title": "Ulkoinen MQTT-välityspalvelin – Asetukset",
+        "description": "Muokkaa ulkoisen MQTT-välityspalvelimen yhteystietoja.",
+        "data": {
+          "host": "MQTT-isäntä",
+          "port": "MQTT-portti",
+          "username": "Käyttäjänimi",
+          "password": "Salasana",
+          "client_id": "Client ID",
+          "tls": "Käytä TLS:ää"
+        }
+      },
+      "external_tls_options": {
+        "title": "Ulkoinen MQTT TLS – Asetukset",
+        "description": "Muokkaa ulkoisen välityspalvelimen TLS-asetuksia.",
+        "data": {
+          "cafile": "CA-tiedoston polku",
+          "certfile": "Asiakassertifikaatin polku",
+          "keyfile": "Asiakasavaimen polku",
+          "tls_version": "TLS-versio",
+          "tls_insecure": "Salli epävarma TLS (ohita varmenne)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "1-0_1_8_0": {
+        "name": "Kokonaisenergiantuonti"
+      },
+      "1-0_1_8_1": {
+        "name": "Energiantuonti (T1)"
+      },
+      "1-0_1_8_2": {
+        "name": "Energiantuonti (T2)"
+      },
+      "1-0_2_8_0": {
+        "name": "Kokonaisenergia­vienti"
+      },
+      "1-0_2_8_1": {
+        "name": "Energiavienti (T1)"
+      },
+      "1-0_2_8_2": {
+        "name": "Energiavienti (T2)"
+      },
+      "1-0_1_7_0": {
+        "name": "Aktiiviteho (kokonais)"
+      },
+      "1-0_2_7_0": {
+        "name": "Aktiiviteho ulos (kokonais)"
+      },
+      "1-0_21_7_0": {
+        "name": "Aktiiviteho L1"
+      },
+      "1-0_22_7_0": {
+        "name": "Aktiiviteho ulos L1"
+      },
+      "1-0_41_7_0": {
+        "name": "Aktiiviteho L2"
+      },
+      "1-0_42_7_0": {
+        "name": "Aktiiviteho ulos L2"
+      },
+      "1-0_61_7_0": {
+        "name": "Aktiiviteho L3"
+      },
+      "1-0_62_7_0": {
+        "name": "Aktiiviteho ulos L3"
+      },
+      "1-0_32_7_0": {
+        "name": "Jännite L1"
+      },
+      "1-0_52_7_0": {
+        "name": "Jännite L2"
+      },
+      "1-0_72_7_0": {
+        "name": "Jännite L3"
+      },
+      "1-0_31_7_0": {
+        "name": "Virta L1"
+      },
+      "1-0_51_7_0": {
+        "name": "Virta L2"
+      },
+      "1-0_71_7_0": {
+        "name": "Virta L3"
+      },
+      "1-0_14_7_0": {
+        "name": "Verkkotaajuus"
+      },
+      "1-0_3_8_0": {
+        "name": "Loisenergian tuonti"
+      },
+      "1-0_4_8_0": {
+        "name": "Loisenergian vienti"
+      },
+      "1-0_3_7_0": {
+        "name": "Loisteho (sisään)"
+      },
+      "1-0_4_7_0": {
+        "name": "Loisteho (ulos)"
+      },
+      "1-0_23_7_0": {
+        "name": "Loisteho L1 (sisään)"
+      },
+      "1-0_24_7_0": {
+        "name": "Loisteho L1 (ulos)"
+      },
+      "1-0_43_7_0": {
+        "name": "Loisteho L2 (sisään)"
+      },
+      "1-0_44_7_0": {
+        "name": "Loisteho L2 (ulos)"
+      },
+      "1-0_63_7_0": {
+        "name": "Loisteho L3 (sisään)"
+      },
+      "1-0_64_7_0": {
+        "name": "Loisteho L3 (ulos)"
+      }
+    }
+  },
+  "issues": {
+    "old_raw_captures": {
+      "title": "Vanhoja raw capture -tiedostoja löytyi",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Poista vanhat raw capture -tiedostot",
+            "description": "{count} raw capture -tiedostoa on yli {days} päivää vanhoja ja ne käyttävät noin {size} Mt levytilaa.\n\nJos jatkat, nämä tiedostot poistetaan pysyvästi."
+          }
+        }
+      }
+    },
+    "unsupported_meter": {
+      "title": "Sähkömittaria ei vielä tueta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Lopeta tuntemattoman mittarin tiedonkeruu",
+            "description": "Yli puolta laitteelta {device} vastaanotetuista viesteistä ei voitu tulkita. Raw capture otettiin siksi automaattisesti käyttöön, ja diagnostiikkatietoja kerätään nyt.\n\nVoit auttaa lisäämään tuen tälle mittarille luomalla GitHub-ongelman ja liittämällä mukaan raw capture -tiedoston. Lähetettyjä capture-tiedostoja käytetään mittarituen parantamiseen, ja ne lisätään automaattiseen testijoukkoon tulevien regressioiden ehkäisemiseksi.\n\nAnna capture-tiedoston kerätä tietoja jonkin aikaa ennen sen lataamista.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n[Lataa raw capture]({download_url}) | [Dokumentaatio]({documentation_url}) | [Luo GitHub-ongelma]({issue_url})\n\nVarmista ensin, että olet ladannut uusimman raw capture -tiedoston ja luonut GitHub-ongelman.\n\nKun vahvistat, tiedonkeruu lopetetaan ja paikallinen capture-tiedosto poistetaan pysyvästi."
+          }
+        }
+      }
+    },
+    "raw_capture_saved": {
+      "title": "Raw capture saatavilla",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Viimeistele mittarin tiedonkeruu",
+            "description": "Laitteelle {device} kerätään raw capture -tiedostoa, jonka voi ladata alla olevasta linkistä. Tiedostoa päivitetään uusilla viesteillä niin kauan kuin keräys on käynnissä.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nVarmista ensin, että olet ladannut uusimman raw capture -tiedoston ja luonut GitHub-ongelman.\n\nKun vahvistat, tiedonkeruu lopetetaan ja paikallinen capture-tiedosto poistetaan pysyvästi."
+          }
+        }
+      }
+    }
+  }
 }

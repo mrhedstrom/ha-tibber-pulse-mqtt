@@ -1,4 +1,5 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
 
 # Common DSMR/OBIS subset. Extend as needed.
 obis_meta = {
@@ -48,11 +49,13 @@ obis_meta = {
     "1-0:14.7.0": {"unit": "Hz", "state_class": SensorStateClass.MEASUREMENT, "display_precision": 0},
 
     # Identifiers & time
-    "0-0:1.0.0": {},         # Date/time
-    "0-0:96.1.0": {},        # Serial
-    "0-0:96.1.1": {},        # Meter ID
-    "0-0:96.1.7": {},        # Meter type (e.g. Kamstrup MA304H3E)
-    "0-0:42.0.0": {},        # Alt ID
-    "0-0:96.13.0": {},       # Message text
-    "0-0:96.13.1": {},       # Message code
+    "0-0:1.0.0": {"attribute_only": True, "attribute_name": "meter_datetime",},
+    "0-0:96.1.0": {"attribute_only": True, "attribute_name": "meter_serial",},
+    "0-0:96.1.1": {"attribute_only": True, "attribute_name": "meter_id",},
+    "0-0:96.1.7": {"attribute_only": True, "attribute_name": "meter_type",},
+    "0-0:42.0.0": {"attribute_only": True, "attribute_name": "alt_id",},
+
+    # Messages
+    "0-0:96.13.0": {},  # Message text
+    "0-0:96.13.1": {},  # Message code
 }

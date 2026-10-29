@@ -103,9 +103,12 @@ class SensorManager:
         # Meter serial (0-0:96.1.1) per device (pulse_id)
         self._meter_ids: Dict[str, str] = {}
 
+        self._device_attributes: Dict[str, Dict[str, Any]] = {}
+
         # Creation guard (prevents duplicate creation in races)
         self._creating: set[str] = set()
         self._create_lock = asyncio.Lock()
+
 
     def set_obis_units(self, units_map: dict[str, str] | None):
         """Set last-seen raw unit mapping per OBIS code (used for conversion)."""
@@ -126,6 +129,21 @@ class SensorManager:
         unique_id = f"tibber_{dev_id}_{obis_code.replace(':','_').replace('.','_')}"
         raw_unit = self._obis_units.get(obis_code) if hasattr(self, "_obis_units") else None
 
+        meta = _metadata_for_obis(obis_code)
+
+        if meta.get("attribute_only"):
+            attr_name = meta.get(
+                "attribute_name",
+                obis_code.replace(":", "_").replace(".", "_"),
+            )
+
+            self.update_device_attribute(
+                dev_id,
+                attr_name,
+                value,
+            )
+            return
+
         # Entity Registry lookup
         reg = er.async_get(self.hass)
         er_entry_entity_id = reg.async_get_entity_id("sensor", DOMAIN, unique_id)
@@ -134,7 +152,7 @@ class SensorManager:
         ent = self._entities.get(unique_id)
 
         # Target unit from entity meta or OBIS database
-        target_unit = ent.meta.get("unit") if ent else _metadata_for_obis(obis_code).get("unit")
+        target_unit = ent.meta.get("unit") if ent else meta.get("unit")
 
         # Ignore values until the unit is known (prevents unscaled Wh vs kWh jumps)
         if target_unit and not raw_unit:
@@ -147,7 +165,6 @@ class SensorManager:
 
         # If entity exists in registry but not in runtime, recreate it
         if ent is None and er_entry_entity_id:
-            meta = _metadata_for_obis(obis_code)
             ent = TibberSensor(
                 unique_id=unique_id,
                 dev_id=dev_id,
@@ -203,6 +220,20 @@ class SensorManager:
         ent.set_status(status or {})
         ent.set_state(scaled_value)
 
+    def update_device_attribute(
+        self,
+        dev_id: str,
+        attr_name: str,
+        value: Any,
+    ):
+        """Store a device-level attribute and propagate it to all entities."""
+        attrs = self._device_attributes.setdefault(dev_id, {})
+        attrs[attr_name] = value
+
+        for ent in self._entities.values():
+            if getattr(ent, "_dev_id", None) == dev_id:
+                ent.set_device_attributes(attrs)
+
     def update_status_for_device(self, dev_id: str, status: Dict[str, Any]):
         """Propagate status attributes to all entities of the device (dev_id = pulse_id)."""
         for ent in self._entities.values():
@@ -242,6 +273,7 @@ class TibberSensor(SensorEntity):
 
         self._state = None
         self._meter_id = None
+        self._device_attributes = {}
         self._added_to_hass = False
 
         # Target unit from OBIS metadata
@@ -258,6 +290,10 @@ class TibberSensor(SensorEntity):
             self._attr_device_class = self.meta["device_class"]
         if "state_class" in self.meta:
             self._attr_state_class = self.meta["state_class"]
+        if "entity_category" in self.meta:
+            self._attr_entity_category = self.meta["entity_category"]
+        if "entity_registry_enabled_default" in self.meta:
+            self._attr_entity_registry_enabled_default = self.meta["entity_registry_enabled_default"]
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -288,14 +324,32 @@ class TibberSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        """Only expose a constrained set of status fields as entity attributes."""
-        if not self._status:
-            return None
-        allowed = [
-            "hwmodel", "rssi", "ssid", "Build", "Hw", "ID", "IP", "Uptime",
-            "baud", "ntc", "dsmr", "heap"
-        ]
-        return {k: v for k, v in self._status.items() if k in allowed}
+        """Expose status fields and shared OBIS device attributes."""
+        attrs = {}
+
+        if self._status:
+            allowed = [
+                "hwmodel",
+                "rssi",
+                "ssid",
+                "Build",
+                "Hw",
+                "ID",
+                "IP",
+                "Uptime",
+                "baud",
+                "ntc",
+                "dsmr",
+                "heap",
+            ]
+
+            attrs.update(
+                {k: v for k, v in self._status.items() if k in allowed}
+            )
+
+        attrs.update(self._device_attributes)
+
+        return attrs or None
 
     def _schedule_state_write(self):
         """Schedule async_write_ha_state on the HA event loop thread-safely."""
@@ -328,6 +382,13 @@ class TibberSensor(SensorEntity):
         if self.meta.get("state_class") == SensorStateClass.TOTAL_INCREASING:
             return True
         return False
+
+    def set_device_attributes(self, attrs: Dict[str, Any]):
+        """Set shared device-level attributes."""
+        self._device_attributes = attrs or {}
+
+        if getattr(self, "_added_to_hass", False):
+            self._schedule_state_write()
 
     def set_state(self, value: Any):
         """Set internal state; write only after entity is added to HA, on the HA loop."""

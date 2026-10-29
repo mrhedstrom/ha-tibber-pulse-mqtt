@@ -175,7 +175,7 @@ def test_dispatcher_captures_unrecognized_data_messages(tmp_path):
     for payload in raw_payloads:
         dispatcher._process_payload_sync(device_key, topic, payload)
 
-    capture_file = next((tmp_path / "tibber_pulse_mqtt_raw").glob("*.jsonl"))
+    capture_file = next((tmp_path / "www/tibber_pulse_mqtt/raw").glob("*.jsonl"))
     records = [json.loads(line) for line in capture_file.read_text(encoding="utf-8").splitlines()]
     synthetic_id = json.loads(base64.b64decode(records[0]["payload"]))["status"]["ID"]
     assert synthetic_id.startswith("test-")

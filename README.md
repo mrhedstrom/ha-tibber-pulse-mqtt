@@ -288,11 +288,34 @@ Sensitive identifiers are redacted where possible, but you should always review 
 #### Finding and sharing captures
 
 1. Enable **Save sanitized raw MQTT data for sharing** in the integration options.
-2. Wait for data to be collected.
-3. Locate the generated .jsonl file in `<Home Assistant config>/tibber_pulse_mqtt_raw/`. On Home Assistant OS, the usual path is `/config/tibber_pulse_mqtt_raw/`.
-4. Review the file before sharing.
-5. Create a [Raw Capture issue](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/issues/new?assignees=&labels=raw+capture&projects=&template=raw-capture.md) and attach the .jsonl file.
-6. Disable the option to stop capturing.
+2. Wait for a raw capture to be generated.
+3. When a capture file has been saved, a **Repair** will appear in Home Assistant.
+4. Open the Repair and use the provided links to:
+   - Download the generated `.jsonl` file
+   - Read the documentation
+   - Create a pre-filled GitHub issue
+5. Review the capture before sharing.
+6. Create the GitHub issue and attach the downloaded `.jsonl` file.
+7. Disable the option if you no longer wish to collect captures.
+
+#### Capture location
+
+Raw capture files are stored in:
+
+```text
+<Home Assistant config>/www/tibber_pulse_mqtt/raw/
+```
+
+On Home Assistant OS, the usual path is:
+
+```text
+/config/www/tibber_pulse_mqtt/raw/
+```
+
+The files are also exposed through Home Assistant's `/local/` URL so they can be downloaded directly from the Repair.
+
+> [!TIP]
+> If the integration is unable to decode more than 50% of the received messages from a device, raw capture may be enabled automatically. Once enough data has been collected, a Repair will be created with instructions for reporting the unsupported meter and sharing the generated capture.
 
 ## Topics
 By default, this integration subscribes to: `tibber-pulse-+/publish`  

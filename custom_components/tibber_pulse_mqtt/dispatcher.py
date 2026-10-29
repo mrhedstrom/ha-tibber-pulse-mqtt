@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
+from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
 if TYPE_CHECKING:
@@ -15,7 +17,7 @@ except ImportError:
     def callback(func):
         return func
 
-from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS, CONF_SAVE_RAW_DATA
+from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS
 
 try:
     from .protobuf import pulse_pb2
@@ -30,9 +32,15 @@ from .obis.streaming import ObisStreamManager
 from .util.diagnostics import DiagnosticsRegistry
 from .ha.invoke import call_sm_threadsafe, call_sm_on_loop
 from .raw_capture import RawMessageCapture
+from .raw_capture_manager import RawCaptureManager
+
+from urllib.parse import urlencode
+
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.network import get_url
+from homeassistant.loader import async_get_integration
 
 _LOGGER = logging.getLogger(__name__)
-
 
 class TibberDispatcher:
     """Receives MQTT payloads, decodes Tibber Pulse messages and pushes OBIS to SensorManager."""
@@ -42,17 +50,19 @@ class TibberDispatcher:
         self.entry = entry
         self.cfg = {**entry.data, **entry.options}
         self.debug = _LOGGER.isEnabledFor(logging.DEBUG)
-        self._raw_capture = (
-            RawMessageCapture(hass.config.path("tibber_pulse_mqtt_raw"))
-            if self.cfg.get(CONF_SAVE_RAW_DATA, False)
-            else None
-        )
 
         # Device state / mappings
         self._devices: Dict[str, Dict[str, Any]] = {}
         self._topic_to_pulse: Dict[str, str] = {}
         self._pending_by_topic: Dict[str, list] = {}
         self._meter_id: Dict[str, str] = {}
+
+        # RawCaptureManager
+        self._capture_manager = RawCaptureManager(
+            hass,
+            entry,
+            self._devices,
+        )
 
         # Async worker infrastructure
         self._queues: dict[str, asyncio.Queue[tuple[str, str, bytes]]] = {}
@@ -72,11 +82,17 @@ class TibberDispatcher:
         di_cfg["log_missed_base64"] = bool(self.cfg.get(CONF_LOG_MISSED_BASE64, False))
         self._diag = DiagnosticsRegistry(_LOGGER, di_cfg, self.debug)
 
+    @property
+    def capture_manager(self) -> RawCaptureManager:
+        """Return raw capture manager."""
+        return self._capture_manager
+
     # ----------------------------- Lifecycle -----------------------------------
 
     async def async_start(self) -> None:
         """Prepare dispatcher to start receiving work."""
         self._stop_event.clear()
+        await self._capture_manager.async_initialize()
 
     async def async_stop(self) -> None:
         """Cancel and await all workers; drain queues and clear references."""
@@ -193,9 +209,11 @@ class TibberDispatcher:
 
     def _process_payload_sync(self, dev_id: str, topic: str, payload: bytes):
         """Runs in a threadpool. Must use thread-safe hops to call HA loop APIs."""
-        if self._raw_capture:
+
+        capture = self._capture_manager.capture()
+        if capture and self._capture_manager.should_capture(dev_id):
             is_status = payload.startswith(b"{") and b'"status"' in payload
-            self._raw_capture.record(dev_id, topic, payload, is_status=is_status)
+            capture.record(dev_id, topic, payload, is_status=is_status)
 
         # 1) STATUS JSON
         try:
@@ -204,8 +222,8 @@ class TibberDispatcher:
                 d = self._devices.setdefault(dev_id, {"status": {}, "sensors": {}, "has_status": False})
                 obj = json.loads(s)
                 d["status"] = obj.get("status", {}) or {}
-                if self._raw_capture:
-                    self._raw_capture.set_status(dev_id, d["status"], topic, payload)
+                if capture and self._capture_manager.should_capture(dev_id):
+                    capture.set_status(dev_id, d["status"], topic, payload)
 
                 # Extract pulse_id from STATUS
                 pulse_id = str(d["status"].get("ID") or "").strip()
@@ -233,7 +251,7 @@ class TibberDispatcher:
                 if self.debug:
                     _LOGGER.debug("STATUS UPDATE %s", s)
 
-                self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=None, zerr=None)
+                self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=None, zerr=None)
                 return
         except Exception:
             pass
@@ -255,7 +273,7 @@ class TibberDispatcher:
                     obis = parse_dlms(hdlc_frame)
                     if obis:
                         self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                        self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
+                        self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
                         return
             except Exception:
                 pass
@@ -275,7 +293,7 @@ class TibberDispatcher:
                             "multi-chunk decode OK for %s (%d bytes, %d frames)",
                             dev_id, len(multi_text), len(obis_frames)
                         )
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True)
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True)
                     return
 
             if self.debug:
@@ -305,7 +323,7 @@ class TibberDispatcher:
                     obis = parse_obis_text(frame)
                     if obis:
                         self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                        self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=True)
+                        self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=off_used, had_blob=True)
                 return
 
             if self._streams.consume_skip_bump(dev_id):
@@ -314,7 +332,7 @@ class TibberDispatcher:
                     self._diag.maybe_log_payload_as_base64(payload)
                 return
 
-            self._diag.bump(dev_id, False, topic=topic, payload=payload, offset=off_used, had_blob=True)
+            self._bump_decode(dev_id, False, topic=topic, payload=payload, offset=off_used, had_blob=True)
             return
 
         # 2.5) RAW DLMS/COSEM FRAME (not protobuf-wrapped)
@@ -325,7 +343,7 @@ class TibberDispatcher:
                 obis = parse_dlms(payload)
                 if obis:
                     self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
                     if self.debug:
                         _LOGGER.debug("RAW DLMS decoded for %s: %d codes", dev_id, len(obis) - 1)
                     return
@@ -339,7 +357,7 @@ class TibberDispatcher:
                 obis = parse_obis_text(s)
                 if obis:
                     self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                    self._diag.bump(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=False)
                     if self.debug and self.cfg.get(CONF_LOG_OBIS, False):
                         _LOGGER.debug("RAW OBIS:\n%s", s)
                     return
@@ -353,7 +371,18 @@ class TibberDispatcher:
                 self._diag.maybe_log_payload_as_base64(payload)
             return
 
-        self._diag.bump(dev_id, False, topic=topic, payload=payload, offset=None, had_blob=False)
+        self._bump_decode(dev_id, False, topic=topic, payload=payload, offset=None, had_blob=False)
+
+    # ------------------------ Logging and raw captures -------------------------
+
+    def _bump_decode(self, dev_id: str, success: bool, **kwargs: Any) -> None:
+        """Update diagnostics and enable a capture if decoding fails too often."""
+        self._diag.bump(dev_id, success, **kwargs)
+
+        self._capture_manager.record_decode_result(
+            dev_id,
+            success,
+        )
 
     # ------------------------------ Apply to HA --------------------------------
 

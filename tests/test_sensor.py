@@ -21,6 +21,7 @@ from types import SimpleNamespace
 
 import pytest
 from homeassistant.components.sensor import SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
 
 from custom_components.tibber_pulse_mqtt import sensor as sensor_module
 from custom_components.tibber_pulse_mqtt.obis.full_db import obis_meta
@@ -129,8 +130,8 @@ class TestUnitGuard:
 
         async def _run():
             manager = _manager()
-            await manager.add_or_update(DEV, "0-0:96.1.1", "12345678", {})
-            assert manager._entities[f"tibber_{DEV}_0-0_96_1_1"].native_value == "12345678"
+            await manager.add_or_update(DEV, "0-0:96.13.0", "12345678", {})
+            assert manager._entities[f"tibber_{DEV}_0-0_96_13_0"].native_value == "12345678"
 
         asyncio.run(_run())
 
@@ -220,3 +221,94 @@ class TestCumulativeSensor:
         for value in (500.0, 0.0, 350.0, 120.0):
             sensor.set_state(value)
             assert sensor.native_value == value
+
+# ---------------------------------------------------------------------------
+# 4. Attribute-only OBIS values
+# ---------------------------------------------------------------------------
+
+class TestAttributeOnlyObis:
+    @pytest.fixture(autouse=True)
+    def _mock_entity_registry(self, monkeypatch):
+        registry = SimpleNamespace(async_get_entity_id=lambda *args: None)
+        monkeypatch.setattr(sensor_module.er, "async_get", lambda hass: registry)
+        monkeypatch.setattr(
+            sensor_module,
+            "async_generate_entity_id",
+            lambda entity_id_format, name, hass: entity_id_format.format(name),
+        )
+
+    def test_attribute_only_value_creates_no_entity(self):
+        """attribute_only OBIS values should be stored as attributes, not entities."""
+
+        async def _run():
+            manager = _manager()
+
+            await manager.add_or_update(
+                DEV,
+                "0-0:1.0.0",
+                "261023201220W",
+                {},
+            )
+
+            assert manager._entities == {}
+            assert manager._device_attributes[DEV]["meter_datetime"] == "261023201220W"
+
+        asyncio.run(_run())
+
+    def test_attribute_only_values_are_exposed_on_sensor_attributes(self):
+        """Device attributes should be exposed on all entities."""
+
+        async def _run():
+            manager = _manager()
+
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+
+            await manager.add_or_update(
+                DEV,
+                "1-0:1.8.0",
+                100.0,
+                {},
+            )
+
+            await manager.add_or_update(
+                DEV,
+                "0-0:1.0.0",
+                "261023201220W",
+                {},
+            )
+
+            sensor = manager._entities[IMPORT_UID]
+
+            assert (
+                sensor.extra_state_attributes["meter_datetime"]
+                == "261023201220W"
+            )
+
+        asyncio.run(_run())
+
+    def test_multiple_attribute_only_values_are_retained(self):
+        """Multiple device attributes should coexist."""
+
+        async def _run():
+            manager = _manager()
+
+            await manager.add_or_update(
+                DEV,
+                "0-0:96.1.1",
+                "735999999999999999",
+                {},
+            )
+
+            await manager.add_or_update(
+                DEV,
+                "0-0:96.1.7",
+                "Kamstrup MA304H3E",
+                {},
+            )
+
+            attrs = manager._device_attributes[DEV]
+
+            assert attrs["meter_id"] == "735999999999999999"
+            assert attrs["meter_type"] == "Kamstrup MA304H3E"
+
+        asyncio.run(_run())

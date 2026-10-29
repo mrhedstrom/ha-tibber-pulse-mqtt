@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.6] - Future release
+## [0.4.7] - Future Release
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### Added
@@ -14,6 +14,45 @@
 > [!IMPORTANT]
 > **Help keep your meter supported.**
 > Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
+
+## [0.4.6]
+
+### Breaking Changes
+
+- The following OBIS values are now exposed as device attributes instead of sensor entities:
+  - `0-0:1.0.0` (Date/Time)
+  - `0-0:96.1.0` (Serial Number)
+  - `0-0:96.1.1` (Meter ID)
+  - `0-0:96.1.7` (Meter Type)
+  - `0-0:42.0.0` (Alternative ID)
+
+- Existing entities for these OBIS values will become unavailable after upgrading. Users with dashboards, automations, templates, or other references to these entities must update their configuration accordingly.
+
+### New
+
+- Added automatic detection of unsupported meters.
+- Added automatic collection of local diagnostic captures when an unsupported meter is detected.
+- Added Repairs that make it easy to:
+  - Download diagnostic captures
+  - Read documentation
+  - Create a pre-filled GitHub issue from data collected in the diagnostic capture
+  - When repair is marked as fixed, the local diagnostic capture is deleted and raw captures are disabled.
+- Added support for collecting diagnostic captures even from devices that do not provide status messages.
+- Added new repair type to clean up old local diagnostic captures that are no longer needed.
+
+> [!NOTE]
+> Diagnostic data is never shared automatically. Capture files are stored locally in Home Assistant and are only shared if you explicitly choose to download and attach them to a GitHub issue.
+
+### Improvements
+
+- Reduced the number of entities created per device.
+- Reduced unnecessary database growth and history updates caused by date/time, identifier and metadata-only values.
+- Improved the workflow for reporting unsupported meters and sharing diagnostic captures.
+- Diagnostic capture files remain updated while data is being collected, making it easier to gather useful troubleshooting information before submitting a report.
+
+### Fixes
+
+- Fixed downloading of updated diagnostic captures by preventing stale cached files from being served.
 
 ## [0.4.5]
 ### Added

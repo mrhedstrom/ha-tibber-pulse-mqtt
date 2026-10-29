@@ -1,207 +1,224 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Tibber Pulse MQTT",
-                "description": "Konfigurer MQTT og feilsøking for Tibber Pulse MQTT.",
-                "data": {
-                    "broker_mode": "MQTT-meglermodus",
-                    "subscribe_topic": "MQTT subscribe-topic",
-                    "debug_log_component": "Aktiver debug-logging for komponenten",
-                    "log_missed_base64": "Logg manglende payloads (Base64)",
-                    "log_obis": "Vis OBIS-koder i logg",
-                    "save_raw_data": "Lagre anonymiserte rå MQTT-data for deling"
-                },
-                "data_description": {
-                    "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
-                    "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
-                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
-                    "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 MQTT-meldinger totalt, inkludert STATUS. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
-                }
-            },
-            "external_broker": {
-                "title": "Ekstern MQTT-megler",
-                "description": "Oppgi tilkoblingsdetaljer for din eksterne MQTT-megler.",
-                "data": {
-                    "host": "MQTT-vert",
-                    "port": "MQTT-port",
-                    "username": "Brukernavn",
-                    "password": "Passord",
-                    "client_id": "Client ID",
-                    "tls": "Bruk TLS"
-                }
-            },
-            "external_tls": {
-                "title": "Ekstern MQTT TLS",
-                "description": "Konfigurer TLS for ekstern megler.",
-                "data": {
-                    "cafile": "Sti til CA-fil",
-                    "certfile": "Sti til klientsertifikat",
-                    "keyfile": "Sti til klientnøkkel",
-                    "tls_version": "TLS-versjon",
-                    "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tibber Pulse MQTT",
+        "description": "Konfigurer MQTT og feilsøking for Tibber Pulse MQTT.",
+        "data": {
+          "broker_mode": "MQTT-meglermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "debug_log_component": "Aktiver debug-logging for komponenten",
+          "log_missed_base64": "Logg manglende payloads (Base64)",
+          "log_obis": "Vis OBIS-koder i logg",
+          "save_raw_data": "Lagre anonymiserte rå MQTT-data for deling"
+        },
+        "data_description": {
+          "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
+          "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
+          "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
+          "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 MQTT-meldinger totalt, inkludert STATUS. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
         }
-    },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Tibber Pulse MQTT - Alternativer",
-                "description": "Rediger MQTT- og feilsøkingsalternativer.",
-                "data": {
-                    "broker_mode": "MQTT-meglermodus",
-                    "subscribe_topic": "MQTT subscribe-topic",
-                    "debug_log_component": "Aktiver debug-logging for komponenten",
-                    "log_missed_base64": "Logg manglende payloads (Base64)",
-                    "log_obis": "Vis OBIS-koder i logg",
-                    "save_raw_data": "Lagre anonymiserte rå MQTT-data for deling"
-                },
-                "data_description": {
-                    "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
-                    "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
-                    "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
-                    "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 MQTT-meldinger totalt, inkludert STATUS. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
-                }
-            },
-            "external_broker_options": {
-                "title": "Ekstern MQTT-megler - Alternativer",
-                "description": "Rediger tilkoblingsdetaljer for din eksterne MQTT-megler.",
-                "data": {
-                    "host": "MQTT-vert",
-                    "port": "MQTT-port",
-                    "username": "Brukernavn",
-                    "password": "Passord",
-                    "client_id": "Client ID",
-                    "tls": "Bruk TLS"
-                }
-            },
-            "external_tls_options": {
-                "title": "Ekstern MQTT TLS - Alternativer",
-                "description": "Rediger TLS-innstillinger for ekstern megler.",
-                "data": {
-                    "cafile": "Sti til CA-fil",
-                    "certfile": "Sti til klientsertifikat",
-                    "keyfile": "Sti til klientnøkkel",
-                    "tls_version": "TLS-versjon",
-                    "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
-                }
-            }
+      },
+      "external_broker": {
+        "title": "Ekstern MQTT-megler",
+        "description": "Oppgi tilkoblingsdetaljer for din eksterne MQTT-megler.",
+        "data": {
+          "host": "MQTT-vert",
+          "port": "MQTT-port",
+          "username": "Brukernavn",
+          "password": "Passord",
+          "client_id": "Client ID",
+          "tls": "Bruk TLS"
         }
-    },
-    "entity": {
-        "sensor": {
-            "1-0_1_8_0": {
-                "name": "Total energiimport"
-            },
-            "1-0_1_8_1": {
-                "name": "Energiimport (T1)"
-            },
-            "1-0_1_8_2": {
-                "name": "Energiimport (T2)"
-            },
-            "1-0_2_8_0": {
-                "name": "Total energiek eksport"
-            },
-            "1-0_2_8_1": {
-                "name": "Energiek eksport (T1)"
-            },
-            "1-0_2_8_2": {
-                "name": "Energiek eksport (T2)"
-            },
-            "1-0_1_7_0": {
-                "name": "Aktiv effekt (total)"
-            },
-            "1-0_2_7_0": {
-                "name": "Aktiv effekt ut (total)"
-            },
-            "1-0_21_7_0": {
-                "name": "Aktiv effekt L1"
-            },
-            "1-0_22_7_0": {
-                "name": "Aktiv effekt ut L1"
-            },
-            "1-0_41_7_0": {
-                "name": "Aktiv effekt L2"
-            },
-            "1-0_42_7_0": {
-                "name": "Aktiv effekt ut L2"
-            },
-            "1-0_61_7_0": {
-                "name": "Aktiv effekt L3"
-            },
-            "1-0_62_7_0": {
-                "name": "Aktiv effekt ut L3"
-            },
-            "1-0_32_7_0": {
-                "name": "Spenning L1"
-            },
-            "1-0_52_7_0": {
-                "name": "Spenning L2"
-            },
-            "1-0_72_7_0": {
-                "name": "Spenning L3"
-            },
-            "1-0_31_7_0": {
-                "name": "Strøm L1"
-            },
-            "1-0_51_7_0": {
-                "name": "Strøm L2"
-            },
-            "1-0_71_7_0": {
-                "name": "Strøm L3"
-            },
-            "1-0_14_7_0": {
-                "name": "Nettfrekvens"
-            },
-            "0-0_1_0_0": {
-                "name": "Dato/Tid"
-            },
-            "0-0_96_1_0": {
-                "name": "Serienummer"
-            },
-            "0-0_96_1_1": {
-                "name": "Måler-ID"
-            },
-            "0-0_42_0_0": {
-                "name": "Alternativt ID"
-            },
-            "0-0_96_13_0": {
-                "name": "Melding"
-            },
-            "0-0_96_13_1": {
-                "name": "Meldingskode"
-            },
-            "1-0_3_8_0": {
-                "name": "Reaktiv energi import"
-            },
-            "1-0_4_8_0": {
-                "name": "Reaktiv energi eksport"
-            },
-            "1-0_3_7_0": {
-                "name": "Reaktiv effekt (inn)"
-            },
-            "1-0_4_7_0": {
-                "name": "Reaktiv effekt (ut)"
-            },
-            "1-0_23_7_0": {
-                "name": "Reaktiv effekt L1 (inn)"
-            },
-            "1-0_24_7_0": {
-                "name": "Reaktiv effekt L1 (ut)"
-            },
-            "1-0_43_7_0": {
-                "name": "Reaktiv effekt L2 (inn)"
-            },
-            "1-0_44_7_0": {
-                "name": "Reaktiv effekt L2 (ut)"
-            },
-            "1-0_63_7_0": {
-                "name": "Reaktiv effekt L3 (inn)"
-            },
-            "1-0_64_7_0": {
-                "name": "Reaktiv effekt L3 (ut)"
-            }
+      },
+      "external_tls": {
+        "title": "Ekstern MQTT TLS",
+        "description": "Konfigurer TLS for ekstern megler.",
+        "data": {
+          "cafile": "Sti til CA-fil",
+          "certfile": "Sti til klientsertifikat",
+          "keyfile": "Sti til klientnøkkel",
+          "tls_version": "TLS-versjon",
+          "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
         }
+      }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tibber Pulse MQTT - Alternativer",
+        "description": "Rediger MQTT- og feilsøkingsalternativer.",
+        "data": {
+          "broker_mode": "MQTT-meglermodus",
+          "subscribe_topic": "MQTT subscribe-topic",
+          "debug_log_component": "Aktiver debug-logging for komponenten",
+          "log_missed_base64": "Logg manglende payloads (Base64)",
+          "log_obis": "Vis OBIS-koder i logg",
+          "save_raw_data": "Lagre anonymiserte rå MQTT-data for deling"
+        },
+        "data_description": {
+          "debug_log_component": "Slår på debug-loggnivå for denne integrasjonen.",
+          "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
+          "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
+          "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 MQTT-meldinger totalt, inkludert STATUS. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
+        }
+      },
+      "external_broker_options": {
+        "title": "Ekstern MQTT-megler - Alternativer",
+        "description": "Rediger tilkoblingsdetaljer for din eksterne MQTT-megler.",
+        "data": {
+          "host": "MQTT-vert",
+          "port": "MQTT-port",
+          "username": "Brukernavn",
+          "password": "Passord",
+          "client_id": "Client ID",
+          "tls": "Bruk TLS"
+        }
+      },
+      "external_tls_options": {
+        "title": "Ekstern MQTT TLS - Alternativer",
+        "description": "Rediger TLS-innstillinger for ekstern megler.",
+        "data": {
+          "cafile": "Sti til CA-fil",
+          "certfile": "Sti til klientsertifikat",
+          "keyfile": "Sti til klientnøkkel",
+          "tls_version": "TLS-versjon",
+          "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "1-0_1_8_0": {
+        "name": "Total energiimport"
+      },
+      "1-0_1_8_1": {
+        "name": "Energiimport (T1)"
+      },
+      "1-0_1_8_2": {
+        "name": "Energiimport (T2)"
+      },
+      "1-0_2_8_0": {
+        "name": "Total energiek eksport"
+      },
+      "1-0_2_8_1": {
+        "name": "Energiek eksport (T1)"
+      },
+      "1-0_2_8_2": {
+        "name": "Energiek eksport (T2)"
+      },
+      "1-0_1_7_0": {
+        "name": "Aktiv effekt (total)"
+      },
+      "1-0_2_7_0": {
+        "name": "Aktiv effekt ut (total)"
+      },
+      "1-0_21_7_0": {
+        "name": "Aktiv effekt L1"
+      },
+      "1-0_22_7_0": {
+        "name": "Aktiv effekt ut L1"
+      },
+      "1-0_41_7_0": {
+        "name": "Aktiv effekt L2"
+      },
+      "1-0_42_7_0": {
+        "name": "Aktiv effekt ut L2"
+      },
+      "1-0_61_7_0": {
+        "name": "Aktiv effekt L3"
+      },
+      "1-0_62_7_0": {
+        "name": "Aktiv effekt ut L3"
+      },
+      "1-0_32_7_0": {
+        "name": "Spenning L1"
+      },
+      "1-0_52_7_0": {
+        "name": "Spenning L2"
+      },
+      "1-0_72_7_0": {
+        "name": "Spenning L3"
+      },
+      "1-0_31_7_0": {
+        "name": "Strøm L1"
+      },
+      "1-0_51_7_0": {
+        "name": "Strøm L2"
+      },
+      "1-0_71_7_0": {
+        "name": "Strøm L3"
+      },
+      "1-0_14_7_0": {
+        "name": "Nettfrekvens"
+      },
+      "1-0_3_8_0": {
+        "name": "Reaktiv energi import"
+      },
+      "1-0_4_8_0": {
+        "name": "Reaktiv energi eksport"
+      },
+      "1-0_3_7_0": {
+        "name": "Reaktiv effekt (inn)"
+      },
+      "1-0_4_7_0": {
+        "name": "Reaktiv effekt (ut)"
+      },
+      "1-0_23_7_0": {
+        "name": "Reaktiv effekt L1 (inn)"
+      },
+      "1-0_24_7_0": {
+        "name": "Reaktiv effekt L1 (ut)"
+      },
+      "1-0_43_7_0": {
+        "name": "Reaktiv effekt L2 (inn)"
+      },
+      "1-0_44_7_0": {
+        "name": "Reaktiv effekt L2 (ut)"
+      },
+      "1-0_63_7_0": {
+        "name": "Reaktiv effekt L3 (inn)"
+      },
+      "1-0_64_7_0": {
+        "name": "Reaktiv effekt L3 (ut)"
+      }
+    }
+  },
+  "issues": {
+    "old_raw_captures": {
+      "title": "Gamle raw capture-filer funnet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Slett gamle raw capture-filer",
+            "description": "{count} raw capture-filer er eldre enn {days} dager og bruker omtrent {size} MB diskplass.\n\nHvis du fortsetter, vil disse filene bli permanent slettet."
+          }
+        }
+      }
+    },
+    "unsupported_meter": {
+      "title": "Strømmåleren støttes ikke ennå",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Avslutt innsamling for ikke-støttet måler",
+            "description": "Mer enn halvparten av meldingene mottatt fra {device} kunne ikke tolkes. Raw capture ble derfor aktivert automatisk, og diagnostikkdata samles nå inn.\n\nDu kan hjelpe til med å legge til støtte for denne måleren ved å opprette en GitHub-sak og legge ved raw capture-filen. Innsendte captures brukes til å forbedre støtten for strømmålere og legges til i den automatiserte testpakken for å bidra til å forhindre fremtidige regresjoner.\n\nLa gjerne capture-filen samle inn data en stund før du laster den ned.\n\nMerk: Hvis nedlastingen ikke starter når du klikker på lenken, høyreklikk på lenken og velg «Lagre lenke som ...» eller «Åpne lenke i ny fane».\n\n[Last ned raw capture]({download_url}) | [Dokumentasjon]({documentation_url}) | [Opprett GitHub-sak]({issue_url})\n\nKontroller først at du har lastet ned den nyeste raw capture-filen og opprettet en GitHub-sak.\n\nNår du bekrefter, stoppes innsamlingen og den lokale capture-filen slettes permanent."
+          }
+        }
+      }
+    },
+    "raw_capture_saved": {
+      "title": "Raw capture tilgjengelig",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Fullfør innsamling fra måler",
+            "description": "En raw capture for {device} samles inn og kan lastes ned via lenken nedenfor. Filen vil fortsette å bli oppdatert med nye meldinger mens innsamlingen pågår.\n\nMerk: Hvis nedlastingen ikke starter når du klikker på lenken, høyreklikk på lenken og velg «Lagre lenke som ...» eller «Åpne lenke i ny fane».\n\n{download_url} | {documentation_url} | {issue_url}\n\nKontroller først at du har lastet ned den nyeste raw capture-filen og opprettet en GitHub-sak.\n\nNår du bekrefter, stoppes innsamlingen og den lokale capture-filen slettes permanent."
+          }
+        }
+      }
+    }
+  }
 }
