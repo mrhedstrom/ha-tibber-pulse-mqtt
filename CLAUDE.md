@@ -29,7 +29,6 @@ This integration is intentionally independent of Tibber Cloud and can operate fu
 - Run all tests: `pytest`
 - Run specific test file: `pytest tests/test_file.py`
 - Run tests with stdout enabled: `pytest -s`
-- Run linting and code style checks: `flake8 .` or `black --check .`
 
 ## Code Style & Conventions
 - **Formatting:** Follow PEP 8 standards strictly. Use explicit type hinting for all function signatures.
