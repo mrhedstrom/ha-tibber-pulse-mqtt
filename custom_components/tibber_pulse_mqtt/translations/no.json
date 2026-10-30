@@ -91,97 +91,97 @@
   },
   "entity": {
     "sensor": {
-      "1-0_1_8_0": {
+      "1_8_0": {
         "name": "Total energiimport"
       },
-      "1-0_1_8_1": {
+      "1_8_1": {
         "name": "Energiimport (T1)"
       },
-      "1-0_1_8_2": {
+      "1_8_2": {
         "name": "Energiimport (T2)"
       },
-      "1-0_2_8_0": {
+      "2_8_0": {
         "name": "Total energiek eksport"
       },
-      "1-0_2_8_1": {
+      "2_8_1": {
         "name": "Energiek eksport (T1)"
       },
-      "1-0_2_8_2": {
+      "2_8_2": {
         "name": "Energiek eksport (T2)"
       },
-      "1-0_1_7_0": {
+      "1_7_0": {
         "name": "Aktiv effekt (total)"
       },
-      "1-0_2_7_0": {
+      "2_7_0": {
         "name": "Aktiv effekt ut (total)"
       },
-      "1-0_21_7_0": {
+      "21_7_0": {
         "name": "Aktiv effekt L1"
       },
-      "1-0_22_7_0": {
+      "22_7_0": {
         "name": "Aktiv effekt ut L1"
       },
-      "1-0_41_7_0": {
+      "41_7_0": {
         "name": "Aktiv effekt L2"
       },
-      "1-0_42_7_0": {
+      "42_7_0": {
         "name": "Aktiv effekt ut L2"
       },
-      "1-0_61_7_0": {
+      "61_7_0": {
         "name": "Aktiv effekt L3"
       },
-      "1-0_62_7_0": {
+      "62_7_0": {
         "name": "Aktiv effekt ut L3"
       },
-      "1-0_32_7_0": {
+      "32_7_0": {
         "name": "Spenning L1"
       },
-      "1-0_52_7_0": {
+      "52_7_0": {
         "name": "Spenning L2"
       },
-      "1-0_72_7_0": {
+      "72_7_0": {
         "name": "Spenning L3"
       },
-      "1-0_31_7_0": {
+      "31_7_0": {
         "name": "Strøm L1"
       },
-      "1-0_51_7_0": {
+      "51_7_0": {
         "name": "Strøm L2"
       },
-      "1-0_71_7_0": {
+      "71_7_0": {
         "name": "Strøm L3"
       },
-      "1-0_14_7_0": {
+      "14_7_0": {
         "name": "Nettfrekvens"
       },
-      "1-0_3_8_0": {
+      "3_8_0": {
         "name": "Reaktiv energi import"
       },
-      "1-0_4_8_0": {
+      "4_8_0": {
         "name": "Reaktiv energi eksport"
       },
-      "1-0_3_7_0": {
+      "3_7_0": {
         "name": "Reaktiv effekt (inn)"
       },
-      "1-0_4_7_0": {
+      "4_7_0": {
         "name": "Reaktiv effekt (ut)"
       },
-      "1-0_23_7_0": {
+      "23_7_0": {
         "name": "Reaktiv effekt L1 (inn)"
       },
-      "1-0_24_7_0": {
+      "24_7_0": {
         "name": "Reaktiv effekt L1 (ut)"
       },
-      "1-0_43_7_0": {
+      "43_7_0": {
         "name": "Reaktiv effekt L2 (inn)"
       },
-      "1-0_44_7_0": {
+      "44_7_0": {
         "name": "Reaktiv effekt L2 (ut)"
       },
-      "1-0_63_7_0": {
+      "63_7_0": {
         "name": "Reaktiv effekt L3 (inn)"
       },
-      "1-0_64_7_0": {
+      "64_7_0": {
         "name": "Reaktiv effekt L3 (ut)"
       }
     }

@@ -17,6 +17,8 @@ Fixes covered here:
 from __future__ import annotations
 
 import asyncio
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -135,20 +137,48 @@ class TestUnitGuard:
 
         asyncio.run(_run())
 
-    def test_1_1_channel_reuses_1_0_name_and_metadata(self):
-        """Kamstrup 1-1 readings use the translated name and metadata for 1-0."""
+    def test_channels_share_translation_key_but_keep_distinct_unique_ids(self):
+        """OBIS channel does not affect the translated measurement name."""
 
         async def _run():
             manager = _manager()
-            manager.set_obis_units({"1-1:1.7.0": "W"})
+            manager.set_obis_units({"1-0:1.7.0": "W", "1-1:1.7.0": "W"})
             await manager.add_or_update(DEV, "1-1:1.7.0", 3574.0, {})
+            await manager.add_or_update(DEV, "1-0:1.7.0", 3574.0, {})
 
-            ent = manager._entities[f"tibber_{DEV}_1-1_1_7_0"]
-            assert ent._attr_translation_key == "1-0_1_7_0"
-            assert ent.meta == obis_meta["1-0:1.7.0"]
-            assert ent.native_value == pytest.approx(3574.0)
+            channel_one = manager._entities[f"tibber_{DEV}_1-1_1_7_0"]
+            channel_zero = manager._entities[f"tibber_{DEV}_1-0_1_7_0"]
+            assert channel_one._attr_translation_key == "1_7_0"
+            assert channel_zero._attr_translation_key == "1_7_0"
+            assert channel_one.unique_id != channel_zero.unique_id
+            assert channel_one.meta == obis_meta["1-0:1.7.0"]
+            assert channel_one.native_value == pytest.approx(3574.0)
+            assert channel_zero.native_value == pytest.approx(3574.0)
 
         asyncio.run(_run())
+
+    @pytest.mark.parametrize("channel", [0, 1, 2])
+    def test_translation_key_uses_only_measurement_code(self, channel):
+        obis_code = f"1-{channel}:1.8.0"
+        sensor = TibberSensor("test", DEV, obis_code, {}, {})
+
+        assert sensor._attr_translation_key == "1_8_0"
+
+    def test_sensor_translation_keys_are_normalized_across_locales(self):
+        integration_dir = (
+            Path(__file__).parents[1]
+            / "custom_components"
+            / "tibber_pulse_mqtt"
+        )
+        source = json.loads((integration_dir / "strings.json").read_text(encoding="utf-8"))
+        expected_keys = set(source["entity"]["sensor"])
+
+        assert len(expected_keys) == 31
+        assert all("-" not in key.split("_", 1)[0] for key in expected_keys)
+
+        for path in (integration_dir / "translations").glob("*.json"):
+            translation = json.loads(path.read_text(encoding="utf-8"))
+            assert set(translation["entity"]["sensor"]) == expected_keys, path.name
 
 
 # ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@
 ### Added
 - Decode Kamstrup HAN `Kamstrup_V0001` flat DLMS structures with embedded OBIS codes.
 - Decode numeric values in two-member DLMS ARRAY records that omit scaler/unit metadata.
+- Reuse sensor translation names across OBIS channels while keeping channel-specific entities.
 
 ### Fixed
 - Map active and reactive energy units for Kamstrup flat DLMS data so cumulative energy sensors keep updating.

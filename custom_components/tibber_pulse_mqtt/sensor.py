@@ -32,11 +32,8 @@ def _metadata_for_obis(obis_code: str) -> dict:
 
 
 def _translation_key_for_obis(obis_code: str) -> str:
-    """Map a 1-1 channel to the existing translated 1-0 sensor name."""
-    translated_code = obis_code
-    if obis_code.startswith("1-1:"):
-        translated_code = "1-0:" + obis_code[4:]
-    return translated_code.replace(":", "_").replace(".", "_")
+    """Return the translation key for the OBIS measurement, independent of channel."""
+    return obis_code.split(":", 1)[1].replace(".", "_")
 
 
 # --- Unit conversion: OBIS -> target (full_db.py) ---

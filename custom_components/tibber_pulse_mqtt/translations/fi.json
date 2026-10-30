@@ -91,97 +91,97 @@
   },
   "entity": {
     "sensor": {
-      "1-0_1_8_0": {
+      "1_8_0": {
         "name": "Kokonaisenergiantuonti"
       },
-      "1-0_1_8_1": {
+      "1_8_1": {
         "name": "Energiantuonti (T1)"
       },
-      "1-0_1_8_2": {
+      "1_8_2": {
         "name": "Energiantuonti (T2)"
       },
-      "1-0_2_8_0": {
+      "2_8_0": {
         "name": "Kokonaisenergia­vienti"
       },
-      "1-0_2_8_1": {
+      "2_8_1": {
         "name": "Energiavienti (T1)"
       },
-      "1-0_2_8_2": {
+      "2_8_2": {
         "name": "Energiavienti (T2)"
       },
-      "1-0_1_7_0": {
+      "1_7_0": {
         "name": "Aktiiviteho (kokonais)"
       },
-      "1-0_2_7_0": {
+      "2_7_0": {
         "name": "Aktiiviteho ulos (kokonais)"
       },
-      "1-0_21_7_0": {
+      "21_7_0": {
         "name": "Aktiiviteho L1"
       },
-      "1-0_22_7_0": {
+      "22_7_0": {
         "name": "Aktiiviteho ulos L1"
       },
-      "1-0_41_7_0": {
+      "41_7_0": {
         "name": "Aktiiviteho L2"
       },
-      "1-0_42_7_0": {
+      "42_7_0": {
         "name": "Aktiiviteho ulos L2"
       },
-      "1-0_61_7_0": {
+      "61_7_0": {
         "name": "Aktiiviteho L3"
       },
-      "1-0_62_7_0": {
+      "62_7_0": {
         "name": "Aktiiviteho ulos L3"
       },
-      "1-0_32_7_0": {
+      "32_7_0": {
         "name": "Jännite L1"
       },
-      "1-0_52_7_0": {
+      "52_7_0": {
         "name": "Jännite L2"
       },
-      "1-0_72_7_0": {
+      "72_7_0": {
         "name": "Jännite L3"
       },
-      "1-0_31_7_0": {
+      "31_7_0": {
         "name": "Virta L1"
       },
-      "1-0_51_7_0": {
+      "51_7_0": {
         "name": "Virta L2"
       },
-      "1-0_71_7_0": {
+      "71_7_0": {
         "name": "Virta L3"
       },
-      "1-0_14_7_0": {
+      "14_7_0": {
         "name": "Verkkotaajuus"
       },
-      "1-0_3_8_0": {
+      "3_8_0": {
         "name": "Loisenergian tuonti"
       },
-      "1-0_4_8_0": {
+      "4_8_0": {
         "name": "Loisenergian vienti"
       },
-      "1-0_3_7_0": {
+      "3_7_0": {
         "name": "Loisteho (sisään)"
       },
-      "1-0_4_7_0": {
+      "4_7_0": {
         "name": "Loisteho (ulos)"
       },
-      "1-0_23_7_0": {
+      "23_7_0": {
         "name": "Loisteho L1 (sisään)"
       },
-      "1-0_24_7_0": {
+      "24_7_0": {
         "name": "Loisteho L1 (ulos)"
       },
-      "1-0_43_7_0": {
+      "43_7_0": {
         "name": "Loisteho L2 (sisään)"
       },
-      "1-0_44_7_0": {
+      "44_7_0": {
         "name": "Loisteho L2 (ulos)"
       },
-      "1-0_63_7_0": {
+      "63_7_0": {
         "name": "Loisteho L3 (sisään)"
       },
-      "1-0_64_7_0": {
+      "64_7_0": {
         "name": "Loisteho L3 (ulos)"
       }
     }
