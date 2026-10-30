@@ -4,14 +4,11 @@
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### Added
-- Decode Kamstrup HAN `Kamstrup_V0001` flat DLMS structures with embedded OBIS codes.
-- Decode numeric values in two-member DLMS ARRAY records that omit scaler/unit metadata.
-- Reuse sensor translation names across OBIS channels while keeping channel-specific entities.
+- Added support for flat DLMS structure meters, e.g. `Kamstrup_V0001`.
+- Added support for multiple channel meters.
 
 ### Fixed
-- Map active and reactive energy units for Kamstrup flat DLMS data so cumulative energy sensors keep updating.
-- Preserve the MQTT topic as the device key for forwarded topics and try each nested DLMS frame until one decodes.
-- Keep missed-payload Base64 diagnostics on a single log line.
+- Improved compatibility with forwarded MQTT topics.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
