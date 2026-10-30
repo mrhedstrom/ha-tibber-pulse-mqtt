@@ -1,5 +1,8 @@
+import pytest
+
 from custom_components.tibber_pulse_mqtt.parsers.dlms_cosem import (
     iter_dlms_frames_in_blob,
+    obis_measurement_code,
     parse_dlms,
     parse_dlms_cosem,
 )
@@ -95,13 +98,37 @@ def test_parse_kamstrup_v0001_flat_structure():
     assert direct_result == expected
 
 
-def test_parse_two_member_array_numeric_value():
-    result = parse_dlms_cosem(_array_frame((1, 1, 1, 7, 0), 3574))
+@pytest.mark.parametrize("channel", [0, 1, 2])
+def test_parse_two_member_array_numeric_value_uses_channel_independent_units(channel):
+    obis_code = f"1-{channel}:1.7.0"
+    result = parse_dlms_cosem(_array_frame((1, channel, 1, 7, 0), 3574))
 
     assert result == {
-        "1-1:1.7.0": 3574.0,
-        "_units": {"1-1:1.7.0": "W"},
+        obis_code: 3574.0,
+        "_units": {obis_code: "W"},
     }
+
+
+@pytest.mark.parametrize("channel", [0, 1, 2])
+def test_flat_unit_and_implicit_scale_lookups_are_channel_independent(channel):
+    current_code = f"1-{channel}:31.7.0"
+    energy_code = f"1-{channel}:1.8.0"
+    frame = _frame([
+        _visible_string("Kamstrup_V0001"),
+        _obis(1, channel, 31, 7, 0),
+        _uint32(540),
+        _obis(1, channel, 1, 8, 0),
+        _uint32(1234),
+    ])
+
+    result = parse_dlms(frame)
+
+    assert result[current_code] == 5.4
+    assert result[energy_code] == 1234.0
+    assert result["_units"][current_code] == "A"
+    assert result["_units"][energy_code] == "Wh"
+    assert obis_measurement_code(current_code) == "31.7.0"
+    assert obis_measurement_code(energy_code) == "1.8.0"
 
 
 def test_iter_dlms_frames_in_blob_finds_all_frames():

@@ -41,45 +41,49 @@ _DLMS_UNITS: Dict[int, str] = {
 }
 
 _IMPLICIT_SCALE: Dict[str, float] = {
-    "1-0:31.7.0": 0.01,
-    "1-0:51.7.0": 0.01,
-    "1-0:71.7.0": 0.01,
+    "31.7.0": 0.01,
+    "51.7.0": 0.01,
+    "71.7.0": 0.01,
 }
 
 _FLAT_UNITS: Dict[str, str] = {
-    "1-0:1.8.0": "Wh",
-    "1-0:2.8.0": "Wh",
-    "1-0:3.8.0": "VArh",
-    "1-0:4.8.0": "VArh",
-    "1-0:1.7.0": "W",
-    "1-0:2.7.0": "W",
-    "1-0:3.7.0": "VAr",
-    "1-0:4.7.0": "VAr",
-    "1-0:14.7.0": "Hz",
-    "1-0:21.7.0": "W",
-    "1-0:22.7.0": "W",
-    "1-0:23.7.0": "VAr",
-    "1-0:24.7.0": "VAr",
-    "1-0:31.7.0": "A",
-    "1-0:32.7.0": "V",
-    "1-0:41.7.0": "W",
-    "1-0:42.7.0": "W",
-    "1-0:43.7.0": "VAr",
-    "1-0:44.7.0": "VAr",
-    "1-0:51.7.0": "A",
-    "1-0:52.7.0": "V",
-    "1-0:61.7.0": "W",
-    "1-0:62.7.0": "W",
-    "1-0:63.7.0": "VAr",
-    "1-0:64.7.0": "VAr",
-    "1-0:71.7.0": "A",
-    "1-0:72.7.0": "V",
+    "1.8.0": "Wh",
+    "2.8.0": "Wh",
+    "3.8.0": "VArh",
+    "4.8.0": "VArh",
+    "1.7.0": "W",
+    "2.7.0": "W",
+    "3.7.0": "VAr",
+    "4.7.0": "VAr",
+    "14.7.0": "Hz",
+    "21.7.0": "W",
+    "22.7.0": "W",
+    "23.7.0": "VAr",
+    "24.7.0": "VAr",
+    "31.7.0": "A",
+    "32.7.0": "V",
+    "41.7.0": "W",
+    "42.7.0": "W",
+    "43.7.0": "VAr",
+    "44.7.0": "VAr",
+    "51.7.0": "A",
+    "52.7.0": "V",
+    "61.7.0": "W",
+    "62.7.0": "W",
+    "63.7.0": "VAr",
+    "64.7.0": "VAr",
+    "71.7.0": "A",
+    "72.7.0": "V",
 }
 
 
+def obis_measurement_code(obis: str) -> str:
+    """Return the OBIS measurement code without medium or channel fields."""
+    return obis.split(":", 1)[1]
+
+
 def _scale_flat_value(obis_code: str, value: float) -> float:
-    canonical_code = "1-0:" + obis_code[4:] if obis_code.startswith("1-1:") else obis_code
-    return value * _IMPLICIT_SCALE.get(canonical_code, 1.0)
+    return value * _IMPLICIT_SCALE.get(obis_measurement_code(obis_code), 1.0)
 
 # ---------------------------------------------------------------------------
 # Positional (list-id) DLMS lists — meters that send a flat STRUCTURE of bare
@@ -274,8 +278,7 @@ def _parse_flat_structure(data: bytes, pos: int) -> Optional[tuple[Dict[str, Any
             if numeric is not None:
                 value, pos = numeric
                 result[obis_code] = _scale_flat_value(obis_code, value)
-                canonical_code = "1-0:" + obis_code[4:] if obis_code.startswith("1-1:") else obis_code
-                unit = _FLAT_UNITS.get(canonical_code)
+                unit = _FLAT_UNITS.get(obis_measurement_code(obis_code))
                 if unit:
                     units[obis_code] = unit
                 members_read += 1
@@ -534,8 +537,7 @@ def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
             if numeric is not None:
                 raw_val, pos = numeric
                 result[obis_code] = raw_val
-                canonical_code = "1-0:" + obis_code[4:] if obis_code.startswith("1-1:") else obis_code
-                unit = _FLAT_UNITS.get(canonical_code)
+                unit = _FLAT_UNITS.get(obis_measurement_code(obis_code))
                 if unit:
                     units[obis_code] = unit
                 continue
