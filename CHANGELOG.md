@@ -3,6 +3,12 @@
 ## [0.4.7] - Future Release
 <!-- Add sections for new features, fixes, and improvements -->
 
+### Added
+- Added support for flat DLMS structure meters, e.g. `Kamstrup_V0001`.
+- Added support for multiple channel meters.
+
+### Fixed
+- Improved compatibility with forwarded MQTT topics.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**

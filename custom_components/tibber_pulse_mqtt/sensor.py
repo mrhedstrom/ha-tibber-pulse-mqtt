@@ -20,6 +20,22 @@ from .obis.full_db import obis_meta
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _metadata_for_obis(obis_code: str) -> dict:
+    """Use standard 1-0 metadata for meters reporting the 1-1 channel."""
+    meta = obis_meta.get(obis_code)
+    if meta is not None:
+        return meta
+    if obis_code.startswith("1-1:"):
+        return obis_meta.get("1-0:" + obis_code[4:], {})
+    return {}
+
+
+def _translation_key_for_obis(obis_code: str) -> str:
+    """Return the translation key for the OBIS measurement, independent of channel."""
+    return obis_code.split(":", 1)[1].replace(".", "_")
+
+
 # --- Unit conversion: OBIS -> target (full_db.py) ---
 UNIT_SCALE = {
     ("kWh",  "Wh"):    1000.0,
@@ -110,7 +126,7 @@ class SensorManager:
         unique_id = f"tibber_{dev_id}_{obis_code.replace(':','_').replace('.','_')}"
         raw_unit = self._obis_units.get(obis_code) if hasattr(self, "_obis_units") else None
 
-        meta = obis_meta.get(obis_code, {})
+        meta = _metadata_for_obis(obis_code)
 
         if meta.get("attribute_only"):
             attr_name = meta.get(
@@ -168,7 +184,7 @@ class SensorManager:
                 if unique_id in self._entities:
                     ent = self._entities[unique_id]
                 else:
-                    meta = obis_meta.get(obis_code, {})
+                    meta = _metadata_for_obis(obis_code)
 
                     ent = TibberSensor(
                         unique_id=unique_id,
@@ -244,13 +260,13 @@ class TibberSensor(SensorEntity):
     ):
         self._attr_unique_id = unique_id
         self.has_entity_name = True
-        self._attr_translation_key = obis_code.replace(':','_').replace('.','_')
+        self._attr_translation_key = _translation_key_for_obis(obis_code)
 
         self._dev_id = dev_id          # Canonical device key = pulse_id
         self._obis = obis_code
         self._status = status or {}
 
-        self.meta = meta or {}
+        self.meta = meta or _metadata_for_obis(obis_code)
 
         self._state = None
         self._meter_id = None
