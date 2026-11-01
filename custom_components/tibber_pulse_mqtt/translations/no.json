@@ -91,98 +91,104 @@
   },
   "entity": {
     "sensor": {
-      "1_8_0": {
+      "1-0_1_8_0": {
         "name": "Total energiimport"
       },
-      "1_8_1": {
+      "1-0_1_8_1": {
         "name": "Energiimport (T1)"
       },
-      "1_8_2": {
+      "1-0_1_8_2": {
         "name": "Energiimport (T2)"
       },
-      "2_8_0": {
-        "name": "Total energiek eksport"
+      "1-0_2_8_0": {
+        "name": "Total energi-eksport"
       },
-      "2_8_1": {
-        "name": "Energiek eksport (T1)"
+      "1-0_2_8_1": {
+        "name": "Energi-eksport (T1)"
       },
-      "2_8_2": {
-        "name": "Energiek eksport (T2)"
+      "1-0_2_8_2": {
+        "name": "Energi-eksport (T2)"
       },
-      "1_7_0": {
+      "1-0_1_7_0": {
         "name": "Aktiv effekt (total)"
       },
-      "2_7_0": {
+      "1-0_2_7_0": {
         "name": "Aktiv effekt ut (total)"
       },
-      "21_7_0": {
+      "1-0_21_7_0": {
         "name": "Aktiv effekt L1"
       },
-      "22_7_0": {
+      "1-0_22_7_0": {
         "name": "Aktiv effekt ut L1"
       },
-      "41_7_0": {
+      "1-0_41_7_0": {
         "name": "Aktiv effekt L2"
       },
-      "42_7_0": {
+      "1-0_42_7_0": {
         "name": "Aktiv effekt ut L2"
       },
-      "61_7_0": {
+      "1-0_61_7_0": {
         "name": "Aktiv effekt L3"
       },
-      "62_7_0": {
+      "1-0_62_7_0": {
         "name": "Aktiv effekt ut L3"
       },
-      "32_7_0": {
+      "1-0_32_7_0": {
         "name": "Spenning L1"
       },
-      "52_7_0": {
+      "1-0_52_7_0": {
         "name": "Spenning L2"
       },
-      "72_7_0": {
+      "1-0_72_7_0": {
         "name": "Spenning L3"
       },
-      "31_7_0": {
+      "1-0_31_7_0": {
         "name": "Strøm L1"
       },
-      "51_7_0": {
+      "1-0_51_7_0": {
         "name": "Strøm L2"
       },
-      "71_7_0": {
+      "1-0_71_7_0": {
         "name": "Strøm L3"
       },
-      "14_7_0": {
+      "1-0_14_7_0": {
         "name": "Nettfrekvens"
       },
-      "3_8_0": {
+      "1-0_3_8_0": {
         "name": "Reaktiv energi import"
       },
-      "4_8_0": {
+      "1-0_4_8_0": {
         "name": "Reaktiv energi eksport"
       },
-      "3_7_0": {
+      "1-0_3_7_0": {
         "name": "Reaktiv effekt (inn)"
       },
-      "4_7_0": {
+      "1-0_4_7_0": {
         "name": "Reaktiv effekt (ut)"
       },
-      "23_7_0": {
+      "1-0_23_7_0": {
         "name": "Reaktiv effekt L1 (inn)"
       },
-      "24_7_0": {
+      "1-0_24_7_0": {
         "name": "Reaktiv effekt L1 (ut)"
       },
-      "43_7_0": {
+      "1-0_43_7_0": {
         "name": "Reaktiv effekt L2 (inn)"
       },
-      "44_7_0": {
+      "1-0_44_7_0": {
         "name": "Reaktiv effekt L2 (ut)"
       },
-      "63_7_0": {
+      "1-0_63_7_0": {
         "name": "Reaktiv effekt L3 (inn)"
       },
-      "64_7_0": {
+      "1-0_64_7_0": {
         "name": "Reaktiv effekt L3 (ut)"
+      },
+      "0-0_96_13_0": {
+        "name": "Melding"
+      },
+      "0-0_96_13_1": {
+        "name": "Meldingskode"
       }
     }
   },

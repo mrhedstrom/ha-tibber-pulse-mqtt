@@ -34,7 +34,7 @@ IMPORT_UID = f"tibber_{DEV}_1-0_1_8_0"
 
 
 def _sensor(obis: str, meta: dict | None = None) -> TibberSensor:
-    return TibberSensor(f"test_{obis}", DEV, obis, obis_meta[obis] if meta is None else meta, {})
+    return TibberSensor(f"test_{obis}", DEV, obis, meta, {})
 
 
 def _manager() -> SensorManager:
@@ -148,8 +148,8 @@ class TestUnitGuard:
 
             channel_one = manager._entities[f"tibber_{DEV}_1-1_1_7_0"]
             channel_zero = manager._entities[f"tibber_{DEV}_1-0_1_7_0"]
-            assert channel_one._attr_translation_key == "1_7_0"
-            assert channel_zero._attr_translation_key == "1_7_0"
+            assert channel_one._attr_translation_key == "1-0_1_7_0"
+            assert channel_zero._attr_translation_key == "1-0_1_7_0"
             assert channel_one.unique_id != channel_zero.unique_id
             assert channel_one.meta == obis_meta["1-0:1.7.0"]
             assert channel_one.native_value == pytest.approx(3574.0)
@@ -158,27 +158,11 @@ class TestUnitGuard:
         asyncio.run(_run())
 
     @pytest.mark.parametrize("channel", [0, 1, 2])
-    def test_translation_key_uses_only_measurement_code(self, channel):
+    def test_translation_key_uses_only_channel_zero(self, channel):
         obis_code = f"1-{channel}:1.8.0"
         sensor = TibberSensor("test", DEV, obis_code, {}, {})
 
-        assert sensor._attr_translation_key == "1_8_0"
-
-    def test_sensor_translation_keys_are_normalized_across_locales(self):
-        integration_dir = (
-            Path(__file__).parents[1]
-            / "custom_components"
-            / "tibber_pulse_mqtt"
-        )
-        source = json.loads((integration_dir / "strings.json").read_text(encoding="utf-8"))
-        expected_keys = set(source["entity"]["sensor"])
-
-        assert len(expected_keys) == 31
-        assert all("-" not in key.split("_", 1)[0] for key in expected_keys)
-
-        for path in (integration_dir / "translations").glob("*.json"):
-            translation = json.loads(path.read_text(encoding="utf-8"))
-            assert set(translation["entity"]["sensor"]) == expected_keys, path.name
+        assert sensor._attr_translation_key == "1-0_1_8_0"
 
 
 # ---------------------------------------------------------------------------

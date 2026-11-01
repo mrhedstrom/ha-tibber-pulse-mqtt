@@ -4,11 +4,15 @@
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### Added
-- Added support for flat DLMS structure meters, e.g. `Kamstrup_V0001`.
+- Added support for flat DLMS structure meters, e.g. `Kamstrup_V0001`. #37
 - Added support for multiple channel meters.
 
 ### Fixed
 - Improved compatibility with forwarded MQTT topics.
+- Added translations for Message and Message code OBIS values (0-0:96.13.0 and 0-0:96.13.1) in all supported languages.
+
+### Thanks
+- Thanks to @supermania for the Kamstrup flat DLMS structure implementation.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
