@@ -295,7 +295,7 @@ What behavior or unsupported data the capture demonstrates:
                     "Unable to delete capture %s",
                     path,
                 )
-        
+
         self._resolved_devices.add(device_key)
         if device_key in self._automatic_capture_devices:
             self._automatic_capture_devices.discard(device_key)

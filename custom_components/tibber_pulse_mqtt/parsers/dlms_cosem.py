@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import struct
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Iterable, Optional
 
 from .pulse_envelope import iter_len_delimited
 
@@ -39,6 +39,51 @@ _DLMS_UNITS: Dict[int, str] = {
     36: "V",
     37: "V",
 }
+
+_IMPLICIT_SCALE: Dict[str, float] = {
+    "31.7.0": 0.01,
+    "51.7.0": 0.01,
+    "71.7.0": 0.01,
+}
+
+_FLAT_UNITS: Dict[str, str] = {
+    "1.8.0": "Wh",
+    "2.8.0": "Wh",
+    "3.8.0": "VArh",
+    "4.8.0": "VArh",
+    "1.7.0": "W",
+    "2.7.0": "W",
+    "3.7.0": "VAr",
+    "4.7.0": "VAr",
+    "14.7.0": "Hz",
+    "21.7.0": "W",
+    "22.7.0": "W",
+    "23.7.0": "VAr",
+    "24.7.0": "VAr",
+    "31.7.0": "A",
+    "32.7.0": "V",
+    "41.7.0": "W",
+    "42.7.0": "W",
+    "43.7.0": "VAr",
+    "44.7.0": "VAr",
+    "51.7.0": "A",
+    "52.7.0": "V",
+    "61.7.0": "W",
+    "62.7.0": "W",
+    "63.7.0": "VAr",
+    "64.7.0": "VAr",
+    "71.7.0": "A",
+    "72.7.0": "V",
+}
+
+
+def obis_measurement_code(obis: str) -> str:
+    """Return the OBIS measurement code without medium or channel fields."""
+    return obis.split(":", 1)[1]
+
+
+def _scale_flat_value(obis_code: str, value: float) -> float:
+    return value * _IMPLICIT_SCALE.get(obis_measurement_code(obis_code), 1.0)
 
 # ---------------------------------------------------------------------------
 # Positional (list-id) DLMS lists — meters that send a flat STRUCTURE of bare
@@ -178,6 +223,75 @@ def _skip_dlms_value(data: bytes, pos: int) -> Optional[int]:
     return r[1] if r else None
 
 
+def _skip_element(data: bytes, pos: int) -> Optional[int]:
+    """Skip one AXDR element and return the position after it."""
+    if pos >= len(data):
+        return None
+    tag = data[pos]
+    pos += 1
+    sizes = {
+        _TAG_INT8: 1, _TAG_UINT8: 1, _TAG_INT16: 2, _TAG_UINT16: 2,
+        _TAG_INT32: 4, _TAG_UINT32: 4, _TAG_INT64: 8, _TAG_UINT64: 8,
+        _TAG_ENUM: 1, _TAG_FLOAT32: 4, _TAG_FLOAT64: 8,
+        0x0C: 12,
+    }
+    if tag in sizes:
+        end = pos + sizes[tag]
+        return end if end <= len(data) else None
+    if tag in (_TAG_OCTET_STRING, _TAG_VISIBLE_STRING):
+        if pos >= len(data):
+            return None
+        end = pos + 1 + data[pos]
+        return end if end <= len(data) else None
+    if tag in (_TAG_ARRAY, _TAG_STRUCTURE):
+        if pos >= len(data):
+            return None
+        count = data[pos]
+        pos += 1
+        for _ in range(count):
+            pos = _skip_element(data, pos)
+            if pos is None:
+                return None
+        return pos
+    return None
+
+
+def _parse_flat_structure(data: bytes, pos: int) -> Optional[tuple[Dict[str, Any], Dict[str, str]]]:
+    """Parse flat structures containing OBIS octet-strings and separate values."""
+    if pos + 2 > len(data) or data[pos] != _TAG_STRUCTURE:
+        return None
+    count = data[pos + 1]
+    pos += 2
+    result: Dict[str, Any] = {}
+    units: Dict[str, str] = {}
+
+    members_read = 0
+    while members_read < count:
+        if pos >= len(data):
+            return None
+        if data[pos] == _TAG_OCTET_STRING and pos + 8 <= len(data) and data[pos + 1] == 6:
+            a, b, c, d, e, _f = data[pos + 2:pos + 8]
+            obis_code = f"{a}-{b}:{c}.{d}.{e}"
+            pos += 8
+            members_read += 1
+            numeric = _read_numeric(data, pos)
+            if numeric is not None:
+                value, pos = numeric
+                result[obis_code] = _scale_flat_value(obis_code, value)
+                unit = _FLAT_UNITS.get(obis_measurement_code(obis_code))
+                if unit:
+                    units[obis_code] = unit
+                members_read += 1
+                continue
+        next_pos = _skip_element(data, pos)
+        if next_pos is None:
+            return None
+        pos = next_pos
+        members_read += 1
+
+    return (result, units) if result else None
+
+
 def _dlms_app_start(blob: bytes) -> Optional[int]:
     """
     Validate HDLC + LLC and return the position of the first byte AFTER the
@@ -208,6 +322,8 @@ def _dlms_app_start(blob: bytes) -> Optional[int]:
             return None
         dt_len = blob[pos]
         pos += 1 + dt_len
+    elif blob[pos] == 0x0C:
+        pos += 1 + 12
     else:
         pos += 1  # skip 0x00 absent marker
 
@@ -322,8 +438,7 @@ def parse_dlms_kamstrup(blob: bytes) -> Optional[Dict[str, Any]]:
 
 def parse_dlms(blob: bytes) -> Optional[Dict[str, Any]]:
     """
-    Top-level DLMS dispatcher. Tries the Aidon-style embedded-OBIS ARRAY format
-    first, then the positional (Kamstrup) STRUCTURE format.
+    Try Aidon arrays, embedded-OBIS flat structures, then positional Kamstrup lists.
     """
     obis = parse_dlms_cosem(blob)
     if obis:
@@ -356,15 +471,24 @@ def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
     if pos >= len(blob):
         return None
 
-    # Optional date-time: 0x09 = octet-string follows, 0x00 = absent
+    # Optional date-time: octet-string, fixed 12-byte date-time, or absent marker.
     if blob[pos] == _TAG_OCTET_STRING:
         pos += 1
         if pos >= len(blob):
             return None
         dt_len = blob[pos]
         pos += 1 + dt_len
+    elif blob[pos] == 0x0C:
+        pos += 1 + 12
     else:
         pos += 1  # skip 0x00 absent marker
+
+    if pos < len(blob) and blob[pos] == _TAG_STRUCTURE:
+        flat = _parse_flat_structure(blob, pos)
+        if flat:
+            result, units = flat
+            result["_units"] = units
+            return result
 
     if pos >= len(blob) or blob[pos] != _TAG_ARRAY:
         return None
@@ -409,6 +533,15 @@ def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
         if num_members == 2:
             if pos >= len(blob):
                 break
+            numeric = _read_numeric(blob, pos)
+            if numeric is not None:
+                raw_val, pos = numeric
+                result[obis_code] = raw_val
+                unit = _FLAT_UNITS.get(obis_measurement_code(obis_code))
+                if unit:
+                    units[obis_code] = unit
+                continue
+
             val_tag = blob[pos]
             pos += 1
             if val_tag in (_TAG_OCTET_STRING, _TAG_VISIBLE_STRING):
@@ -469,7 +602,13 @@ def find_dlms_frame_in_blob(blob: bytes) -> Optional[bytes]:
     Walk nested protobuf length-delimited fields looking for an HDLC frame (starts with 0x7E).
     Returns the frame bytes, or None if not found. No decompression is attempted.
     """
+    return next(iter_dlms_frames_in_blob(blob), None)
+
+
+def iter_dlms_frames_in_blob(blob: bytes) -> Iterable[bytes]:
+    """Yield every unique nested length-delimited field that starts with HDLC."""
+    seen: set[bytes] = set()
     for *_, field_bytes in iter_len_delimited(blob, 0, 4):
-        if field_bytes and field_bytes[0] == _HDLC_FLAG:
-            return field_bytes
-    return None
+        if field_bytes and field_bytes[0] == _HDLC_FLAG and field_bytes not in seen:
+            seen.add(field_bytes)
+            yield field_bytes
