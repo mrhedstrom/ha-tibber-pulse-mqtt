@@ -13,28 +13,6 @@ from custom_components.tibber_pulse_mqtt.raw_capture import MIN_DATA_MESSAGES
 
 RAW_FIXTURE_DIR = Path(__file__).parent / "fixtures" / "raw"
 RAW_FIXTURES = sorted(RAW_FIXTURE_DIR.glob("*.jsonl"))
-KAMSTRUP_ISSUE_CODES = {
-    "1-1:1.7.0", "1-1:2.7.0", "1-1:3.7.0", "1-1:4.7.0",
-    "1-1:31.7.0", "1-1:32.7.0", "1-1:51.7.0", "1-1:52.7.0",
-    "1-1:71.7.0", "1-1:72.7.0",
-}
-KAMSTRUP_LOCAL_CODES = KAMSTRUP_ISSUE_CODES | {
-    "1-1:1.8.0", "1-1:2.8.0", "1-1:3.8.0", "1-1:4.8.0",
-}
-KAMSTRUP_ISSUE_UNITS = {
-    "1-1:1.7.0": "W", "1-1:2.7.0": "W",
-    "1-1:3.7.0": "VAr", "1-1:4.7.0": "VAr",
-    "1-1:31.7.0": "A", "1-1:32.7.0": "V",
-    "1-1:51.7.0": "A", "1-1:52.7.0": "V",
-    "1-1:71.7.0": "A", "1-1:72.7.0": "V",
-}
-KAMSTRUP_LOCAL_UNITS = {
-    **KAMSTRUP_ISSUE_UNITS,
-    "1-1:1.8.0": "Wh", "1-1:2.8.0": "Wh",
-    "1-1:3.8.0": "VArh", "1-1:4.8.0": "VArh",
-}
-
-
 class ImmediateLoop:
     def call_soon_threadsafe(self, callback, *args):
         callback(*args)
@@ -144,6 +122,46 @@ def _replay_fixture(raw_file, tmp_path, records=None):
             per_record_updates.append(parsed_updates + pending_updates)
 
     return sensor_manager, records, per_record_updates
+
+
+def _metadata_file_for(raw_file):
+    return raw_file.with_suffix(".json")
+
+
+def _decoded_obis_codes(sensor_manager):
+    return sorted({code for _device, code, _value in sensor_manager.reading_updates})
+
+
+def _decoded_obis_units(sensor_manager):
+    return dict(sorted(sensor_manager.units.items()))
+
+
+def generate_raw_fixture_metadata(raw_fixture_dir=RAW_FIXTURE_DIR, tmp_path=None):
+    """Replay raw fixtures and write observed OBIS codes and units beside each fixture."""
+    raw_files = sorted(Path(raw_fixture_dir).glob("*.jsonl"))
+    if tmp_path is None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as replay_dir:
+            return generate_raw_fixture_metadata(raw_fixture_dir, Path(replay_dir))
+
+    generated_files = []
+    for raw_file in raw_files:
+        sensor_manager, _records, _updates = _replay_fixture(raw_file, tmp_path / raw_file.stem)
+        metadata_file = _metadata_file_for(raw_file)
+        metadata_file.write_text(
+            json.dumps(
+                {
+                    "obis_codes": _decoded_obis_codes(sensor_manager),
+                    "obis_units": _decoded_obis_units(sensor_manager),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        generated_files.append(metadata_file)
+    return generated_files
 
 
 def test_forwarded_topic_is_used_as_device_key(monkeypatch):
@@ -285,23 +303,11 @@ def test_raw_fixture_has_sufficient_decoded_obis_coverage(raw_file, tmp_path):
 
     code_counts = Counter(code for _device, code, _value in sensor_manager.reading_updates)
     assert all(isinstance(value, (float, int, str)) for _device, _code, value in sensor_manager.reading_updates)
-    expected_codes_by_fixture = {
-        "HAN-Kamstrup_V0001-8367cb955d.jsonl": KAMSTRUP_LOCAL_CODES,
-        "HAN-Kamstrup_V0001-e38ac249cd.jsonl": KAMSTRUP_ISSUE_CODES,
-    }
-    default_codes = {
-        "1-0:1.8.0",  # imported energy
-        "1-0:2.8.0",  # exported energy
-        "1-0:1.7.0",  # active power
-        "1-0:32.7.0",  # voltage
-        "1-0:31.7.0",  # current
-    }
-    expected_codes = expected_codes_by_fixture.get(raw_file.name, default_codes)
-    minimum_codes = len(expected_codes) if raw_file.name in expected_codes_by_fixture else 16
-    assert len(code_counts) >= minimum_codes, (
-        f"{raw_file.name} should exercise at least {minimum_codes} distinct OBIS codes"
-    )
-    assert expected_codes <= code_counts.keys(), f"{raw_file.name} is missing expected energy/electrical readings"
+    metadata_file = _metadata_file_for(raw_file)
+    assert metadata_file.is_file(), f"{raw_file.name} is missing metadata file {metadata_file.name}"
+    metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+    expected_codes = set(metadata["obis_codes"])
+    assert expected_codes <= code_counts.keys(), f"{raw_file.name} is missing expected OBIS readings"
     assert sensor_manager.units, f"{raw_file.name} did not provide OBIS unit mappings"
     # Pulse HAN firmware reports only the hardware revision (Hw), not hwmodel
     assert all(status.get("hwmodel") or status.get("Hw") for status in sensor_manager.status.values()), (
@@ -314,27 +320,13 @@ def test_raw_fixture_has_sufficient_decoded_obis_coverage(raw_file, tmp_path):
 def test_raw_fixture_normalizes_units_for_known_obis_codes(raw_file, tmp_path):
     sensor_manager, _records, _per_record_updates = _replay_fixture(raw_file, tmp_path)
 
-    kamstrup_units_by_fixture = {
-        "HAN-Kamstrup_V0001-8367cb955d.jsonl": KAMSTRUP_LOCAL_UNITS,
-        "HAN-Kamstrup_V0001-e38ac249cd.jsonl": KAMSTRUP_ISSUE_UNITS,
-    }
-    if raw_file.name in kamstrup_units_by_fixture:
-        for code, expected_unit in kamstrup_units_by_fixture[raw_file.name].items():
-            assert sensor_manager.units.get(code) == expected_unit, (
-                f"{raw_file.name} has unexpected unit for OBIS code {code}"
-            )
-        return
-
-    # P1 meters report kWh/kW, HAN meters such as Kaifa report Wh/W; sensors convert either
-    expected_units = {
-        "1-0:1.8.0": {"kWh", "Wh"},
-        "1-0:2.8.0": {"kWh", "Wh"},
-        "1-0:1.7.0": {"kW", "W"},
-        "1-0:32.7.0": {"V"},
-        "1-0:31.7.0": {"A"},
-    }
+    metadata_file = _metadata_file_for(raw_file)
+    assert metadata_file.is_file(), f"{raw_file.name} is missing metadata file {metadata_file.name}"
+    metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+    expected_units = metadata["obis_units"]
+    assert expected_units, f"{raw_file.name} has no expected OBIS unit mappings"
     for code, expected_unit in expected_units.items():
-        assert sensor_manager.units.get(code) in expected_unit, (
+        assert sensor_manager.units.get(code) == expected_unit, (
             f"{raw_file.name} has unexpected normalized unit for OBIS code {code}"
         )
 
