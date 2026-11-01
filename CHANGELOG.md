@@ -6,11 +6,14 @@
 ### Added
 - Added support for flat DLMS structure meters, e.g. `Kamstrup_V0001`. #37
 - Added support for multiple channel meters.
-- Added per-fixture OBIS metadata to verify decoded raw capture coverage.
 
 ### Fixed
 - Improved compatibility with forwarded MQTT topics.
 - Added translations for Message and Message code OBIS values (0-0:96.13.0 and 0-0:96.13.1) in all supported languages.
+
+### Changed
+- Expanded automated testing with Aidon 6534 and Kamstrup V0001 meter captures to help ensure continued meter support in future releases.
+- Added OBIS metadata validation to the automated test suite to help prevent decoding regressions.
 
 ### Thanks
 - Thanks to @supermania for the Kamstrup flat DLMS structure implementation.
