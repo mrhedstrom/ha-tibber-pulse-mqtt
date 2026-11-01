@@ -22,18 +22,22 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _metadata_for_obis(obis_code: str) -> dict:
-    """Use standard 1-0 metadata for meters reporting the 1-1 channel."""
-    meta = obis_meta.get(obis_code)
-    if meta is not None:
-        return meta
-    if obis_code.startswith("1-1:"):
-        return obis_meta.get("1-0:" + obis_code[4:], {})
-    return {}
-
+    """Return metadata for the given OBIS code, falling back to channel 0 if needed."""
+    return (
+        obis_meta.get(obis_code)
+        or obis_meta.get(_force_channel_zero(obis_code))
+        or {}
+    )
 
 def _translation_key_for_obis(obis_code: str) -> str:
-    """Return the translation key for the OBIS measurement, independent of channel."""
-    return obis_code.split(":", 1)[1].replace(".", "_")
+    """Return a translation key for the given OBIS code, always falling back to channel 0."""
+    return _force_channel_zero(obis_code).replace(".", "_").replace(":", "_")
+
+def _force_channel_zero(obis_code: str) -> str:
+    """Return the OBIS code with channel set to 0 (e.g., 1-0:1.8.0)."""
+    medium_channel, rest = obis_code.split(":", 1)
+    medium, _channel = medium_channel.split("-", 1)
+    return f"{medium}-0:{rest}"
 
 
 # --- Unit conversion: OBIS -> target (full_db.py) ---

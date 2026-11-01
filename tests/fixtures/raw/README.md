@@ -24,3 +24,21 @@ File: HAN-MA304H3E-89100c9157.jsonl
 - Home Assistant and integration versions: 2026.10.1, 0.4.4
 - What behavior or unsupported data the capture demonstrates: Kaifa positional lists (1 and 13 members), plus the hourly 18-member list with energy registers at 22:00
 - Confirmation that the capture was reviewed and is safe to share: Yes (meter GS1 id replaced with a dummy)
+
+File: HAN-Kamstrup_V0001-e38ac249cd.jsonl
+
+- Device type/model (Pulse P1, HAN, or KM): HAN
+- Meter manufacturer and model, if known: Kamstrup V0001
+- Firmware/build version, if known: 1.2.5
+- Home Assistant and integration versions: 0.4.4
+- What behavior or unsupported data the capture demonstrates: flat DLMS structure
+- Confirmation that the capture was reviewed and is safe to share: Yes
+
+File: HAN-Kamstrup_V0001-8367cb955d.jsonl
+
+- Device type/model (Pulse P1, HAN, or KM): HAN
+- Meter manufacturer and model, if known: Kamstrup V0001
+- Firmware/build version, if known: 1.2.5
+- Home Assistant and integration versions: 0.4.4
+- What behavior or unsupported data the capture demonstrates: flat DLMS structure
+- Confirmation that the capture was reviewed and is safe to share: Yes
