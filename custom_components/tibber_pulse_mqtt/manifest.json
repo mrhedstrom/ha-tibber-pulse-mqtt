@@ -4,7 +4,9 @@
   "after_dependencies": [
     "mqtt"
   ],
-  "categories": [ "energy.meters_monitoring" ],
+  "categories": [
+    "energy.meters_monitoring"
+  ],
   "codeowners": [
     "@mrhedstrom"
   ],
@@ -23,5 +25,5 @@
     "paho-mqtt>=1.6.1",
     "protobuf>=4.25.0"
   ],
-  "version": "0.4.6"
+  "version": "0.4.7"
 }
