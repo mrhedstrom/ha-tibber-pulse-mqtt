@@ -4,7 +4,7 @@
   "after_dependencies": [
     "mqtt"
   ],
-  "categories": [ "energy", "energy.meters_monitoring" ],
+  "categories": [ "energy.meters_monitoring" ],
   "codeowners": [
     "@mrhedstrom"
   ],
