@@ -6,6 +6,7 @@
 ### Added
 - Added support for flat DLMS structure meters, e.g. `Kamstrup_V0001`. #37
 - Added support for multiple channel meters.
+- Added per-fixture OBIS metadata to verify decoded raw capture coverage.
 
 ### Fixed
 - Improved compatibility with forwarded MQTT topics.
