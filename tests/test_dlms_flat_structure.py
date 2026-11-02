@@ -5,6 +5,7 @@ from custom_components.tibber_pulse_mqtt.parsers.dlms_cosem import (
     obis_measurement_code,
     parse_dlms,
     parse_dlms_cosem,
+    parse_dlms_kamstrup,
 )
 
 
@@ -110,7 +111,7 @@ def test_parse_two_member_array_numeric_value_uses_channel_independent_units(cha
 
 
 @pytest.mark.parametrize("channel", [0, 1, 2])
-def test_flat_unit_and_implicit_scale_lookups_are_channel_independent(channel):
+def test_flat_unit_and_format_scale_lookups_are_channel_independent(channel):
     current_code = f"1-{channel}:31.7.0"
     energy_code = f"1-{channel}:1.8.0"
     frame = _frame([
@@ -129,6 +130,21 @@ def test_flat_unit_and_implicit_scale_lookups_are_channel_independent(channel):
     assert result["_units"][energy_code] == "Wh"
     assert obis_measurement_code(current_code) == "31.7.0"
     assert obis_measurement_code(energy_code) == "1.8.0"
+
+def test_unknown_obis_value_is_preserved_without_metadata():
+    result = parse_dlms_cosem(_array_frame((9, 2, 200, 7, 0), 42))
+
+    assert result == {"9-2:200.7.0": 42.0, "_units": {}}
+
+
+def test_unregistered_positional_list_is_not_guessed():
+    frame = _frame([
+        _octet_string(b"UNLISTED_001"),
+        *[_uint32(value) for value in range(12)],
+    ])
+
+    assert parse_dlms(frame) is None
+    assert parse_dlms_kamstrup(frame) is None
 
 
 def test_iter_dlms_frames_in_blob_finds_all_frames():

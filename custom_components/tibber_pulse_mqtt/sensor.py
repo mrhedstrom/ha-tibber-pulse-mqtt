@@ -40,6 +40,11 @@ def _force_channel_zero(obis_code: str) -> str:
     return f"{medium}-0:{rest}"
 
 
+def _unique_id_for_obis(dev_id: str, obis_code: str) -> str:
+    """Return the stable unique ID used for an OBIS sensor."""
+    return f"tibber_{dev_id}_{obis_code.replace(':','_').replace('.','_')}"
+
+
 # --- Unit conversion: OBIS -> target (full_db.py) ---
 UNIT_SCALE = {
     ("kWh",  "Wh"):    1000.0,
@@ -127,7 +132,7 @@ class SensorManager:
         Add or update one OBIS sensor bound to a canonical device (pulse_id).
         Robust against user-renamed entity_ids.
         """
-        unique_id = f"tibber_{dev_id}_{obis_code.replace(':','_').replace('.','_')}"
+        unique_id = _unique_id_for_obis(dev_id, obis_code)
         raw_unit = self._obis_units.get(obis_code) if hasattr(self, "_obis_units") else None
 
         meta = _metadata_for_obis(obis_code)
