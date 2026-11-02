@@ -3,6 +3,7 @@ from __future__ import annotations
 import struct
 from typing import Dict, Any, Iterable, Optional
 
+from ..obis.full_db import flat_dlms_scales, get_positional_dlms_list, obis_meta
 from .pulse_envelope import iter_len_delimited
 
 _HDLC_FLAG = 0x7E
@@ -40,111 +41,23 @@ _DLMS_UNITS: Dict[int, str] = {
     37: "V",
 }
 
-_IMPLICIT_SCALE: Dict[str, float] = {
-    "31.7.0": 0.01,
-    "51.7.0": 0.01,
-    "71.7.0": 0.01,
-}
-
-_FLAT_UNITS: Dict[str, str] = {
-    "1.8.0": "Wh",
-    "2.8.0": "Wh",
-    "3.8.0": "VArh",
-    "4.8.0": "VArh",
-    "1.7.0": "W",
-    "2.7.0": "W",
-    "3.7.0": "VAr",
-    "4.7.0": "VAr",
-    "14.7.0": "Hz",
-    "21.7.0": "W",
-    "22.7.0": "W",
-    "23.7.0": "VAr",
-    "24.7.0": "VAr",
-    "31.7.0": "A",
-    "32.7.0": "V",
-    "41.7.0": "W",
-    "42.7.0": "W",
-    "43.7.0": "VAr",
-    "44.7.0": "VAr",
-    "51.7.0": "A",
-    "52.7.0": "V",
-    "61.7.0": "W",
-    "62.7.0": "W",
-    "63.7.0": "VAr",
-    "64.7.0": "VAr",
-    "71.7.0": "A",
-    "72.7.0": "V",
-}
-
-
 def obis_measurement_code(obis: str) -> str:
     """Return the OBIS measurement code without medium or channel fields."""
     return obis.split(":", 1)[1]
 
 
-def _scale_flat_value(obis_code: str, value: float) -> float:
-    return value * _IMPLICIT_SCALE.get(obis_measurement_code(obis_code), 1.0)
+def _obis_metadata(obis_code: str) -> dict:
+    """Return OBIS metadata, falling back to the channel-zero definition."""
+    if obis_code in obis_meta:
+        return obis_meta[obis_code]
+    medium_channel, measurement = obis_code.split(":", 1)
+    medium, _channel = medium_channel.split("-", 1)
+    return obis_meta.get(f"{medium}-0:{measurement}", {})
 
-# ---------------------------------------------------------------------------
-# Positional (list-id) DLMS lists — meters that send a flat STRUCTURE of bare
-# values WITHOUT embedded OBIS codes or scaler/unit (e.g. Norwegian Kamstrup).
-#
-# Registry format:
-#   { list_id_prefix: { member_count: [ (index, obis_or_"skip", kind, scale?), ... ] } }
-#
-# kind is one of:
-#   "str"                    -> emit the octet-string value as a string
-#   "<unit>" with a scale    -> emit numeric value * scale, unit "<unit>"
-#   "skip"                   -> ignore this member (e.g. the list id itself)
-#
-# Add new meters by extending this registry; no parser changes required.
-# ---------------------------------------------------------------------------
-KAMSTRUP_LISTS: Dict[str, Dict[int, list]] = {
-    # Kaifa (Norwegian HAN, list id "KFM_001")
-    "KFM": {
-        # Short list: active power only
-        1: [
-            (0, "1-0:1.7.0", "W", 1.0),
-        ],
-        # Full list (13 members)
-        13: [
-            (0, None, "skip"),                 # list id "KFM_001"
-            (1, "0-0:96.1.0", "str"),          # meter GS1 id
-            (2, "0-0:96.1.7", "str"),          # meter type
-            (3, "1-0:1.7.0", "W", 1.0),        # active power +
-            (4, "1-0:2.7.0", "W", 1.0),        # active power -
-            (5, "1-0:3.7.0", "VAr", 1.0),      # reactive power +
-            (6, "1-0:4.7.0", "VAr", 1.0),      # reactive power -
-            (7, "1-0:31.7.0", "A", 0.001),     # current L1 (mA)
-            (8, "1-0:51.7.0", "A", 0.001),     # current L2 (mA)
-            (9, "1-0:71.7.0", "A", 0.001),     # current L3 (mA)
-            (10, "1-0:32.7.0", "V", 0.1),      # voltage L1
-            (11, "1-0:52.7.0", "V", 0.1),      # voltage L2
-            (12, "1-0:72.7.0", "V", 0.1),      # voltage L3
-        ],
-        # Hourly list (18 members): full list + meter clock + energy registers
-        18: [
-            (0, None, "skip"),                 # list id "KFM_001"
-            (1, "0-0:96.1.0", "str"),          # meter GS1 id
-            (2, "0-0:96.1.7", "str"),          # meter type
-            (3, "1-0:1.7.0", "W", 1.0),        # active power +
-            (4, "1-0:2.7.0", "W", 1.0),        # active power -
-            (5, "1-0:3.7.0", "VAr", 1.0),      # reactive power +
-            (6, "1-0:4.7.0", "VAr", 1.0),      # reactive power -
-            (7, "1-0:31.7.0", "A", 0.001),     # current L1 (mA)
-            (8, "1-0:51.7.0", "A", 0.001),     # current L2 (mA)
-            (9, "1-0:71.7.0", "A", 0.001),     # current L3 (mA)
-            (10, "1-0:32.7.0", "V", 0.1),      # voltage L1
-            (11, "1-0:52.7.0", "V", 0.1),      # voltage L2
-            (12, "1-0:72.7.0", "V", 0.1),      # voltage L3
-            (13, None, "skip"),                # meter clock (octet-string)
-            (14, "1-0:1.8.0", "Wh", 1.0),      # active energy import
-            (15, "1-0:2.8.0", "Wh", 1.0),      # active energy export
-            (16, "1-0:3.8.0", "VArh", 1.0),    # reactive energy import
-            (17, "1-0:4.8.0", "VArh", 1.0),    # reactive energy export
-        ],
-    },
-}
+
+def _scale_flat_value(obis_code: str, value: float) -> float:
+    scale = flat_dlms_scales.get(obis_measurement_code(obis_code), 1.0)
+    return value * scale
 
 
 def _read_numeric(data: bytes, pos: int) -> Optional[tuple[float, int]]:
@@ -278,7 +191,7 @@ def _parse_flat_structure(data: bytes, pos: int) -> Optional[tuple[Dict[str, Any
             if numeric is not None:
                 value, pos = numeric
                 result[obis_code] = _scale_flat_value(obis_code, value)
-                unit = _FLAT_UNITS.get(obis_measurement_code(obis_code))
+                unit = _obis_metadata(obis_code).get("unit")
                 if unit:
                     units[obis_code] = unit
                 members_read += 1
@@ -296,7 +209,7 @@ def _dlms_app_start(blob: bytes) -> Optional[int]:
     """
     Validate HDLC + LLC and return the position of the first byte AFTER the
     invoke-id-and-priority and optional datetime, i.e. the container tag.
-    Shared by the Aidon (ARRAY) and Kamstrup (STRUCTURE) decoders.
+    Shared by the array, embedded-OBIS structure, and positional-list decoders.
     """
     if not blob or blob[0] != _HDLC_FLAG:
         return None
@@ -332,59 +245,32 @@ def _dlms_app_start(blob: bytes) -> Optional[int]:
     return pos
 
 
-def parse_dlms_kamstrup(blob: bytes) -> Optional[Dict[str, Any]]:
-    """
-    Parse a flat positional DLMS list (no embedded OBIS codes / scaler-unit),
-    such as the Norwegian Kamstrup HAN list. Mapping is resolved from
-    KAMSTRUP_LISTS using the leading list-id octet-string and member count.
-
-    Returns {obis_code: value, "_units": {obis_code: unit_str}} or None.
-    """
+def _parse_positional_dlms(blob: bytes) -> Optional[Dict[str, Any]]:
+    """Decode a registered positional DLMS layout without inferring unknown layouts."""
     pos = _dlms_app_start(blob)
     if pos is None:
         return None
 
-    # Kamstrup uses a top-level STRUCTURE (not ARRAY)
     if blob[pos] != _TAG_STRUCTURE:
         return None
-    pos += 1
-    if pos >= len(blob):
+    if pos + 1 >= len(blob):
         return None
-    count = blob[pos]
-    pos += 1
+    count = blob[pos + 1]
+    members_pos = pos + 2
 
-    # The first member is the list-id octet-string only on the long lists.
-    # Short lists (e.g. Kamstrup count=1) carry no list-id, so we cannot key
-    # off it — resolve those purely by member count instead.
-    first = _read_octet_string(blob, pos)
+    first = _read_octet_string(blob, members_pos)
     list_id = None
     if first is not None:
         try:
             list_id = first[0].decode("ascii")
         except Exception:
-            list_id = None
-
-    # Resolve mapping by list-id prefix + member count.
-    mapping = None
-    if list_id is not None:
-        for prefix, by_count in KAMSTRUP_LISTS.items():
-            if list_id.startswith(prefix):
-                mapping = by_count.get(count)
-                break
-    else:
-        # No list-id present: only accept an unambiguous count whose mapping
-        # contains no octet-string ("str"/"skip") members.
-        for by_count in KAMSTRUP_LISTS.values():
-            candidate = by_count.get(count)
-            if candidate and all(e[2] not in ("str", "skip") for e in candidate):
-                mapping = candidate
-                break
+            return None
+    mapping = get_positional_dlms_list(list_id, count)
     if mapping is None:
         return None
 
-    # Read exactly `count` members (never touch the trailing HDLC FCS + 0x7e)
-    members: list = []
-    p = pos
+    members: list[tuple[str, Any]] = []
+    p = members_pos
     for _ in range(count):
         if p >= len(blob):
             return None
@@ -405,29 +291,21 @@ def parse_dlms_kamstrup(blob: bytes) -> Optional[Dict[str, Any]]:
     result: Dict[str, Any] = {}
     units: Dict[str, str] = {}
 
-    for entry in mapping:
-        idx = entry[0]
-        obis = entry[1]
-        kind = entry[2]
-        if kind == "skip" or obis is None:
+    for index, obis in mapping["members"].items():
+        if index >= len(members):
             continue
-        if idx >= len(members):
+        value_type, value = members[index]
+        metadata = _obis_metadata(obis)
+        if metadata.get("attribute_only"):
+            if value_type == "str":
+                result[obis] = value.decode("ascii", errors="ignore")
             continue
-        mtype, mval = members[idx]
-        if kind == "str":
-            if mtype == "str":
-                try:
-                    result[obis] = mval.decode("ascii", errors="ignore")
-                except Exception:
-                    result[obis] = mval.hex()
+        if value_type != "num":
             continue
-        # numeric with unit + scale
-        if mtype != "num":
-            continue
-        scale = entry[3] if len(entry) > 3 else 1.0
-        result[obis] = mval * scale if scale != 1.0 else mval
-        if kind:
-            units[obis] = kind
+        scale = mapping.get("scales", {}).get(index, 1.0)
+        result[obis] = value * scale if scale != 1.0 else value
+        if unit := metadata.get("unit"):
+            units[obis] = unit
 
     if not result:
         return None
@@ -436,52 +314,39 @@ def parse_dlms_kamstrup(blob: bytes) -> Optional[Dict[str, Any]]:
     return result
 
 
+def parse_dlms_kamstrup(blob: bytes) -> Optional[Dict[str, Any]]:
+    """Compatibility wrapper for the former positional-list parser."""
+    return _parse_positional_dlms(blob)
+
+
 def parse_dlms(blob: bytes) -> Optional[Dict[str, Any]]:
     """
-    Try Aidon arrays, embedded-OBIS flat structures, then positional Kamstrup lists.
+    Detect the DLMS container format and decode its registered capabilities.
     """
-    obis = parse_dlms_cosem(blob)
-    if obis:
-        return obis
-    return parse_dlms_kamstrup(blob)
+    pos = _dlms_app_start(blob)
+    if pos is None:
+        return None
+    if blob[pos] == _TAG_ARRAY:
+        return parse_dlms_cosem(blob)
+    if blob[pos] != _TAG_STRUCTURE:
+        return None
+
+    flat = _parse_flat_structure(blob, pos)
+    if flat:
+        result, units = flat
+        result["_units"] = units
+        return result
+    return _parse_positional_dlms(blob)
 
 
 def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
     """
-    Parse an HDLC-framed DLMS/COSEM DataNotification (Aidon V2 and similar HAN meters).
+    Parse an HDLC-framed DLMS/COSEM DataNotification with OBIS-coded values.
     Returns {obis_code: float, "_units": {obis_code: unit_str}} or None.
     """
-    if not blob or blob[0] != _HDLC_FLAG:
+    pos = _dlms_app_start(blob)
+    if pos is None:
         return None
-
-    # Locate LLC header (E6 E7 00) — always present in DLMS meters, within first 30 bytes
-    llc_pos = blob.find(_LLC_HEADER, 1, 30)
-    if llc_pos < 0:
-        return None
-
-    # DLMS application layer starts after LLC (3 bytes)
-    pos = llc_pos + 3
-
-    if pos >= len(blob) or blob[pos] != _TAG_DATANOTIFICATION:
-        return None
-    pos += 1
-
-    # 4-byte Long-Invoke-Id-And-Priority
-    pos += 4
-    if pos >= len(blob):
-        return None
-
-    # Optional date-time: octet-string, fixed 12-byte date-time, or absent marker.
-    if blob[pos] == _TAG_OCTET_STRING:
-        pos += 1
-        if pos >= len(blob):
-            return None
-        dt_len = blob[pos]
-        pos += 1 + dt_len
-    elif blob[pos] == 0x0C:
-        pos += 1 + 12
-    else:
-        pos += 1  # skip 0x00 absent marker
 
     if pos < len(blob) and blob[pos] == _TAG_STRUCTURE:
         flat = _parse_flat_structure(blob, pos)
@@ -537,7 +402,7 @@ def parse_dlms_cosem(blob: bytes) -> Optional[Dict[str, Any]]:
             if numeric is not None:
                 raw_val, pos = numeric
                 result[obis_code] = raw_val
-                unit = _FLAT_UNITS.get(obis_measurement_code(obis_code))
+                unit = _obis_metadata(obis_code).get("unit")
                 if unit:
                     units[obis_code] = unit
                 continue

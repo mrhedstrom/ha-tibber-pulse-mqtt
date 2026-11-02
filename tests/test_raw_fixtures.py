@@ -10,6 +10,7 @@ import pytest
 from custom_components.tibber_pulse_mqtt.const import CONF_SAVE_RAW_DATA, DOMAIN
 from custom_components.tibber_pulse_mqtt.dispatcher import TibberDispatcher
 from custom_components.tibber_pulse_mqtt.raw_capture import MIN_DATA_MESSAGES
+from custom_components.tibber_pulse_mqtt.sensor import _unique_id_for_obis
 
 RAW_FIXTURE_DIR = Path(__file__).parent / "fixtures" / "raw"
 RAW_FIXTURES = sorted(RAW_FIXTURE_DIR.glob("*.jsonl"))
@@ -329,6 +330,22 @@ def test_raw_fixture_normalizes_units_for_known_obis_codes(raw_file, tmp_path):
         assert sensor_manager.units.get(code) == expected_unit, (
             f"{raw_file.name} has unexpected normalized unit for OBIS code {code}"
         )
+
+
+@pytest.mark.parametrize("raw_file", RAW_FIXTURES, ids=lambda path: path.name)
+def test_raw_fixture_obis_codes_keep_legacy_unique_ids(raw_file):
+    metadata_file = _metadata_file_for(raw_file)
+    metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+    codes = metadata["obis_codes"]
+    device_id = "pulse-id"
+
+    expected = {
+        f"tibber_{device_id}_{code.replace(':', '_').replace('.', '_')}"
+        for code in codes
+    }
+    actual = {_unique_id_for_obis(device_id, code) for code in codes}
+
+    assert actual == expected
 
 
 @pytest.mark.parametrize("raw_file", RAW_FIXTURES, ids=lambda path: path.name)
