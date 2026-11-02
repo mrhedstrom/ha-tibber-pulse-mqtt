@@ -92,6 +92,24 @@ Key modules:
 
 Before creating new functionality, first determine if an existing parser, dispatcher or entity management flow should be extended.
 
+### Parser Architecture
+
+A parser should know how to decode data, not what the data means.
+
+Protocol parsers are responsible for:
+- Decoding protocol payloads
+- Detecting payload formats
+- Extracting values from payloads
+
+Protocol parsers should not contain:
+- Meter-specific metadata
+- OBIS metadata
+- Positional mappings
+- Unit definitions
+- Format-specific scaling metadata
+
+Such definitions belong in full_db.py.
+
 ## Claude Code Workflow
 
 Before making changes:
@@ -153,6 +171,12 @@ When implementing support for new meters:
 - Add regression tests for every newly supported meter.
 - Never assume that behavior observed in a single raw capture applies to all meters of the same type.
 
+When implementing support for a new meter format:
+
+1. First determine if support can be added through metadata.
+2. Only extend parser behavior when the payload structure itself is new.
+3. Avoid modifying parser logic when a metadata change is sufficient.
+
 ## Release Notes and CHANGELOG.md
 
 CHANGELOG.md is used to automate release creation in GitHub Actions.
@@ -195,6 +219,27 @@ When modifying dlms_cosem.py:
 - Preserve unknown OBIS values whenever possible.
 - Do not discard, filter or remove unsupported OBIS values from parsed meter data, diagnostics or raw captures, except when removing sensitive information during sanitization or when handling invalid/corrupted data.
 - Verify changes against multiple real captures.
+
+### DLMS Parser Responsibilities
+
+The DLMS/COSEM parser is responsible for:
+
+- Decoding DLMS/COSEM payload structures
+- Detecting payload formats
+- Extracting OBIS codes and values
+- Returning parsed measurements
+
+The parser must not contain:
+
+- Meter-specific OBIS mappings
+- Positional register definitions
+- OBIS unit definitions
+- Format-specific scaling metadata
+- Meter manufacturer registries
+
+Such metadata belongs in full_db.py.
+
+When adding support for new meter formats, prefer adding metadata definitions rather than parser logic whenever possible.
 
 ## Config Flow Reloading
 
@@ -293,6 +338,35 @@ The integration must:
 Do not hardcode assumptions specific to Pulse P1.
 
 Never hard code OBIS codes. All OBIS related settings should be stored in full_db.py.
+
+Before introducing new metadata, ask:
+
+- Is this a property of the OBIS code itself?
+- Is this a property of a payload format?
+- Is this a property of a specific meter?
+
+Store the information in the layer it belongs to.
+
+Do not place format-specific or meter-specific metadata in protocol parsers.
+
+OBIS metadata and format-specific metadata are separate concepts.
+
+Canonical OBIS metadata describes the meaning of an OBIS code and may include:
+
+- Unit
+- Device class
+- State class
+- Precision
+- Sensor metadata
+
+Format-specific metadata describes how a specific protocol format encodes values and may include:
+
+- Positional mappings
+- Scaling factors
+- Structure definitions
+- Format identifiers
+
+Format-specific metadata must not be stored as canonical OBIS properties.
 
 ## Unit Conversion
 
