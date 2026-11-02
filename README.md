@@ -1,4 +1,4 @@
-# Tibber Pulse MQTT for Home Assistant (P1, HAN, KM)
+# <sub><img src="https://raw.githubusercontent.com/mrhedstrom/ha-tibber-pulse-mqtt/main/custom_components/tibber_pulse_mqtt/brand/icon.png" width="48" height="48"></sub> Tibber Pulse MQTT for Home Assistant (P1, HAN, KM)
 Tibber Pulse MQTT is a local Home Assistant integration for Tibber Pulse devices (P1, HAN, KM). 
 
 It decodes compressed protobuf envelopes, parses OBIS data, and exposes real-time **native Home Assistant sensors**. No MQTT Discovery, extra topics, **or cloud dependencies** are required.
@@ -385,7 +385,8 @@ Tibber Pulse MQTT is a hobby project created and maintained during evenings and 
 If the integration adds value to your Home Assistant setup and you'd like to help fund future development, you are welcome to support the project with a donation.
 
 [![PayPal](https://img.shields.io/badge/PayPal-003087?logo=paypal&logoColor=white)](https://paypal.me/mrhedstrom1)  
-[![Swish](images/swish-tibber-pulse-mqtt-qronly.png)](https://app.swish.nu/1/p/sw/?sw=0704542533&cur=SEK&msg=Tibber%20Pulse%20MQTT&edit=amt,msg&src=qr)
+
+[![Swish](https://raw.githubusercontent.com/mrhedstrom/ha-tibber-pulse-mqtt/main/images/swish-tibber-pulse-mqtt-qronly.png)](https://app.swish.nu/1/p/sw/?sw=0704542533&cur=SEK&msg=Tibber%20Pulse%20MQTT&edit=amt,msg&src=qr)
 
 ## Credits
 Tibber Pulse community work and formats
