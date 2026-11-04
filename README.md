@@ -23,26 +23,13 @@ For Tibber Pulse IR devices, see [marq24/ha-tibber-pulse-local](https://github.c
   - Protobuf + zlib (P1 / DSMR)
   - DLMS/COSEM DataNotification (HAN meters)
 
-## HACS Installation
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mrhedstrom&repository=ha-tibber-pulse-mqtt)
+## Installation via Home Assistant Marketplace
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=mrhedstrom&repository=ha-tibber-pulse-mqtt)
 
-This integration is available as an official HACS integration.
-
-1. Open HACS in Home Assistant
-2. Go to Integrations
-3. Click Explore & Download Repositories
-4. Search for Tibber Pulse MQTT
-5. Click Install
-6. Restart Home Assistant
-
-> HACS docs: https://hacs.xyz  
-
-## Manual Installation (without HACS)
-Use this method only if you do not want to use HACS.
-1. Download the latest release from GitHub  
-   https://github.com/mrhedstrom/ha-tibber-pulse-mqtt/releases
-2. Copy the `custom_components/tibber_pulse_mqtt` folder into your HA `config/custom_components/` directory.
-3. Restart Home Assistant
+1. Open **Marketplace**
+2. Search for **Tibber Pulse MQTT**
+3. Click **Download**
+4. Follow the on-screen instructions
 
 ## Configure MQTT Bridge (Pulse → AWS via local Mosquitto)
 To keep full Tibber functionality — including the Tibber app, firmware updates, and Tibber cloud–based features such as load balancing for EV chargers — the Tibber Pulse must continue communicating with Tibber Cloud (AWS IoT).
