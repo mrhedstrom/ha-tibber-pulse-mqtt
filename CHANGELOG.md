@@ -5,6 +5,7 @@
 
 ### Changed
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
+- Updated installation instructions to reflect that the integration is now a HA Marketplace integration.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**
