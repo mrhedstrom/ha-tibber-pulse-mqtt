@@ -326,3 +326,146 @@ class TestAttributeOnlyObis:
             assert attrs["meter_type"] == "Kamstrup MA304H3E"
 
         asyncio.run(_run())
+
+
+# ---------------------------------------------------------------------------
+# 5. Recorder state & attribute deduplication
+# ---------------------------------------------------------------------------
+
+
+class TestRecorderStateDeduplication:
+    @pytest.fixture(autouse=True)
+    def _mock_entity_registry(self, monkeypatch):
+        registry = SimpleNamespace(async_get_entity_id=lambda *args: None)
+        monkeypatch.setattr(sensor_module.er, "async_get", lambda hass: registry)
+        monkeypatch.setattr(
+            sensor_module,
+            "async_generate_entity_id",
+            lambda entity_id_format, name, hass: entity_id_format.format(name),
+        )
+
+    def test_unrecorded_attributes_exclude_device_and_status_metadata(self):
+        """Recorder must exclude static/volatile device metadata from state_attributes."""
+        expected = {
+            "hwmodel",
+            "rssi",
+            "ssid",
+            "Build",
+            "Hw",
+            "ID",
+            "IP",
+            "Uptime",
+            "baud",
+            "ntc",
+            "dsmr",
+            "heap",
+            "meter_datetime",
+            "meter_id",
+            "meter_serial",
+            "meter_type",
+            "alt_id",
+        }
+        assert expected <= TibberSensor._unrecorded_attributes
+        assert expected <= TibberSensor._attr_unrecorded_attributes
+
+    def test_unchanged_sensor_value_does_not_schedule_state_write(self):
+        """Repeated identical OBIS readings must not call _schedule_state_write."""
+        writes = []
+        sensor = _sensor("1-0:1.7.0")
+        sensor._added_to_hass = True
+        sensor._schedule_state_write = lambda: writes.append(sensor.native_value)
+
+        sensor.set_state(500.0)
+        sensor.set_state(500.0)
+        sensor.set_state(500.0)
+        sensor.set_state(525.0)
+        sensor.set_state(525.0)
+
+        assert writes == [500.0, 525.0]
+
+    def test_meter_datetime_and_status_updates_do_not_schedule_state_writes(self):
+        """1 Hz meter_datetime and periodic status updates must not force state writes."""
+
+        async def _run():
+            manager = _manager()
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+            await manager.add_or_update(DEV, "1-0:1.8.0", 100.0, {"hwmodel": "TLC01", "Uptime": 10})
+
+            sensor = manager._entities[IMPORT_UID]
+            sensor._added_to_hass = True
+            writes = []
+            sensor._schedule_state_write = lambda: writes.append(sensor.native_value)
+
+            # 1 Hz meter_datetime updates update extra_state_attributes in memory without writing state
+            await manager.add_or_update(DEV, "0-0:1.0.0", "261023201220W", {"hwmodel": "TLC01", "Uptime": 10})
+            await manager.add_or_update(DEV, "0-0:1.0.0", "261023201221W", {"hwmodel": "TLC01", "Uptime": 11})
+            assert sensor.extra_state_attributes["meter_datetime"] == "261023201221W"
+            assert writes == []
+
+            # Periodic status updates update extra_state_attributes in memory without writing state
+            manager.update_status_for_device(DEV, {"hwmodel": "TLC01", "Uptime": 130, "heap": 150000})
+            assert sensor.extra_state_attributes["Uptime"] == 130
+            assert writes == []
+
+            # Repeated identical sensor reading with updated status does not write state
+            await manager.add_or_update(DEV, "1-0:1.8.0", 100.0, {"hwmodel": "TLC01", "Uptime": 130})
+            assert writes == []
+
+            # Actual measurement change writes state once
+            await manager.add_or_update(DEV, "1-0:1.8.0", 100.001, {"hwmodel": "TLC01", "Uptime": 130})
+            assert writes == [pytest.approx(100001.0)]
+
+        asyncio.run(_run())
+
+    def test_meter_id_deduplicates_across_device_and_attribute_updates(self):
+        """0-0:96.1.1 handled via update_meter_id_for_device and add_or_update must not double-write."""
+
+        async def _run():
+            manager = _manager()
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+
+            # Pre-populate meter_id before entity creation (as dispatcher._apply_obis_with_pulse_id does)
+            manager.update_meter_id_for_device(DEV, "4530303630313030303033313831353233")
+            await manager.add_or_update(DEV, "1-0:1.8.0", 100.0, {})
+
+            sensor = manager._entities[IMPORT_UID]
+            sensor._added_to_hass = True
+            writes = []
+            sensor._schedule_state_write = lambda: writes.append("write")
+
+            # Subsequent update_meter_id_for_device and add_or_update for 0-0:96.1.1 with same serial
+            manager.update_meter_id_for_device(DEV, "4530303630313030303033313831353233")
+            await manager.add_or_update(DEV, "0-0:96.1.1", "4530303630313030303033313831353233", {})
+            assert writes == []
+            assert sensor.extra_state_attributes["meter_id"] == "4530303630313030303033313831353233"
+
+        asyncio.run(_run())
+
+    def test_registered_entity_has_state_set_before_async_add_entities(self, monkeypatch):
+        """Entities already in the Entity Registry must have state populated before async_add_entities runs."""
+        registry = SimpleNamespace(async_get_entity_id=lambda *args: f"sensor.{IMPORT_UID}")
+        monkeypatch.setattr(sensor_module.er, "async_get", lambda hass: registry)
+
+        async def _run():
+            observed_at_add = []
+
+            def _eager_add_entities(entities):
+                for ent in entities:
+                    observed_at_add.append(
+                        (ent.native_value, ent._meter_id, dict(ent.extra_state_attributes or {}))
+                    )
+
+            manager = SensorManager(_manager().hass, object(), _eager_add_entities)
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+            manager.update_meter_id_for_device(DEV, "meter-123")
+
+            await manager.add_or_update(DEV, "1-0:1.8.0", 50.0, {"hwmodel": "TLC01"})
+
+            assert len(observed_at_add) == 1
+            val, meter_id, attrs = observed_at_add[0]
+            assert val == pytest.approx(50000.0)
+            assert meter_id == "meter-123"
+            assert attrs.get("meter_id") == "meter-123"
+            assert attrs.get("hwmodel") == "TLC01"
+
+        asyncio.run(_run())

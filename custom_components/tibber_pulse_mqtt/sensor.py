@@ -169,30 +169,15 @@ class SensorManager:
             )
             return
 
-        # If entity exists in registry but not in runtime, recreate it
-        if ent is None and er_entry_entity_id:
-            ent = TibberSensor(
-                unique_id=unique_id,
-                dev_id=dev_id,
-                obis_code=obis_code,
-                meta=meta,
-                status=status or {}
-            )
-
-            self._entities[unique_id] = ent
-            # HA will automatically attach entity_id via registry
-            self.async_add_entities([ent])
-
         # Compute scaled value
         scaled_value = convert_unit_value(value, raw_unit, target_unit)
 
-        # Create brand-new entity
+        # Create or recreate entity if not yet in runtime cache
         if ent is None:
             async with self._create_lock:
                 # Double-check after locking
-                if unique_id in self._entities:
-                    ent = self._entities[unique_id]
-                else:
+                ent = self._entities.get(unique_id)
+                if ent is None:
                     meta = _metadata_for_obis(obis_code)
 
                     ent = TibberSensor(
@@ -200,30 +185,26 @@ class SensorManager:
                         dev_id=dev_id,
                         obis_code=obis_code,
                         meta=meta,
-                        status=status or {}
+                        status=status or {},
+                        meter_id=self._meter_ids.get(dev_id),
+                        device_attributes=self._device_attributes.get(dev_id),
                     )
                     ent.set_state(scaled_value)
 
+                    if not er_entry_entity_id:
+                        # First-time creation, generate suggested entity_id
+                        ent.entity_id = async_generate_entity_id(
+                            "sensor.{}",
+                            unique_id,
+                            hass=self.hass,
+                        )
+
                     self._entities[unique_id] = ent
-
-                    if er_entry_entity_id:
-                        # HA will reconnect by unique_id
-                        self.async_add_entities([ent])
-                        return
-
-                    # First-time creation, generate suggested entity_id
-                    suggested_object_id = unique_id
-                    ent.entity_id = async_generate_entity_id(
-                        "sensor.{}",
-                        suggested_object_id,
-                        hass=self.hass
-                    )
-
                     self.async_add_entities([ent])
-                # After creation, fall through and update its state below
+                    return
 
-        # Update entity
-        ent.set_status(status or {})
+        # Update existing entity
+        ent.set_status(status or {}, write_state=False)
         ent.set_state(scaled_value)
 
     def update_device_attribute(
@@ -234,23 +215,31 @@ class SensorManager:
     ):
         """Store a device-level attribute and propagate it to all entities."""
         attrs = self._device_attributes.setdefault(dev_id, {})
+        if attrs.get(attr_name) == value:
+            return
+        if attr_name == "meter_id" and attrs.get("meter_id") == str(value).strip():
+            return
         attrs[attr_name] = value
 
+        write_state = attr_name != "meter_datetime"
         for ent in self._entities.values():
             if getattr(ent, "_dev_id", None) == dev_id:
-                ent.set_device_attributes(attrs)
+                ent.set_device_attributes(attrs, write_state=write_state)
 
     def update_status_for_device(self, dev_id: str, status: Dict[str, Any]):
         """Propagate status attributes to all entities of the device (dev_id = pulse_id)."""
         for ent in self._entities.values():
             if getattr(ent, "_dev_id", None) == dev_id:
-                ent.set_status(status)
+                ent.set_status(status, write_state=False)
 
     def update_meter_id_for_device(self, pulse_id: str, meter_id: str):
         """
         Set the meter serial (OBIS 0-0:96.1.1) for the device and propagate to its entities.
         """
+        if self._meter_ids.get(pulse_id) == meter_id:
+            return
         self._meter_ids[pulse_id] = meter_id
+        self._device_attributes.setdefault(pulse_id, {})["meter_id"] = meter_id
         for ent in self._entities.values():
             if getattr(ent, "_dev_id", None) == pulse_id:
                 ent.set_meter_id(meter_id)
@@ -258,6 +247,25 @@ class SensorManager:
 
 class TibberSensor(SensorEntity):
     _attr_should_poll = False
+    _unrecorded_attributes = _attr_unrecorded_attributes = frozenset({
+        "hwmodel",
+        "rssi",
+        "ssid",
+        "Build",
+        "Hw",
+        "ID",
+        "IP",
+        "Uptime",
+        "baud",
+        "ntc",
+        "dsmr",
+        "heap",
+        "meter_datetime",
+        "meter_id",
+        "meter_serial",
+        "meter_type",
+        "alt_id",
+    })
 
     def __init__(
         self,
@@ -265,7 +273,9 @@ class TibberSensor(SensorEntity):
         dev_id: str,     # pulse_id
         obis_code: str,
         meta: Dict[str, Any],
-        status: Dict[str, Any]
+        status: Dict[str, Any],
+        meter_id: str | None = None,
+        device_attributes: Dict[str, Any] | None = None,
     ):
         self._attr_unique_id = unique_id
         self.has_entity_name = True
@@ -278,8 +288,8 @@ class TibberSensor(SensorEntity):
         self.meta = meta or _metadata_for_obis(obis_code)
 
         self._state = None
-        self._meter_id = None
-        self._device_attributes = {}
+        self._meter_id = meter_id
+        self._device_attributes = dict(device_attributes) if device_attributes else {}
         self._added_to_hass = False
 
         # Target unit from OBIS metadata
@@ -389,11 +399,14 @@ class TibberSensor(SensorEntity):
             return True
         return False
 
-    def set_device_attributes(self, attrs: Dict[str, Any]):
+    def set_device_attributes(self, attrs: Dict[str, Any], *, write_state: bool = True):
         """Set shared device-level attributes."""
-        self._device_attributes = attrs or {}
+        new_attrs = dict(attrs) if attrs else {}
+        if self._device_attributes == new_attrs:
+            return
+        self._device_attributes = new_attrs
 
-        if getattr(self, "_added_to_hass", False):
+        if write_state and getattr(self, "_added_to_hass", False):
             self._schedule_state_write()
 
     def set_state(self, value: Any):
@@ -438,19 +451,28 @@ class TibberSensor(SensorEntity):
 
             value = numeric_val
 
+        if self._state == value and type(self._state) is type(value):
+            return
+
         self._state = value
         if getattr(self, "_added_to_hass", False):
             self._schedule_state_write()
 
-    def set_status(self, status: Dict[str, Any]):
+    def set_status(self, status: Dict[str, Any], *, write_state: bool = False):
         """Set internal status; write only after entity is added to HA, on the HA loop."""
-        self._status = status or {}
-        if getattr(self, "_added_to_hass", False):
+        new_status = status or {}
+        if new_status == self._status:
+            return
+        self._status = new_status
+        if write_state and getattr(self, "_added_to_hass", False):
             self._schedule_state_write()
 
     def set_meter_id(self, meter_id: str):
         """Set meter serial (0-0:96.1.1); write only after entity is added to HA, on the HA loop."""
+        if self._meter_id == meter_id:
+            return
         self._meter_id = meter_id
+        self._device_attributes["meter_id"] = meter_id
         if getattr(self, "_added_to_hass", False):
             self._schedule_state_write()
 

@@ -3,6 +3,9 @@
 ## [0.4.8] - future release
 <!-- Add sections for new features, fixes, and improvements -->
 
+### Fixed
+- Prevented Home Assistant Recorder database bloat (`states` and `state_attributes`) by excluding device/status metadata from recorded attributes (`_unrecorded_attributes`), skipping redundant state writes when OBIS sensor readings, `meter_datetime`, `meter_id`, or `status` telemetry have not changed, and populating initial state on registered entities before `async_add_entities` executes.
+
 ### Changed
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
 - Updated installation instructions to reflect that the integration is now a HA Marketplace integration.
