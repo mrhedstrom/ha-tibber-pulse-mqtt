@@ -27,7 +27,11 @@ from homeassistant.helpers.entity import EntityCategory
 
 from custom_components.tibber_pulse_mqtt import sensor as sensor_module
 from custom_components.tibber_pulse_mqtt.obis.full_db import obis_meta
-from custom_components.tibber_pulse_mqtt.sensor import SensorManager, TibberSensor
+from custom_components.tibber_pulse_mqtt.sensor import (
+    ALLOWED_STATUS_ATTRIBUTES,
+    SensorManager,
+    TibberSensor,
+)
 
 DEV = "cb8158ec4600"
 IMPORT_UID = f"tibber_{DEV}_1-0_1_8_0"
@@ -346,27 +350,30 @@ class TestRecorderStateDeduplication:
 
     def test_unrecorded_attributes_exclude_device_and_status_metadata(self):
         """Recorder must exclude static/volatile device metadata from state_attributes."""
-        expected = {
-            "hwmodel",
-            "rssi",
-            "ssid",
-            "Build",
-            "Hw",
-            "ID",
-            "IP",
-            "Uptime",
-            "baud",
-            "ntc",
-            "dsmr",
-            "heap",
-            "meter_datetime",
-            "meter_id",
-            "meter_serial",
-            "meter_type",
-            "alt_id",
+        expected_obis_attrs = {
+            meta.get("attribute_name", obis_code.replace(":", "_").replace(".", "_"))
+            for obis_code, meta in obis_meta.items()
+            if meta.get("attribute_only")
         }
-        assert expected <= TibberSensor._unrecorded_attributes
-        assert expected <= TibberSensor._attr_unrecorded_attributes
+        expected = frozenset({*ALLOWED_STATUS_ATTRIBUTES, *expected_obis_attrs})
+        assert TibberSensor._unrecorded_attributes == expected
+        assert TibberSensor._attr_unrecorded_attributes == expected
+
+        async def _run():
+            manager = _manager()
+            manager.set_obis_units({"1-0:1.8.0": "kWh"})
+            status = {k: f"val_{k}" for k in (*ALLOWED_STATUS_ATTRIBUTES, "ignored_key")}
+            await manager.add_or_update(DEV, "1-0:1.8.0", 100.0, status)
+            for obis_code, meta in obis_meta.items():
+                if meta.get("attribute_only"):
+                    await manager.add_or_update(DEV, obis_code, f"val_{obis_code}", status)
+
+            sensor = manager._entities[IMPORT_UID]
+            exposed_keys = set(sensor.extra_state_attributes)
+            assert exposed_keys == expected
+            assert exposed_keys <= sensor._unrecorded_attributes
+
+        asyncio.run(_run())
 
     def test_unchanged_sensor_value_does_not_schedule_state_write(self):
         """Repeated identical OBIS readings must not call _schedule_state_write."""
@@ -458,6 +465,7 @@ class TestRecorderStateDeduplication:
             manager = SensorManager(_manager().hass, object(), _eager_add_entities)
             manager.set_obis_units({"1-0:1.8.0": "kWh"})
             manager.update_meter_id_for_device(DEV, "meter-123")
+            await manager.add_or_update(DEV, "0-0:96.1.1", "meter-123", {"hwmodel": "TLC01"})
 
             await manager.add_or_update(DEV, "1-0:1.8.0", 50.0, {"hwmodel": "TLC01"})
 
