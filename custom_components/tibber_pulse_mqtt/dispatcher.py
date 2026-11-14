@@ -269,12 +269,18 @@ class TibberDispatcher:
             # DLMS/COSEM binary path (Aidon V2 and similar HAN meters).
             # Checked before feed_blob to avoid wasted deflate attempts on binary frames.
             try:
-                for hdlc_frame in iter_dlms_frames_in_blob(blob):
-                    obis = parse_dlms(hdlc_frame)
+                any_dlms_ok = False
+                for hdlc_frame in iter_dlms_frames_in_blob(payload):
+                    try:
+                        obis = parse_dlms(hdlc_frame)
+                    except Exception:
+                        continue
                     if obis:
+                        any_dlms_ok = True
                         self.hass.loop.call_soon_threadsafe(self._apply_obis, dev_id, obis)
-                        self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
-                        return
+                if any_dlms_ok:
+                    self._bump_decode(dev_id, True, topic=topic, payload=payload, offset=None, had_blob=True, zerr=None)
+                    return
             except Exception:
                 pass
 

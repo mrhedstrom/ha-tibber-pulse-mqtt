@@ -62,3 +62,37 @@ def test_kaifa_hourly_list_decodes_energy_registers():
     assert "0-0:1.0.0" not in result
     assert result["_units"]["1-0:1.8.0"] == "Wh"
     assert result["_units"]["1-0:3.8.0"] == "VArh"
+
+
+def test_kaifa_single_phase_hourly_list_decodes_energy_registers():
+    frame = _kaifa_frame([
+        _octet(b"KFM_001"),
+        _octet(b"0000000000000000"),
+        _octet(b"MA105H2E"),
+        _u32(4397),        # P+ W
+        _u32(0),           # P- W
+        _u32(0),           # Q+ VAr
+        _u32(305),         # Q- VAr
+        _u32(19189),       # I1 mA
+        _u32(2301),        # U1 0.1 V
+        _octet(_CLOCK),
+        _u32(123456),      # A+ Wh
+        _u32(123),         # A- Wh
+        _u32(4567),        # R+ VArh
+        _u32(45),          # R- VArh
+    ])
+
+    result = parse_dlms(frame)
+
+    assert result is not None
+    assert result["0-0:96.1.7"] == "MA105H2E"
+    assert result["1-0:1.7.0"] == 4397
+    assert result["1-0:4.7.0"] == 305
+    assert result["1-0:31.7.0"] == pytest.approx(19.189)
+    assert result["1-0:32.7.0"] == pytest.approx(230.1)
+    assert result["1-0:1.8.0"] == 123456
+    assert result["1-0:2.8.0"] == 123
+    assert result["1-0:3.8.0"] == 4567
+    assert result["1-0:4.8.0"] == 45
+    assert result["_units"]["1-0:31.7.0"] == "A"
+    assert result["_units"]["1-0:32.7.0"] == "V"

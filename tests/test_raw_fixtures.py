@@ -193,6 +193,28 @@ def test_forwarded_topic_is_used_as_device_key(monkeypatch):
     assert queue.items == [("Tibber", "Tibber", payload)]
 
 
+@pytest.mark.parametrize(
+    "filename",
+    ["F-55bc424cac.jsonl", "F-62856487d9.jsonl"],
+)
+def test_batched_single_phase_kaifa_frames_decode_all_measurements(filename, tmp_path):
+    raw_file = RAW_FIXTURE_DIR / filename
+    sensor_manager, _records, per_record_updates = _replay_fixture(raw_file, tmp_path)
+
+    decoded_codes = set(_decoded_obis_codes(sensor_manager))
+    assert {
+        "1-0:1.7.0",
+        "1-0:2.7.0",
+        "1-0:3.7.0",
+        "1-0:4.7.0",
+        "1-0:31.7.0",
+        "1-0:32.7.0",
+    } <= decoded_codes
+    assert sensor_manager.units["1-0:31.7.0"] == "A"
+    assert sensor_manager.units["1-0:32.7.0"] == "V"
+    assert set(per_record_updates) <= {5, 12}
+
+
 def test_dispatcher_captures_unrecognized_data_messages(tmp_path):
     device_key = "topic-device"
     topic = f"tibber-pulse-{device_key}/publish"
