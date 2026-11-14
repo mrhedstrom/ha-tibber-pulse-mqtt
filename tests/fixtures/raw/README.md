@@ -16,6 +16,24 @@ Review the generated JSON file and run `pytest tests/test_raw_fixtures.py` befor
 
 ## Files
 
+File: F-55bc424cac.jsonl
+
+- Device type/model (Pulse P1, HAN, or KM): Pulse HAN
+- Meter manufacturer and model, if known: Kaifa MA105H2E, single-phase (Norway)
+- Firmware/build version, if known: 1.2.5 (Hw: F)
+- Home Assistant and integration versions: Integration 0.4.7
+- What behavior or unsupported data the capture demonstrates: Five data messages with four List 1 frames and one nine-member `KFM_001` List 2 frame per protobuf envelope. List 2 carries active/reactive power, current, and voltage. No hourly List 3 frame is present; the proposed 14-member mapping is not verified by this capture.
+- Confirmation that the capture was reviewed and is safe to share: Embedded meter identifier replaced with zeros; MQTT topic and STATUS fields redacted.
+
+File: F-62856487d9.jsonl
+
+- Device type/model (Pulse P1, HAN, or KM): Pulse HAN
+- Meter manufacturer and model, if known: Kaifa MA105H2E, single-phase (Norway)
+- Firmware/build version, if known: 1.2.5 (Hw: F)
+- Home Assistant and integration versions: Integration 0.4.7
+- What behavior or unsupported data the capture demonstrates: Ninety-two data messages with four List 1 frames and one nine-member `KFM_001` List 2 frame per protobuf envelope. List 2 carries active/reactive power, current, and voltage. No hourly List 3 frame is present; the proposed 14-member mapping is not verified by this capture.
+- Confirmation that the capture was reviewed and is safe to share: Embedded meter identifier replaced with zeros; MQTT topic and STATUS fields redacted.
+
 File: TLC01-8294d970bc.jsonl
 
 - Device type/model (Pulse P1, HAN, or KM): P1
