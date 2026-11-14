@@ -23,7 +23,7 @@ from .const import (
 )
 from .raw_capture import RawMessageCapture
 
-MIN_DECODE_SAMPLES = 5
+MIN_DECODE_SAMPLES = 20
 MAX_FAILED_RATIO = 0.50
 
 DOCS_URL = (

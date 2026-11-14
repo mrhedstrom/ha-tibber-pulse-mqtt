@@ -25,6 +25,15 @@ File: TLC01-8294d970bc.jsonl
 - What behavior or unsupported data the capture demonstrates: Ok, this one is with compressed protobuf OBIS values. It is a good example of the OBIS values that are available from this meter.
 - Confirmation that the capture was reviewed and is safe to share: Yes
 
+File: TLC01-7ebae9b8f5.jsonl
+
+- Device type/model (Pulse P1, HAN, or KM): P1
+- Meter manufacturer and model, if known: Unknown (Netherlands)
+- Firmware/build version, if known: Pulse build 1.0.8; meter firmware unknown
+- Home Assistant and integration versions: Unknown
+- What behavior or unsupported data the capture demonstrates: Compressed protobuf P1 data decoded through the dispatcher, with 19 OBIS codes and 10 unit mappings. The meter model is not known, so the OBIS set is recorded from the capture without adding meter-specific assumptions.
+- Confirmation that the capture was reviewed and is safe to share: Not confirmed; Yes
+
 File: TLC01-3ac2ccfb54.jsonl
 
 - Device type/model (Pulse P1, HAN, or KM): P1

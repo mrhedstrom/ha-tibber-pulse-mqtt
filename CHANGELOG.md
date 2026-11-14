@@ -5,6 +5,7 @@
 
 ### Fixed
 - Fixed excessive Home Assistant Recorder database growth caused by frequent metadata and telemetry updates, reducing unnecessary state and attribute records. Thanks @vsilvar for PR #52
+- Increased the number of raw capture samples required before triggering the OBIS decoding repair message from 5 to 20, improving decoding reliability and reducing false positives. A false positive was reported in issue #54.
 
 ### Changed
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
