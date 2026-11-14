@@ -70,6 +70,9 @@ class TibberLocalHub:
 
         self._unsub_ha_stop = self.hass.bus.async_listen(EVENT_HOMEASSISTANT_STOP, _on_ha_stop)
 
+        for forwarder in self._aws_forwarders_for_source_entry():
+            await forwarder.async_attach_local_subscription()
+
         # Unload callback should be an ASYNC FUNCTION so HA can create the Task itself
         async def _on_unload_async():
             await self.async_stop()
@@ -84,6 +87,9 @@ class TibberLocalHub:
             except Exception:
                 pass
             self._unsub_ha_stop = None
+
+        for forwarder in self._aws_forwarders_for_source_entry():
+            await forwarder.async_detach_local_subscription()
 
         # Stop dispatcher (cancels and awaits worker tasks)
         try:

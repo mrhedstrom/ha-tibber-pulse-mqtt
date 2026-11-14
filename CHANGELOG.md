@@ -6,6 +6,15 @@
 ### Changed
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
 - Updated installation instructions to reflect that the integration is now a HA Marketplace integration.
+- Localized AWS forwarding setup, connection test feedback, status, errors, and Repair messages in all supported languages.
+
+### Added
+- Added optional native bidirectional AWS IoT forwarding for discovered Pulse devices, with per-device configuration, certificate rotation, connection testing, and status reporting.
+
+> [!WARNING]
+> Before enabling native AWS forwarding for a Pulse, disable any Mosquitto-to-AWS bridge forwarding the same device. Do not run both methods simultaneously.
+
+- Added migration guidance for existing Mosquitto bridge users; the bridge remains optional and local Home Assistant sensors continue to work without AWS forwarding.
 
 > [!IMPORTANT]
 > **Help keep your meter supported.**

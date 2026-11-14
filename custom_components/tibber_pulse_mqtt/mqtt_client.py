@@ -105,7 +105,13 @@ class HAMQTTBridge:
         self._unsubs = []
         self._debug = _LOGGER.isEnabledFor(logging.DEBUG)
 
-    async def async_subscribe(self, topic: str, cb: MessageCallback):
+    async def async_subscribe(
+        self,
+        topic: str,
+        cb: MessageCallback,
+        *,
+        include_metadata: bool = False,
+    ):
         """
         Subscribe with support for embedded '+':
         - If the topic contains an embedded '+', subscribe to a derived topic with '+' as the whole level.
@@ -127,12 +133,22 @@ class HAMQTTBridge:
             _debug_log_rx("HA MQTT", msg.topic, payload, self._debug)
 
             try:
-                cb(msg.topic, payload)
+                if include_metadata:
+                    cb(msg.topic, payload, msg.qos, msg.retain)
+                else:
+                    cb(msg.topic, payload)
             except Exception as e:
                 _LOGGER.exception("Callback error: %s", e)
 
         unsub = await ha_mqtt.async_subscribe(self.hass, subscribe_topic, _wrapped, qos=1, encoding=None)
         self._unsubs.append(unsub)
+        return unsub
+
+    def async_unsubscribe(self, unsub) -> None:
+        """Remove and invoke one subscription callback."""
+        if unsub in self._unsubs:
+            self._unsubs.remove(unsub)
+        unsub()
 
     async def async_stop(self):
         for u in self._unsubs:
@@ -197,6 +213,47 @@ class ExternalMQTTClient:
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._thread: Optional[threading.Thread] = None
+        self._subscriptions: dict[str, list[MessageCallback]] = {}
+
+    def async_subscribe(
+        self,
+        topic: str,
+        cb: MessageCallback,
+        *,
+        include_metadata: bool = False,
+    ):
+        """Register a topic callback without opening a second external broker client."""
+        subscription = (cb, include_metadata)
+        callbacks = self._subscriptions.setdefault(topic, [])
+        callbacks.append(subscription)
+
+        def _unsubscribe() -> None:
+            topic_callbacks = self._subscriptions.get(topic, [])
+            if subscription in topic_callbacks:
+                topic_callbacks.remove(subscription)
+            if not topic_callbacks:
+                self._subscriptions.pop(topic, None)
+
+        return _unsubscribe
+
+    async def async_publish(
+        self,
+        topic: str,
+        payload: bytes,
+        *,
+        qos: int = 0,
+        retain: bool = False,
+    ) -> None:
+        """Publish through the configured external broker client."""
+        result = await self.hass.async_add_executor_job(
+            self._client.publish,
+            topic,
+            payload,
+            min(qos, 1),
+            retain,
+        )
+        if result.rc != paho.MQTT_ERR_SUCCESS:
+            raise ConnectionError(f"External MQTT publish failed ({result.rc})")
 
     def _on_connect(self, client, userdata, flags, rc, properties=None):
         _LOGGER.info("[Ext MQTT] Connected rc=%s, subscribing to %s (derived=%s)",
@@ -214,15 +271,24 @@ class ExternalMQTTClient:
 
         try:
             self.hass.loop.call_soon_threadsafe(
-                    self._dispatch,
-                    msg.topic,
-                    payload,
-                )
+                self._dispatch,
+                msg.topic,
+                payload,
+            )
         except Exception as e:
             _LOGGER.exception("Callback error: %s", e)
 
-    def _dispatch(self, topic, payload):
+    def _dispatch(self, topic, payload, qos=1, retain=False):
+        if self._filter_regex and not self._filter_regex.match(topic):
+            return
         self.cb(topic, payload)
+        for subscribed_topic, callbacks in tuple(self._subscriptions.items()):
+            if _compile_topic_regex(subscribed_topic).match(topic):
+                for callback, include_metadata in tuple(callbacks):
+                    if include_metadata:
+                        callback(topic, payload, qos, retain)
+                    else:
+                        callback(topic, payload)
 
     def start(self):
         if self.host is None:

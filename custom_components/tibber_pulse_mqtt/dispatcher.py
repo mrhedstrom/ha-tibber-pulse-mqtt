@@ -17,7 +17,14 @@ except ImportError:
     def callback(func):
         return func
 
-from .const import DOMAIN, CONF_LOG_MISSED_BASE64, CONF_LOG_OBIS
+from .const import (
+    DOMAIN,
+    CONF_LOG_MISSED_BASE64,
+    CONF_LOG_OBIS,
+    CONF_ENTRY_TYPE,
+    ENTRY_TYPE_AWS_FORWARDING,
+    CONF_SOURCE_ENTRY_ID,
+)
 
 try:
     from .protobuf import pulse_pb2
@@ -37,6 +44,7 @@ from .raw_capture_manager import RawCaptureManager
 from urllib.parse import urlencode
 
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.network import get_url
 from homeassistant.loader import async_get_integration
 
@@ -56,6 +64,7 @@ class TibberDispatcher:
         self._topic_to_pulse: Dict[str, str] = {}
         self._pending_by_topic: Dict[str, list] = {}
         self._meter_id: Dict[str, str] = {}
+        self._aws_discovery_pending: set[str] = set()
 
         # RawCaptureManager
         self._capture_manager = RawCaptureManager(
@@ -86,6 +95,14 @@ class TibberDispatcher:
     def capture_manager(self) -> RawCaptureManager:
         """Return raw capture manager."""
         return self._capture_manager
+
+    @property
+    def discovered_pulse_devices(self) -> dict[str, Dict[str, Any]]:
+        """Return Pulse IDs and STATUS payloads seen by this dispatcher."""
+        return {
+            pulse_id: self._devices.get(pulse_id, {}).get("status", {})
+            for pulse_id in set(self._topic_to_pulse.values())
+        }
 
     # ----------------------------- Lifecycle -----------------------------------
 
@@ -248,6 +265,13 @@ class TibberDispatcher:
                         if hasattr(sm, "update_status_for_device"):
                             call_sm_threadsafe(self.hass, sm.update_status_for_device, pulse_id, d["status"])
 
+                    self.hass.add_job(
+                        self._async_register_discovered_pulse,
+                        pulse_id,
+                        topic,
+                        d["status"],
+                    )
+
                 if self.debug:
                     _LOGGER.debug("STATUS UPDATE %s", s)
 
@@ -372,6 +396,91 @@ class TibberDispatcher:
             return
 
         self._bump_decode(dev_id, False, topic=topic, payload=payload, offset=None, had_blob=False)
+
+    async def _async_register_discovered_pulse(
+        self,
+        pulse_id: str,
+        publish_topic: str,
+        status: Dict[str, Any],
+    ) -> None:
+        """Register a discovered Pulse and create its persistent AWS forwarding entry."""
+        try:
+            pulse_id = validate_device_id(pulse_id)
+            receive_topic_for_publish(publish_topic)
+        except ValueError:
+            _LOGGER.warning("Ignoring invalid Pulse discovery topic or ID")
+            return
+
+        registry = dr.async_get(self.hass)
+        registry.async_get_or_create(
+            config_entry_id=self.entry.entry_id,
+            identifiers={(f"tibber_pulse_{pulse_id}",)},
+            manufacturer="Tibber",
+            model=status.get("hwmodel") or status.get("Hw") or "Pulse",
+            name=f"Tibber Pulse ({pulse_id})",
+        )
+
+        existing_entry = next(
+            (
+                entry
+                for entry in self.hass.config_entries.async_entries(DOMAIN)
+                if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_AWS_FORWARDING
+                and entry.data.get(CONF_DEVICE_ID) == pulse_id
+            ),
+            None,
+        )
+        configured = bool(existing_entry and existing_entry.data.get(CONF_AWS_CONFIGURED))
+        forwarding = self.hass.data.get(DOMAIN, {}).get("_aws_forwarders", {})
+        active_forwarder = forwarding.get(existing_entry.entry_id) if existing_entry else None
+        aws_status = (
+            active_forwarder.state
+            if active_forwarder
+            else "connecting" if configured else "not_configured"
+        )
+
+        if self._sensor_manager_ready():
+            manager = self._get_sensor_manager()
+            if hasattr(manager, "set_aws_forwarding_status"):
+                manager.set_aws_forwarding_status(
+                    pulse_id,
+                    aws_status,
+                    status,
+                )
+
+        issue_id = f"{AWS_UNCONFIGURED_ISSUE_PREFIX}{pulse_id}"
+        if configured:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            is_persistent=True,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="aws_forwarding_not_configured",
+            translation_placeholders={"device": pulse_id},
+        )
+
+        if existing_entry or pulse_id in self._aws_discovery_pending:
+            return
+
+        self._aws_discovery_pending.add(pulse_id)
+        try:
+            await self.hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={
+                    "source": "integration_discovery",
+                    CONF_DEVICE_ID: pulse_id,
+                    CONF_PUBLISH_TOPIC: publish_topic,
+                    CONF_SOURCE_ENTRY_ID: self.entry.entry_id,
+                },
+            )
+        except Exception:
+            _LOGGER.exception("Unable to create AWS forwarding entry for %s", pulse_id)
+        finally:
+            self._aws_discovery_pending.discard(pulse_id)
 
     # ------------------------ Logging and raw captures -------------------------
 

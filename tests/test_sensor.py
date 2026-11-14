@@ -27,7 +27,11 @@ from homeassistant.helpers.entity import EntityCategory
 
 from custom_components.tibber_pulse_mqtt import sensor as sensor_module
 from custom_components.tibber_pulse_mqtt.obis.full_db import obis_meta
-from custom_components.tibber_pulse_mqtt.sensor import SensorManager, TibberSensor
+from custom_components.tibber_pulse_mqtt.sensor import (
+    SensorManager,
+    TibberAWSForwardingSensor,
+    TibberSensor,
+)
 
 DEV = "cb8158ec4600"
 IMPORT_UID = f"tibber_{DEV}_1-0_1_8_0"
@@ -43,6 +47,29 @@ def _manager() -> SensorManager:
         states=SimpleNamespace(async_available=lambda entity_id: True),
     )
     return SensorManager(hass, object(), lambda ents: None)
+
+
+def test_aws_forwarding_sensor_uses_existing_pulse_device_identity():
+    sensor = TibberAWSForwardingSensor(DEV, {"hwmodel": "Pulse P1", "Build": "1.2"})
+
+    sensor.set_state("connected")
+
+    assert sensor.unique_id == f"tibber_{DEV}_aws_forwarding"
+    assert sensor.native_value == "connected"
+    assert sensor.device_info["identifiers"] == {(f"tibber_pulse_{DEV}",)}
+    assert sensor.device_info["model"] == "Pulse P1"
+
+
+def test_existing_sensor_state_and_status_methods_remain_available():
+    sensor = TibberSensor("test", DEV, "1-0:1.8.0", {}, {})
+
+    sensor.set_state(42)
+    sensor.set_status({"ID": DEV})
+    sensor.set_meter_id("meter-1")
+
+    assert sensor.native_value == 42
+    assert sensor.extra_state_attributes["ID"] == DEV
+    assert sensor._meter_id == "meter-1"
 
 
 # ---------------------------------------------------------------------------

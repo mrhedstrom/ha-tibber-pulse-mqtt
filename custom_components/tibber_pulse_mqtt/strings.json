@@ -19,6 +19,20 @@
           "save_raw_data": "Starts a local capture after a STATUS message and at least four other MQTT messages, then saves up to 100 MQTT messages total, including STATUS. A synthetic device ID replaces the original in STATUS and topics. Sensitive STATUS and readable OBIS fields are redacted, but opaque payloads are unchanged and may contain identifying information. Review captures before sharing."
         }
       },
+      "reconfigure": {
+        "title": "Configure AWS forwarding",
+        "description": "Paste the Tibber Pulse client certificate and private key to configure native forwarding.",
+        "data": {
+          "certificate": "Client certificate (PEM)",
+          "private_key": "Private key (PEM)",
+          "ca_certificate": "Optional CA certificate (PEM)"
+        },
+        "data_description": {
+          "certificate": "Disable any existing MQTT bridge forwarding this Pulse to AWS IoT before enabling native forwarding. Running both may cause duplicate messages or client sessions, firmware update or remote-control issues, and unexpected behavior. This warning is informational and does not prevent setup.",
+          "private_key": "The private key must match the client certificate.",
+          "ca_certificate": "Leave blank to use the system certificate authorities."
+        }
+      },
       "external_broker": {
         "title": "External MQTT broker",
         "description": "Enter connection details for your external MQTT broker.",
@@ -42,6 +56,13 @@
           "tls_insecure": "Allow insecure TLS (skip verify)"
         }
       }
+    },
+    "error": {
+      "invalid_certificate": "The certificate or private key is invalid, expired, or does not match.",
+      "cannot_connect": "Could not connect to AWS IoT. Check the endpoint, certificate, network, and existing bridge configuration."
+    },
+    "abort": {
+      "invalid_discovery": "The discovered Pulse ID or publish topic is invalid."
     }
   },
   "options": {
@@ -62,6 +83,21 @@
           "log_missed_base64": "When enabled, missed/invalid payloads are logged in Base64 for diagnostics.",
           "log_obis": "When enabled, parsed OBIS codes are included in the logs.",
           "save_raw_data": "Starts a local capture after a STATUS message and at least four other MQTT messages, then saves up to 100 MQTT messages total, including STATUS. A synthetic device ID replaces the original in STATUS and topics. Sensitive STATUS and readable OBIS fields are redacted, but opaque payloads are unchanged and may contain identifying information. Review captures before sharing."
+        }
+      },
+      "aws_forwarding": {
+        "title": "AWS forwarding options",
+        "description": "Change advanced AWS forwarding settings or run a connection test.",
+        "data": {
+          "aws_endpoint": "AWS IoT endpoint",
+          "aws_publish_topic_override": "AWS publish topic override",
+          "aws_receive_topic_override": "AWS receive topic override",
+          "test_connection": "Run a connection test"
+        },
+        "data_description": {
+          "aws_endpoint": "Advanced setting. The default is the Tibber AWS IoT endpoint.",
+          "aws_publish_topic_override": "Leave blank to use the exact publish topic observed from this Pulse.",
+          "aws_receive_topic_override": "Leave blank to use the matching receive topic."
         }
       },
       "external_broker_options": {
@@ -87,10 +123,26 @@
           "tls_insecure": "Allow insecure TLS (skip verify)"
         }
       }
+    },
+    "error": {
+      "invalid_advanced_setting": "The endpoint or topic override is invalid.",
+      "missing_certificate": "Configure a valid certificate and private key first.",
+      "invalid_certificate": "The stored certificate or private key is invalid or expired.",
+      "cannot_connect": "Could not connect to AWS IoT.",
+      "connection_test_succeeded": "The connection test succeeded."
     }
   },
   "entity": {
     "sensor": {
+      "aws_forwarding": {
+        "name": "AWS forwarding",
+        "state": {
+          "not_configured": "Not configured",
+          "connecting": "Connecting",
+          "connected": "Connected",
+          "error": "Error"
+        }
+      },
       "1-0_1_8_0": {
         "name": "Total energy import"
       },
@@ -193,6 +245,18 @@
     }
   },
   "issues": {
+    "aws_forwarding_not_configured": {
+      "title": "AWS forwarding is not configured",
+      "description": "AWS forwarding for {device} is optional. Configure it from the Pulse device's associated integration entry. This reminder can be dismissed; the configuration entry remains available."
+    },
+    "aws_forwarding_invalid_certificate": {
+      "title": "AWS forwarding certificate is missing or invalid",
+      "description": "The certificate or private key for {device} is missing, expired, invalid, or does not match. Reconfigure AWS forwarding from the device's associated integration entry."
+    },
+    "aws_forwarding_connection_failed": {
+      "title": "AWS forwarding connection failed",
+      "description": "The AWS MQTT connection for {device} is unavailable. Check the endpoint, certificate, network access, and that an older MQTT bridge is disabled. Reconfigure or test the connection from the device's associated integration entry."
+    },
     "old_raw_captures": {
       "title": "Old raw capture files found",
       "fix_flow": {

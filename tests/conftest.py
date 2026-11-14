@@ -38,6 +38,7 @@ except ImportError:
     _module(
         "homeassistant.helpers.entity",
         DeviceInfo=dict,
+        EntityCategory=types.SimpleNamespace(DIAGNOSTIC="diagnostic"),
         async_generate_entity_id=lambda fmt, obj_id, hass: f"sensor.{obj_id}",
     )
     _module("homeassistant.helpers.entity_platform", AddEntitiesCallback=object)

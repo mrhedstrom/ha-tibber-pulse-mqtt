@@ -19,6 +19,20 @@
           "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 MQTT-berichten in totaal op, inclusief STATUS. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
         }
       },
+      "reconfigure": {
+        "title": "AWS-doorsturen configureren",
+        "description": "Plak het Tibber Pulse-clientcertificaat en de privésleutel om native doorsturen in te stellen.",
+        "data": {
+          "certificate": "Clientcertificaat (PEM)",
+          "private_key": "Privésleutel (PEM)",
+          "ca_certificate": "Optioneel CA-certificaat (PEM)"
+        },
+        "data_description": {
+          "certificate": "Schakel bestaande MQTT-bridges die deze Pulse naar AWS IoT doorsturen uit voordat je native doorsturen inschakelt. Beide tegelijk gebruiken kan dubbele berichten of clientsessies, problemen met firmware-updates of bediening op afstand en ander onverwacht gedrag veroorzaken. Deze waarschuwing is alleen ter informatie en verhindert de configuratie niet.",
+          "private_key": "De privésleutel moet bij het clientcertificaat horen.",
+          "ca_certificate": "Laat leeg om de systeemcertificaatautoriteiten te gebruiken."
+        }
+      },
       "external_broker": {
         "title": "Externe MQTT-broker",
         "description": "Voer verbindingsgegevens in voor je externe MQTT-broker.",
@@ -42,6 +56,13 @@
           "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
         }
       }
+    },
+    "error": {
+      "invalid_certificate": "Het certificaat of de privésleutel is ongeldig, verlopen of komt niet overeen.",
+      "cannot_connect": "Kan geen verbinding maken met AWS IoT. Controleer het endpoint, certificaat, netwerk en de bestaande bridgeconfiguratie."
+    },
+    "abort": {
+      "invalid_discovery": "The discovered Pulse ID or publish topic is invalid."
     }
   },
   "options": {
@@ -62,6 +83,21 @@
           "log_missed_base64": "Indien ingeschakeld, worden gemiste/ongeldige payloads in Base64 gelogd voor diagnose.",
           "log_obis": "Indien ingeschakeld, worden geïnterpreteerde OBIS-codes in de logboeken opgenomen.",
           "save_raw_data": "Start een lokale opname na een STATUS-bericht en ten minste vier andere MQTT-berichten en slaat daarna maximaal 100 MQTT-berichten in totaal op, inclusief STATUS. Een synthetische apparaat-ID vervangt de oorspronkelijke ID in STATUS en topics. Gevoelige STATUS-velden en leesbare OBIS-identificatiegegevens worden verwijderd. Onbekende payloads blijven ongewijzigd en kunnen identificerende informatie bevatten. Controleer de opname voordat je deze deelt."
+        }
+      },
+      "aws_forwarding": {
+        "title": "Opties voor AWS-doorsturen",
+        "description": "Wijzig geavanceerde instellingen voor AWS-doorsturen of voer een verbindingstest uit.",
+        "data": {
+          "aws_endpoint": "AWS IoT-endpoint",
+          "aws_publish_topic_override": "AWS-publicatietopic overschrijven",
+          "aws_receive_topic_override": "AWS-ontvangsttopic overschrijven",
+          "test_connection": "Verbinding testen"
+        },
+        "data_description": {
+          "aws_endpoint": "Geavanceerde instelling. Standaard wordt het AWS IoT-endpoint van Tibber gebruikt.",
+          "aws_publish_topic_override": "Laat leeg om het exacte publicatietopic van deze Pulse te gebruiken.",
+          "aws_receive_topic_override": "Laat leeg om het bijbehorende ontvangsttopic te gebruiken."
         }
       },
       "external_broker_options": {
@@ -87,10 +123,26 @@
           "tls_insecure": "Onveilige TLS toestaan (verificatie overslaan)"
         }
       }
+    },
+    "error": {
+      "invalid_advanced_setting": "Het endpoint of de topicoverschrijving is ongeldig.",
+      "missing_certificate": "Configureer eerst een geldig certificaat en een privésleutel.",
+      "invalid_certificate": "Het opgeslagen certificaat of de privésleutel is ongeldig of verlopen.",
+      "cannot_connect": "Kan geen verbinding maken met AWS IoT.",
+      "connection_test_succeeded": "De verbindingstest is geslaagd."
     }
   },
   "entity": {
     "sensor": {
+      "aws_forwarding": {
+        "name": "AWS-doorsturen",
+        "state": {
+          "not_configured": "Niet geconfigureerd",
+          "connecting": "Verbinden",
+          "connected": "Verbonden",
+          "error": "Fout"
+        }
+      },
       "1-0_1_8_0": {
         "name": "Totale energie-import"
       },
@@ -193,6 +245,18 @@
     }
   },
   "issues": {
+    "aws_forwarding_not_configured": {
+      "title": "AWS-doorsturen is niet geconfigureerd",
+      "description": "AWS-doorsturen voor {device} is optioneel. Configureer dit via het integratie-item van het bijbehorende Pulse-apparaat. Je kunt deze herinnering sluiten; de configuratie blijft beschikbaar."
+    },
+    "aws_forwarding_invalid_certificate": {
+      "title": "AWS-doorstuurcertificaat ontbreekt of is ongeldig",
+      "description": "Het certificaat of de privésleutel voor {device} ontbreekt, is verlopen of ongeldig, of komt niet overeen. Configureer AWS-doorsturen opnieuw via het integratie-item van het apparaat."
+    },
+    "aws_forwarding_connection_failed": {
+      "title": "Verbinding voor AWS-doorsturen mislukt",
+      "description": "De AWS MQTT-verbinding voor {device} is niet beschikbaar. Controleer het endpoint, certificaat, de netwerktoegang en of een oudere MQTT-bridge is uitgeschakeld. Configureer de verbinding opnieuw of test deze via het integratie-item van het apparaat."
+    },
     "old_raw_captures": {
       "title": "Oude raw capture-bestanden gevonden",
       "fix_flow": {

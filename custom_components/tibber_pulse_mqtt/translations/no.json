@@ -19,6 +19,20 @@
           "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 MQTT-meldinger totalt, inkludert STATUS. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
         }
       },
+      "reconfigure": {
+        "title": "Konfigurer AWS-videresending",
+        "description": "Lim inn Tibber Pulse-klientsertifikatet og den private nøkkelen for å konfigurere innebygd videresending.",
+        "data": {
+          "certificate": "Klientsertifikat (PEM)",
+          "private_key": "Privat nøkkel (PEM)",
+          "ca_certificate": "Valgfritt CA-sertifikat (PEM)"
+        },
+        "data_description": {
+          "certificate": "Deaktiver eksisterende MQTT-broer som videresender denne Pulsen til AWS IoT før du aktiverer innebygd videresending. Hvis begge kjører samtidig, kan det føre til dupliserte meldinger eller klientøkter, problemer med fastvareoppdateringer eller fjernstyring og annen uventet atferd. Advarselen er kun til informasjon og hindrer ikke konfigureringen.",
+          "private_key": "Den private nøkkelen må samsvare med klientsertifikatet.",
+          "ca_certificate": "La feltet stå tomt for å bruke systemets sertifiseringsinstanser."
+        }
+      },
       "external_broker": {
         "title": "Ekstern MQTT-megler",
         "description": "Oppgi tilkoblingsdetaljer for din eksterne MQTT-megler.",
@@ -42,6 +56,13 @@
           "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
         }
       }
+    },
+    "error": {
+      "invalid_certificate": "Sertifikatet eller den private nøkkelen er ugyldig, utløpt eller samsvarer ikke.",
+      "cannot_connect": "Kunne ikke koble til AWS IoT. Kontroller endepunktet, sertifikatet, nettverket og den eksisterende brokonfigurasjonen."
+    },
+    "abort": {
+      "invalid_discovery": "The discovered Pulse ID or publish topic is invalid."
     }
   },
   "options": {
@@ -62,6 +83,21 @@
           "log_missed_base64": "Når aktivert, logges manglende/ugyldige payloads i Base64 for diagnostikk.",
           "log_obis": "Når aktivert, inkluderes tolkede OBIS-koder i loggene.",
           "save_raw_data": "Starter et lokalt opptak etter en STATUS-melding og minst fire andre MQTT-meldinger, og lagrer deretter opptil 100 MQTT-meldinger totalt, inkludert STATUS. En syntetisk enhets-ID erstatter den opprinnelige i STATUS og emner. Sensitive STATUS-felt og lesbare OBIS-identifikasjonsdata fjernes. Ukjente payloads forblir uendret og kan inneholde identifiserende informasjon. Gå gjennom opptaket før du deler det."
+        }
+      },
+      "aws_forwarding": {
+        "title": "Innstillinger for AWS-videresending",
+        "description": "Endre avanserte innstillinger for AWS-videresending eller kjør en tilkoblingstest.",
+        "data": {
+          "aws_endpoint": "AWS IoT-endepunkt",
+          "aws_publish_topic_override": "Overstyr AWS-publiseringsemne",
+          "aws_receive_topic_override": "Overstyr AWS-mottaksemne",
+          "test_connection": "Kjør en tilkoblingstest"
+        },
+        "data_description": {
+          "aws_endpoint": "Avansert innstilling. Standardverdien er Tibbers AWS IoT-endepunkt.",
+          "aws_publish_topic_override": "La feltet stå tomt for å bruke det nøyaktige publiseringsemnet som er observert fra denne Pulsen.",
+          "aws_receive_topic_override": "La feltet stå tomt for å bruke det tilhørende mottaksemnet."
         }
       },
       "external_broker_options": {
@@ -87,10 +123,26 @@
           "tls_insecure": "Tillat usikker TLS (hopp over verifisering)"
         }
       }
+    },
+    "error": {
+      "invalid_advanced_setting": "Endepunktet eller overstyringen av emnet er ugyldig.",
+      "missing_certificate": "Konfigurer et gyldig sertifikat og en privat nøkkel først.",
+      "invalid_certificate": "Det lagrede sertifikatet eller den private nøkkelen er ugyldig eller utløpt.",
+      "cannot_connect": "Kunne ikke koble til AWS IoT.",
+      "connection_test_succeeded": "Tilkoblingstesten var vellykket."
     }
   },
   "entity": {
     "sensor": {
+      "aws_forwarding": {
+        "name": "AWS-videresending",
+        "state": {
+          "not_configured": "Ikke konfigurert",
+          "connecting": "Kobler til",
+          "connected": "Tilkoblet",
+          "error": "Feil"
+        }
+      },
       "1-0_1_8_0": {
         "name": "Total energiimport"
       },
@@ -193,6 +245,18 @@
     }
   },
   "issues": {
+    "aws_forwarding_not_configured": {
+      "title": "AWS-videresending er ikke konfigurert",
+      "description": "AWS-videresending for {device} er valgfritt. Konfigurer den fra integrasjonsposten som er knyttet til Pulse-enheten. Påminnelsen kan avvises; konfigurasjonsposten er fortsatt tilgjengelig."
+    },
+    "aws_forwarding_invalid_certificate": {
+      "title": "AWS-videresendingssertifikatet mangler eller er ugyldig",
+      "description": "Sertifikatet eller den private nøkkelen for {device} mangler, er utløpt eller ugyldig, eller samsvarer ikke. Konfigurer AWS-videresending på nytt fra enhetens tilknyttede integrasjonspost."
+    },
+    "aws_forwarding_connection_failed": {
+      "title": "Tilkobling for AWS-videresending mislyktes",
+      "description": "AWS MQTT-tilkoblingen for {device} er utilgjengelig. Kontroller endepunktet, sertifikatet, nettverkstilgangen og at en eldre MQTT-bro er deaktivert. Konfigurer tilkoblingen på nytt eller test den fra enhetens tilknyttede integrasjonspost."
+    },
     "old_raw_captures": {
       "title": "Gamle raw capture-filer funnet",
       "fix_flow": {

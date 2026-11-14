@@ -19,6 +19,20 @@
           "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 MQTT-viestiä yhteensä, STATUS-viestit mukaan lukien. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
         }
       },
+      "reconfigure": {
+        "title": "Määritä AWS-edelleenlähetys",
+        "description": "Määritä natiivi edelleenlähetys liittämällä Tibber Pulse -asiakasvarmenne ja yksityinen avain.",
+        "data": {
+          "certificate": "Asiakasvarmenne (PEM)",
+          "private_key": "Yksityinen avain (PEM)",
+          "ca_certificate": "Valinnainen CA-varmenne (PEM)"
+        },
+        "data_description": {
+          "certificate": "Poista käytöstä kaikki olemassa olevat MQTT-sillat, jotka lähettävät tämän Pulsen AWS IoT:hen, ennen natiivin edelleenlähetyksen käyttöönottoa. Molempien käyttäminen voi aiheuttaa päällekkäisiä viestejä tai asiakasistuntoja, laiteohjelmistopäivitys- tai etäohjausongelmia ja muuta odottamatonta toimintaa. Tämä on vain tiedoksi annettava varoitus, eikä se estä määritystä.",
+          "private_key": "Yksityisen avaimen on vastattava asiakasvarmennetta.",
+          "ca_certificate": "Jätä tyhjäksi, jos haluat käyttää järjestelmän varmentajia."
+        }
+      },
       "external_broker": {
         "title": "Ulkoinen MQTT-välityspalvelin",
         "description": "Syötä ulkoisen MQTT-välityspalvelimen yhteystiedot.",
@@ -42,6 +56,13 @@
           "tls_insecure": "Salli epävarma TLS (ohita varmenne)"
         }
       }
+    },
+    "error": {
+      "invalid_certificate": "Varmenne tai yksityinen avain on virheellinen, vanhentunut tai ne eivät vastaa toisiaan.",
+      "cannot_connect": "AWS IoT -yhteyden muodostaminen epäonnistui. Tarkista päätepiste, varmenne, verkko ja olemassa olevan sillan asetukset."
+    },
+    "abort": {
+      "invalid_discovery": "The discovered Pulse ID or publish topic is invalid."
     }
   },
   "options": {
@@ -62,6 +83,21 @@
           "log_missed_base64": "Kun käytössä, virheelliset tai puuttuvat payloadit kirjataan Base64-muodossa diagnostiikkaa varten.",
           "log_obis": "Kun käytössä, parsitut OBIS-koodit näytetään lokitiedoissa.",
           "save_raw_data": "Aloittaa paikallisen tallennuksen STATUS-viestin ja vähintään neljän muun MQTT-viestin jälkeen ja tallentaa enintään 100 MQTT-viestiä yhteensä, STATUS-viestit mukaan lukien. Synteettinen laitetunnus korvaa alkuperäisen STATUS-viestissä ja aiheissa. Arkaluonteiset STATUS-kentät ja luettavat OBIS-tunnistetiedot poistetaan. Tuntemattomia payload-kuormia ei muuteta, ja ne voivat sisältää tunnistettavia tietoja. Tarkista kaappaus ennen sen jakamista."
+        }
+      },
+      "aws_forwarding": {
+        "title": "AWS-edelleenlähetyksen asetukset",
+        "description": "Muuta AWS-edelleenlähetyksen lisäasetuksia tai testaa yhteys.",
+        "data": {
+          "aws_endpoint": "AWS IoT -päätepiste",
+          "aws_publish_topic_override": "AWS-julkaisukanavan ohitus",
+          "aws_receive_topic_override": "AWS-vastaanottokanavan ohitus",
+          "test_connection": "Testaa yhteys"
+        },
+        "data_description": {
+          "aws_endpoint": "Lisäasetus. Oletusarvo on Tibberin AWS IoT -päätepiste.",
+          "aws_publish_topic_override": "Jätä tyhjäksi, jos haluat käyttää tältä Pulseltä havaittua julkaisukanavaa.",
+          "aws_receive_topic_override": "Jätä tyhjäksi, jos haluat käyttää vastaavaa vastaanottokanavaa."
         }
       },
       "external_broker_options": {
@@ -87,10 +123,26 @@
           "tls_insecure": "Salli epävarma TLS (ohita varmenne)"
         }
       }
+    },
+    "error": {
+      "invalid_advanced_setting": "Päätepiste tai kanavan ohitus on virheellinen.",
+      "missing_certificate": "Määritä ensin kelvollinen varmenne ja yksityinen avain.",
+      "invalid_certificate": "Tallennettu varmenne tai yksityinen avain on virheellinen tai vanhentunut.",
+      "cannot_connect": "AWS IoT -yhteyden muodostaminen epäonnistui.",
+      "connection_test_succeeded": "Yhteystesti onnistui."
     }
   },
   "entity": {
     "sensor": {
+      "aws_forwarding": {
+        "name": "AWS-edelleenlähetys",
+        "state": {
+          "not_configured": "Ei määritetty",
+          "connecting": "Yhdistetään",
+          "connected": "Yhdistetty",
+          "error": "Virhe"
+        }
+      },
       "1-0_1_8_0": {
         "name": "Kokonaisenergiantuonti"
       },
@@ -193,6 +245,18 @@
     }
   },
   "issues": {
+    "aws_forwarding_not_configured": {
+      "title": "AWS-edelleenlähetystä ei ole määritetty",
+      "description": "AWS-edelleenlähetys laitteelle {device} on valinnainen. Määritä se Pulse-laitteen integraation asetuksista. Ilmoituksen voi kuitata, ja määritys on silti käytettävissä."
+    },
+    "aws_forwarding_invalid_certificate": {
+      "title": "AWS-edelleenlähetyksen varmenne puuttuu tai on virheellinen",
+      "description": "Laitteen {device} varmenne tai yksityinen avain puuttuu, on vanhentunut tai virheellinen tai ne eivät vastaa toisiaan. Määritä AWS-edelleenlähetys uudelleen laitteen integraation asetuksista."
+    },
+    "aws_forwarding_connection_failed": {
+      "title": "AWS-edelleenlähetyksen yhteys epäonnistui",
+      "description": "Laitteen {device} AWS MQTT -yhteys ei ole käytettävissä. Tarkista päätepiste, varmenne, verkkoyhteys ja että vanha MQTT-silta on poistettu käytöstä. Määritä yhteys uudelleen tai testaa sitä laitteen integraation asetuksista."
+    },
     "old_raw_captures": {
       "title": "Vanhoja raw capture -tiedostoja löytyi",
       "fix_flow": {

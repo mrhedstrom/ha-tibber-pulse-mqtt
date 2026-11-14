@@ -31,10 +31,27 @@ For Tibber Pulse IR devices, see [marq24/ha-tibber-pulse-local](https://github.c
 3. Click **Download**
 4. Follow the on-screen instructions
 
-## Configure MQTT Bridge (Pulse → AWS via local Mosquitto)
+## Native AWS forwarding (recommended)
+
+The integration can forward a discovered Pulse to Tibber Cloud directly, without a Mosquitto-to-AWS bridge. Local MQTT ingestion and Home Assistant sensors remain active. Forwarding is bidirectional: Pulse publish messages are sent to AWS IoT, and AWS receive messages are relayed to the Pulse's local receive topic.
+
+1. Configure the Pulse to publish to the local MQTT broker as described in [Configure Tibber Pulse to use a local Mosquitto broker](#configure-tibber-pulse-to-use-a-local-mosquitto-broker).
+2. Set up the Tibber Pulse MQTT integration in Home Assistant and wait for a valid Pulse `STATUS` message. The integration discovers the Pulse ID and publish topic and creates an AWS forwarding entry associated with that Pulse device.
+3. Open the discovered AWS forwarding entry and choose **Reconfigure**. Paste the Pulse client certificate and private key (and CA certificate if required). The flow validates the certificate and tests AWS connectivity before saving credentials.
+4. Keep the configured entry to manage certificate rotation and forwarding. Its options allow advanced endpoint/topic overrides and an on-demand connection test. The default endpoint and observed publish topic are used unless overridden.
+
+Credentials are stored under the Home Assistant configuration directory in a per-device integration-owned folder. Removing the AWS forwarding entry deletes only its certificate files and related Repairs; local MQTT sensors and the Pulse device remain.
+
+> [!WARNING]
+> Disable the existing Mosquitto bridge for a Pulse before enabling native forwarding. Running both may produce duplicate traffic or competing MQTT client sessions and can interfere with firmware updates or remote-control commands. The warning is informational; native forwarding is optional.
+
+## Legacy Mosquitto MQTT bridge (optional)
+
+The following certificate extraction and bridge instructions are for users who choose to keep using a Mosquitto-to-AWS bridge. They are not required for local Home Assistant sensors or native forwarding.
+
 To keep full Tibber functionality — including the Tibber app, firmware updates, and Tibber cloud–based features such as load balancing for EV chargers — the Tibber Pulse must continue communicating with Tibber Cloud (AWS IoT).
 
-This can be achieved by configuring:  
+Legacy bridge users can configure:
 
   * Tibber Pulse → local MQTT (Mosquitto)
   * Mosquitto → Tibber Cloud (AWS IoT) via an MQTT bridge
@@ -43,7 +60,7 @@ This setup allows you to use the Pulse locally in Home Assistant, while still fo
 
 With this setup, the Pulse publishes data locally (for Home Assistant) while all required traffic is transparently forwarded to and from Tibber Cloud. 
 
-If you don't need this functionality you can skip this section and continue in [Configure Tibber Pulse to use a local Mosquitto broker](#configure-tibber-pulse-to-use-a-local-mosquitto-broker)
+If you are using native forwarding, skip the legacy bridge steps and continue in [Configure Tibber Pulse to use a local Mosquitto broker](#configure-tibber-pulse-to-use-a-local-mosquitto-broker).
 
 ### Architecture Overview
 ```
@@ -60,7 +77,7 @@ Incoming messages are required for firmware updates and remote control from the 
 
 ### Step 1 – Extract Tibber Pulse Certificates
 Each Tibber Pulse uses device‑specific TLS certificates to authenticate against Tibber Cloud.  
-These certificates must be extracted and later reused by Mosquitto when setting up the MQTT bridge.
+For native forwarding, enter the certificate and private key in the AWS forwarding entry in Home Assistant. For a legacy bridge, these files are reused by Mosquitto.
 
 The following method extracts the certificates by intercepting the configuration sent from the Tibber app.
 
@@ -134,7 +151,7 @@ At this point you should have:
 * Extracted device TLS certificates
 * Saved MQTT connection details
 
-You can now proceed to Step 2 – Configure Mosquitto MQTT Bridge.
+For legacy bridge setup, proceed to Step 2 – Configure Mosquitto MQTT Bridge. For native forwarding, skip the remaining bridge instructions.
 
 ### Step 2 – Configure Mosquitto MQTT Bridge
 1. Make sure you have MQTT addon installed
@@ -247,7 +264,7 @@ If you only need local MQTT, follow only the steps below to configure Tibber Pul
 
 ## Configure Tibber Pulse integration
 
-Before setting up the integration follow the steps to [configure tibber pulse to send updates to local MQTT broker](#configure-mqtt-bridge-pulse--aws-via-local-mosquitto).
+Before setting up the integration, configure the Pulse to send updates to your local MQTT broker. AWS forwarding is optional and can be configured from the per-device entry after the integration discovers the Pulse.
 
 After restarting Home Assistant and configured pulse to send mqtt to local broker:
 

@@ -11,11 +11,19 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.helpers.entity import DeviceInfo, async_generate_entity_id
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory, async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    CONF_AWS_CONFIGURED,
+    CONF_DEVICE_ID,
+    CONF_ENTRY_TYPE,
+    ENTRY_TYPE_AWS_FORWARDING,
+    AWS_FORWARDING_CONNECTING,
+    AWS_FORWARDING_NOT_CONFIGURED,
+)
 from .obis.full_db import obis_meta
 
 _LOGGER = logging.getLogger(__name__)
@@ -77,6 +85,30 @@ async def async_setup_entry(
     manager = SensorManager(hass, entry, async_add_entities)
     hub.sensor_manager = manager
 
+    for pulse_id, status in hub.dispatcher.discovered_pulse_devices.items():
+        forwarding_entry = next(
+            (
+                candidate
+                for candidate in hass.config_entries.async_entries(DOMAIN)
+                if candidate.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_AWS_FORWARDING
+                and candidate.data.get(CONF_DEVICE_ID) == pulse_id
+            ),
+            None,
+        )
+        forwarder = (
+            hass.data.get(DOMAIN, {}).get("_aws_forwarders", {}).get(forwarding_entry.entry_id)
+            if forwarding_entry
+            else None
+        )
+        state = (
+            forwarder.state
+            if forwarder
+            else AWS_FORWARDING_CONNECTING
+            if forwarding_entry and forwarding_entry.data.get(CONF_AWS_CONFIGURED)
+            else AWS_FORWARDING_NOT_CONFIGURED
+        )
+        manager.set_aws_forwarding_status(pulse_id, state, status)
+
     _LOGGER.info("Tibber Local sensor platform initialized")
 
 
@@ -114,6 +146,21 @@ class SensorManager:
         # Creation guard (prevents duplicate creation in races)
         self._creating: set[str] = set()
         self._create_lock = asyncio.Lock()
+        self._aws_forwarding_entities: dict[str, TibberAWSForwardingSensor] = {}
+
+    def set_aws_forwarding_status(
+        self,
+        dev_id: str,
+        status: str,
+        device_status: Dict[str, Any] | None = None,
+    ) -> None:
+        """Expose per-device forwarding state without changing existing sensor IDs."""
+        entity = self._aws_forwarding_entities.get(dev_id)
+        if entity is None:
+            entity = TibberAWSForwardingSensor(dev_id, device_status or {})
+            self._aws_forwarding_entities[dev_id] = entity
+            self.async_add_entities([entity])
+        entity.set_state(status)
 
 
     def set_obis_units(self, units_map: dict[str, str] | None):
@@ -389,6 +436,7 @@ class TibberSensor(SensorEntity):
             return True
         return False
 
+
     def set_device_attributes(self, attrs: Dict[str, Any]):
         """Set shared device-level attributes."""
         self._device_attributes = attrs or {}
@@ -463,3 +511,38 @@ class TibberSensor(SensorEntity):
                 self.async_write_ha_state()
             except Exception:
                 pass
+
+
+class TibberAWSForwardingSensor(SensorEntity):
+    """Diagnostic status for the optional per-device AWS forwarding entry."""
+
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "aws_forwarding"
+    _attr_has_entity_name = True
+
+    def __init__(self, dev_id: str, status: Dict[str, Any]) -> None:
+        self._dev_id = dev_id
+        self._status = status
+        self._state: str | None = None
+        self._attr_unique_id = f"tibber_{dev_id}_aws_forwarding"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        model = self._status.get("hwmodel") or self._status.get("Hw") or "Pulse"
+        return DeviceInfo(
+            identifiers={(f"tibber_pulse_{self._dev_id}",)},
+            manufacturer="Tibber",
+            model=model,
+            name=f"Tibber {model} ({self._dev_id})",
+            sw_version=self._status.get("Build"),
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        return self._state
+
+    def set_state(self, state: str) -> None:
+        self._state = state
+        if getattr(self, "hass", None) and getattr(self, "entity_id", None):
+            self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ssl
+from pathlib import Path
 from typing import Any, Dict, Optional
 import voluptuous as vol
 
@@ -9,6 +11,24 @@ from homeassistant.helpers import selector
 
 from .const import (
     DOMAIN,
+    CONF_ENTRY_TYPE,
+    ENTRY_TYPE_AWS_FORWARDING,
+    CONF_SOURCE_ENTRY_ID,
+    CONF_DEVICE_ID,
+    CONF_PUBLISH_TOPIC,
+    CONF_RECEIVE_TOPIC,
+    CONF_AWS_ENDPOINT,
+    CONF_AWS_CERT_PATH,
+    CONF_AWS_KEY_PATH,
+    CONF_AWS_CA_PATH,
+    CONF_AWS_CONFIGURED,
+    CONF_AWS_PUBLISH_TOPIC_OVERRIDE,
+    CONF_AWS_RECEIVE_TOPIC_OVERRIDE,
+    CONF_TEST_CONNECTION,
+    AWS_UNCONFIGURED_ISSUE_PREFIX,
+    AWS_INVALID_CERT_ISSUE_PREFIX,
+    AWS_CONNECTION_ISSUE_PREFIX,
+    DEFAULT_AWS_ENDPOINT,
     # Core
     CONF_BROKER_MODE,
     CONF_SUBSCRIBE,
@@ -36,6 +56,19 @@ from .const import (
     DEFAULT_LOG_OBIS,
     DEFAULT_SAVE_RAW_DATA,
 )
+from .aws import (
+    certificate_directory,
+    commit_staged_certificate_material,
+    discard_staged_certificate_material,
+    parse_aws_endpoint,
+    receive_topic_for_publish,
+    stage_certificate_material,
+    test_aws_connection,
+    validate_device_id,
+    validate_mqtt_topic,
+    validate_certificate_files,
+)
+from homeassistant.helpers import issue_registry as ir
 
 # Select option lists (labels shown, values stored)
 BROKER_MODES = [
@@ -66,6 +99,16 @@ def _text_selector() -> selector.TextSelector:
     )
 
 
+def _multiline_text_selector() -> selector.TextSelector:
+    """Multiline selector for PEM material pasted by the user."""
+    return selector.TextSelector(
+        selector.TextSelectorConfig(
+            type=selector.TextSelectorType.TEXT,
+            multiline=True,
+        )
+    )
+
+
 def _password_selector() -> selector.TextSelector:
     """Password-masked text selector."""
     return selector.TextSelector(
@@ -93,7 +136,124 @@ def _tls_version_selector() -> selector.SelectSelector:
 
 class TibberLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Initial configuration flow for the integration."""
-    VERSION = 1
+    VERSION = 2
+
+    async def async_step_integration_discovery(self, user_input=None) -> FlowResult:
+        """Create a persistent, device-linked AWS forwarding entry after STATUS discovery."""
+        device_id = self.context.get(CONF_DEVICE_ID, "")
+        publish_topic = self.context.get(CONF_PUBLISH_TOPIC, "")
+        try:
+            device_id = validate_device_id(str(device_id))
+            receive_topic = receive_topic_for_publish(str(publish_topic))
+        except ValueError:
+            return self.async_abort(reason="invalid_discovery")
+
+        await self.async_set_unique_id(device_id)
+        self._abort_if_unique_id_configured()
+
+        cert_dir = certificate_directory(self.hass, device_id)
+        return self.async_create_entry(
+            title=f"Tibber Pulse {device_id} AWS forwarding",
+            data={
+                CONF_ENTRY_TYPE: ENTRY_TYPE_AWS_FORWARDING,
+                CONF_SOURCE_ENTRY_ID: self.context.get(CONF_SOURCE_ENTRY_ID),
+                CONF_DEVICE_ID: device_id,
+                CONF_PUBLISH_TOPIC: publish_topic,
+                CONF_RECEIVE_TOPIC: receive_topic,
+                CONF_AWS_ENDPOINT: DEFAULT_AWS_ENDPOINT,
+                CONF_AWS_CERT_PATH: str(cert_dir / "cert.pem"),
+                CONF_AWS_KEY_PATH: str(cert_dir / "key.pem"),
+                CONF_AWS_CA_PATH: str(cert_dir / "ca.pem"),
+            },
+        )
+
+    async def async_step_reconfigure(
+        self,
+        user_input: Optional[Dict[str, Any]] = None,
+    ) -> FlowResult:
+        """Configure or rotate the device's client certificate at any time."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            device_id = entry.data[CONF_DEVICE_ID]
+            cert_dir = certificate_directory(self.hass, device_id)
+            stage_dir = None
+            try:
+                stage_dir = await self.hass.async_add_executor_job(
+                    stage_certificate_material,
+                    cert_dir,
+                    user_input["certificate"],
+                    user_input["private_key"],
+                    user_input.get("ca_certificate") or None,
+                )
+                cfg = {**entry.data, **entry.options}
+                parse_aws_endpoint(
+                    cfg.get(CONF_AWS_ENDPOINT, DEFAULT_AWS_ENDPOINT)
+                )
+                forwarder = self.hass.data.get(DOMAIN, {}).get(
+                    "_aws_forwarders", {}
+                ).get(entry.entry_id)
+                if forwarder:
+                    await forwarder.async_test_connection(
+                        cfg.get(CONF_AWS_ENDPOINT, DEFAULT_AWS_ENDPOINT),
+                        stage_dir / "cert.pem",
+                        stage_dir / "key.pem",
+                        stage_dir / "ca.pem" if (stage_dir / "ca.pem").exists() else None,
+                    )
+                else:
+                    await self.hass.async_add_executor_job(
+                        test_aws_connection,
+                        cfg.get(CONF_AWS_ENDPOINT, DEFAULT_AWS_ENDPOINT),
+                        device_id,
+                        stage_dir / "cert.pem",
+                        stage_dir / "key.pem",
+                        stage_dir / "ca.pem" if (stage_dir / "ca.pem").exists() else None,
+                    )
+                await self.hass.async_add_executor_job(
+                    commit_staged_certificate_material,
+                    stage_dir,
+                    cert_dir,
+                )
+            except ValueError:
+                errors["base"] = "invalid_certificate"
+            except (TimeoutError, ConnectionError, OSError, ssl.SSLError):
+                errors["base"] = "cannot_connect"
+            finally:
+                if stage_dir:
+                    await self.hass.async_add_executor_job(
+                        discard_staged_certificate_material,
+                        stage_dir,
+                    )
+
+            if not errors:
+                for prefix in (
+                    AWS_UNCONFIGURED_ISSUE_PREFIX,
+                    AWS_INVALID_CERT_ISSUE_PREFIX,
+                    AWS_CONNECTION_ISSUE_PREFIX,
+                ):
+                    ir.async_delete_issue(
+                        self.hass,
+                        DOMAIN,
+                        f"{prefix}{device_id}",
+                    )
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates={CONF_AWS_CONFIGURED: True},
+                )
+
+        schema = vol.Schema(
+            {
+                vol.Required("certificate"): _multiline_text_selector(),
+                vol.Required("private_key"): _multiline_text_selector(),
+                vol.Optional("ca_certificate"): _multiline_text_selector(),
+            }
+        )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=schema,
+            errors=errors,
+        )
 
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         """Step where the user configures broker mode, topic and debug flags."""
@@ -179,7 +339,130 @@ class TibberLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     def async_get_options_flow(entry: config_entries.ConfigEntry):
         """Return the OptionsFlow for editing after initial setup."""
+        if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_AWS_FORWARDING:
+            return TibberAWSOptionsFlow(entry)
         return TibberLocalOptionsFlow(entry)
+
+
+class TibberAWSOptionsFlow(config_entries.OptionsFlow):
+    """Permanent advanced settings and connection-test controls for one Pulse."""
+
+    def __init__(self, entry: config_entries.ConfigEntry) -> None:
+        self.entry = entry
+        self._form_values: dict[str, Any] = {}
+
+    def _cfg(self) -> Dict[str, Any]:
+        return _effective_config(self.entry)
+
+    def _schema(self) -> vol.Schema:
+        cfg = self._cfg()
+        values = {**cfg, **self._form_values}
+        return vol.Schema(
+            {
+                vol.Optional(
+                    CONF_AWS_ENDPOINT,
+                    default=values.get(CONF_AWS_ENDPOINT, DEFAULT_AWS_ENDPOINT),
+                ): _text_selector(),
+                vol.Optional(
+                    CONF_AWS_PUBLISH_TOPIC_OVERRIDE,
+                    default=values.get(CONF_AWS_PUBLISH_TOPIC_OVERRIDE, ""),
+                ): _text_selector(),
+                vol.Optional(
+                    CONF_AWS_RECEIVE_TOPIC_OVERRIDE,
+                    default=values.get(CONF_AWS_RECEIVE_TOPIC_OVERRIDE, ""),
+                ): _text_selector(),
+                vol.Optional(CONF_TEST_CONNECTION, default=False): _bool_toggle_selector(),
+            }
+        )
+
+    async def async_step_init(
+        self,
+        user_input: Optional[Dict[str, Any]] = None,
+    ) -> FlowResult:
+        return await self.async_step_aws_forwarding(user_input)
+
+    async def async_step_aws_forwarding(
+        self,
+        user_input: Optional[Dict[str, Any]] = None,
+    ) -> FlowResult:
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            self._form_values = dict(user_input)
+            endpoint = user_input.get(CONF_AWS_ENDPOINT) or DEFAULT_AWS_ENDPOINT
+            publish_override = user_input.get(CONF_AWS_PUBLISH_TOPIC_OVERRIDE, "").strip()
+            receive_override = user_input.get(CONF_AWS_RECEIVE_TOPIC_OVERRIDE, "").strip()
+
+            try:
+                parse_aws_endpoint(endpoint)
+                if publish_override:
+                    validate_mqtt_topic(publish_override)
+                    receive_topic_for_publish(publish_override)
+                if receive_override:
+                    validate_mqtt_topic(receive_override)
+            except ValueError:
+                errors["base"] = "invalid_advanced_setting"
+
+            if not errors and user_input.get(CONF_TEST_CONNECTION):
+                cfg = self._cfg()
+                cert_path = cfg.get(CONF_AWS_CERT_PATH)
+                key_path = cfg.get(CONF_AWS_KEY_PATH)
+                ca_path = cfg.get(CONF_AWS_CA_PATH)
+                if not cert_path or not key_path:
+                    errors["base"] = "missing_certificate"
+                else:
+                    try:
+                        await self.hass.async_add_executor_job(
+                            validate_certificate_files,
+                            cert_path,
+                            key_path,
+                            ca_path if ca_path and Path(ca_path).is_file() else None,
+                        )
+                        forwarder = self.hass.data.get(DOMAIN, {}).get(
+                            "_aws_forwarders", {}
+                        ).get(self.entry.entry_id)
+                        if forwarder:
+                            await forwarder.async_test_connection(
+                                endpoint,
+                                cert_path,
+                                key_path,
+                                ca_path if ca_path and Path(ca_path).is_file() else None,
+                            )
+                        else:
+                            await self.hass.async_add_executor_job(
+                                test_aws_connection,
+                                endpoint,
+                                cfg[CONF_DEVICE_ID],
+                                cert_path,
+                                key_path,
+                                ca_path if ca_path and Path(ca_path).is_file() else None,
+                            )
+                        errors["base"] = "connection_test_succeeded"
+                    except (TimeoutError, ConnectionError, OSError, ssl.SSLError):
+                        errors["base"] = "cannot_connect"
+                    except ValueError:
+                        errors["base"] = "invalid_certificate"
+                return self.async_show_form(
+                    step_id="aws_forwarding",
+                    data_schema=self._schema(),
+                    errors=errors,
+                )
+
+            if not errors:
+                return self.async_create_entry(
+                    title="",
+                    data={
+                        CONF_AWS_ENDPOINT: endpoint,
+                        CONF_AWS_PUBLISH_TOPIC_OVERRIDE: publish_override,
+                        CONF_AWS_RECEIVE_TOPIC_OVERRIDE: receive_override,
+                    },
+                )
+
+        return self.async_show_form(
+            step_id="aws_forwarding",
+            data_schema=self._schema(),
+            errors=errors,
+        )
 
 
 class TibberLocalOptionsFlow(config_entries.OptionsFlow):

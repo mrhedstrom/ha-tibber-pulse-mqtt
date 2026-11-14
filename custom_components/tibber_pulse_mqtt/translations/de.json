@@ -19,6 +19,20 @@
           "save_raw_data": "Startet nach einer STATUS-Nachricht und mindestens vier weiteren MQTT-Nachrichten eine lokale Aufzeichnung und speichert anschließend insgesamt bis zu 100 MQTT-Nachrichten, einschließlich STATUS. Eine synthetische Geräte-ID ersetzt die ursprüngliche ID in STATUS und Topics. Sensible STATUS-Felder und lesbare OBIS-Identifikationsdaten werden entfernt. Nicht erkannte Payloads bleiben unverändert und können identifizierende Informationen enthalten. Prüfe die Aufzeichnung vor dem Teilen."
         }
       },
+      "reconfigure": {
+        "title": "AWS-Weiterleitung konfigurieren",
+        "description": "Füge das Tibber-Pulse-Clientzertifikat und den privaten Schlüssel ein, um die native Weiterleitung einzurichten.",
+        "data": {
+          "certificate": "Clientzertifikat (PEM)",
+          "private_key": "Privater Schlüssel (PEM)",
+          "ca_certificate": "Optionales CA-Zertifikat (PEM)"
+        },
+        "data_description": {
+          "certificate": "Deaktiviere vorhandene MQTT-Bridges, die diese Pulse an AWS IoT weiterleiten, bevor du die native Weiterleitung aktivierst. Der gleichzeitige Betrieb kann zu doppelten Nachrichten oder Clientsitzungen, Problemen mit Firmware-Updates oder der Fernsteuerung und anderem unerwarteten Verhalten führen. Dieser Hinweis dient nur zur Information und verhindert die Einrichtung nicht.",
+          "private_key": "Der private Schlüssel muss zum Clientzertifikat passen.",
+          "ca_certificate": "Leer lassen, um die System-Zertifizierungsstellen zu verwenden."
+        }
+      },
       "external_broker": {
         "title": "Externer MQTT-Broker",
         "description": "Verbindungsdaten für deinen externen MQTT-Broker eingeben.",
@@ -42,6 +56,13 @@
           "tls_insecure": "Unsicheres TLS zulassen (Verifizierung überspringen)"
         }
       }
+    },
+    "error": {
+      "invalid_certificate": "Das Zertifikat oder der private Schlüssel ist ungültig, abgelaufen oder passt nicht zusammen.",
+      "cannot_connect": "Verbindung zu AWS IoT nicht möglich. Überprüfe den Endpunkt, das Zertifikat, das Netzwerk und die vorhandene Bridge-Konfiguration."
+    },
+    "abort": {
+      "invalid_discovery": "The discovered Pulse ID or publish topic is invalid."
     }
   },
   "options": {
@@ -62,6 +83,21 @@
           "log_missed_base64": "Wenn aktiviert, werden fehlende/ungültige Payloads zur Diagnose in Base64 protokolliert.",
           "log_obis": "Wenn aktiviert, werden interpretierte OBIS-Codes in die Logs aufgenommen.",
           "save_raw_data": "Startet nach einer STATUS-Nachricht und mindestens vier weiteren MQTT-Nachrichten eine lokale Aufzeichnung und speichert anschließend insgesamt bis zu 100 MQTT-Nachrichten, einschließlich STATUS. Eine synthetische Geräte-ID ersetzt die ursprüngliche ID in STATUS und Topics. Sensible STATUS-Felder und lesbare OBIS-Identifikationsdaten werden entfernt. Nicht erkannte Payloads bleiben unverändert und können identifizierende Informationen enthalten. Prüfe die Aufzeichnung vor dem Teilen."
+        }
+      },
+      "aws_forwarding": {
+        "title": "Einstellungen für die AWS-Weiterleitung",
+        "description": "Ändere erweiterte Einstellungen der AWS-Weiterleitung oder führe einen Verbindungstest aus.",
+        "data": {
+          "aws_endpoint": "AWS-IoT-Endpunkt",
+          "aws_publish_topic_override": "AWS-Publish-Topic überschreiben",
+          "aws_receive_topic_override": "AWS-Receive-Topic überschreiben",
+          "test_connection": "Verbindung testen"
+        },
+        "data_description": {
+          "aws_endpoint": "Erweiterte Einstellung. Standardmäßig wird der Tibber-AWS-IoT-Endpunkt verwendet.",
+          "aws_publish_topic_override": "Leer lassen, um das für diese Pulse ermittelte Publish-Topic zu verwenden.",
+          "aws_receive_topic_override": "Leer lassen, um das passende Receive-Topic zu verwenden."
         }
       },
       "external_broker_options": {
@@ -87,10 +123,26 @@
           "tls_insecure": "Unsicheres TLS zulassen (Verifizierung überspringen)"
         }
       }
+    },
+    "error": {
+      "invalid_advanced_setting": "Der Endpunkt oder die Topic-Überschreibung ist ungültig.",
+      "missing_certificate": "Richte zuerst ein gültiges Zertifikat und einen privaten Schlüssel ein.",
+      "invalid_certificate": "Das gespeicherte Zertifikat oder der private Schlüssel ist ungültig oder abgelaufen.",
+      "cannot_connect": "Verbindung zu AWS IoT nicht möglich.",
+      "connection_test_succeeded": "Der Verbindungstest war erfolgreich."
     }
   },
   "entity": {
     "sensor": {
+      "aws_forwarding": {
+        "name": "AWS-Weiterleitung",
+        "state": {
+          "not_configured": "Nicht konfiguriert",
+          "connecting": "Verbindung wird hergestellt",
+          "connected": "Verbunden",
+          "error": "Fehler"
+        }
+      },
       "1-0_1_8_0": {
         "name": "Gesamtenergie Import"
       },
@@ -193,6 +245,18 @@
     }
   },
   "issues": {
+    "aws_forwarding_not_configured": {
+      "title": "AWS-Weiterleitung ist nicht konfiguriert",
+      "description": "Die AWS-Weiterleitung für {device} ist optional. Richte sie über den zugehörigen Integrationseintrag des Pulse-Geräts ein. Dieser Hinweis kann geschlossen werden; der Konfigurationseintrag bleibt verfügbar."
+    },
+    "aws_forwarding_invalid_certificate": {
+      "title": "AWS-Weiterleitungszertifikat fehlt oder ist ungültig",
+      "description": "Das Zertifikat oder der private Schlüssel für {device} fehlt, ist abgelaufen oder ungültig oder passt nicht zusammen. Konfiguriere die AWS-Weiterleitung über den zugehörigen Integrationseintrag des Geräts neu."
+    },
+    "aws_forwarding_connection_failed": {
+      "title": "Verbindung der AWS-Weiterleitung fehlgeschlagen",
+      "description": "Die AWS-MQTT-Verbindung für {device} ist nicht verfügbar. Überprüfe den Endpunkt, das Zertifikat, den Netzwerkzugriff und ob eine ältere MQTT-Bridge deaktiviert ist. Konfiguriere die Verbindung neu oder teste sie über den zugehörigen Integrationseintrag des Geräts."
+    },
     "old_raw_captures": {
       "title": "Alte Raw-Capture-Dateien gefunden",
       "fix_flow": {
