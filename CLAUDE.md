@@ -1,191 +1,115 @@
 # Claude Project Guide (CLAUDE.md)
 
-## Critical Rules
-
-- Never change existing unique_id formats without migration support.
-- Never hardcode OBIS codes.
-- Always prefer real raw captures over synthetic data.
-- Preserve unknown OBIS values whenever possible.
-- Use Pulse ID as the canonical device identifier.
-- Follow existing Home Assistant patterns before introducing new abstractions.
-- Prefer extending existing code over creating parallel implementations.
-- Update tests and translations when behavior changes.
-
 ## Project Overview
 
-This project is a Home Assistant custom integration for Tibber Pulse devices operating in MQTT mode.
+Home Assistant custom integration (`tibber_pulse_mqtt`, "Tibber Pulse MQTT", repo `ha-tibber-pulse-mqtt`) for Tibber Pulse devices in MQTT mode: Pulse P1, HAN and KM. It receives MQTT payloads, extracts OBIS data and creates Home Assistant sensors dynamically. It is independent of Tibber Cloud, Pulse Bridge and Pulse IR, and works fully locally. Users may optionally bridge MQTT traffic to Tibber Cloud.
 
-Supported devices include:
+Targets Home Assistant Core, Home Assistant OS and HACS installations.
 
-- Tibber Pulse P1
-- Tibber Pulse HAN
-- Tibber Pulse KM
+## Commands
 
-The integration receives payloads via MQTT, interprets the message to extract OBIS data and creates Home Assistant sensors dynamically.
-
-This integration is intentionally independent of Tibber Cloud and can operate fully locally. Users may optionally bridge MQTT traffic externally to Tibber Cloud.
-
-## Build and Test Commands
 - Run all tests: `pytest`
-- Run specific test file: `pytest tests/test_file.py`
-- Run tests with stdout enabled: `pytest -s`
+- Run one file: `pytest tests/test_file.py`
+- Show stdout: `pytest -s`
 
-## Code Style & Conventions
-- **Formatting:** Follow PEP 8 standards strictly. Use explicit type hinting for all function signatures.
-- **Localization:** If string resources or localization dictionaries are changed, you must also update all corresponding translation files to maintain parity.
-- **Asynchronous Code:** Prefer `asyncio` for I/O-bound operations. Ensure all async functions are properly awaited.
-- Use thread-safe Home Assistant patterns.
-- Use defensive programming.
-- When multiple solutions exist, prefer the solution most aligned with Home Assistant core development patterns.
+## Critical Rules
 
-Avoid:
+- Pulse ID from the STATUS payload is the canonical identifier for devices and entities. Never base permanent identifiers on MQTT topics or topic suffixes.
+- Never change an existing `unique_id` format without migration support. Never generate a new `unique_id` for an existing sensor or create duplicate entities for the same OBIS value.
+- Never hardcode OBIS codes. All OBIS settings live in `obis/full_db.py`.
+- Preserve unknown OBIS values in parsed data, diagnostics and raw captures. Only drop data when sanitizing sensitive information or when data is invalid/corrupted. Unknown OBIS codes still create sensors dynamically.
+- Always prefer real raw captures over synthetic data. Never write parser logic from assumptions, and never assume behavior seen in one capture applies to all meters of the same type.
+- Do not hardcode assumptions specific to Pulse P1; support future Pulse variants without code changes.
+- Preserve backward compatibility: existing entities, unique IDs, MQTT topics, config entries and previously supported meters must keep working. Existing behavior is intentional unless stated otherwise. Add migration logic when behavior must change.
+- Follow existing Home Assistant and repository patterns before introducing abstractions. Prefer extending existing code over parallel implementations; avoid new managers, coordinators or helpers without a clear architectural need. Explain why before proposing large refactors.
+- Keep changes focused and minimal. Do not refactor unrelated code or modify unrelated files.
 
-- hidden side effects
-- implicit reloads
-- duplicate subscriptions
-- direct Home Assistant API calls from worker threads
+## Code Style
 
-## Testing Guidelines
-- **Framework:** Always use `pytest` for testing. Prefer fixtures over setup/teardown methods.
-- **Raw Data Capture Tests:** Tests must always be written for raw data captures stored in the `\tests\fixtures\raw` folder through the dispatcher when applicable. This is to preserve support across device types, meters, and firmware versions.
-	- For startup and message-order behavior, test both STATUS-before-data and data-before-STATUS when relevant.
-	- Create reusable test helpers to replay all raw fixtures and simulate message ordering, rather than duplicating fixture-loading and dispatch logic across tests.
-- **Unit Tests:** You may only use unit tests when raw data capture testing is not applicable. Use hard-coded synthetic input only when the behavior under test is independent of the incoming payload data.
-- **Coverage:** Aim for high test coverage on all new business logic.
-- When fixing a bug, prefer adding a regression test that reproduces the issue before implementing the fix.
-
-### Debugging
-
-When investigating issues:
-- Prefer replaying existing raw captures.
-- Add temporary logging before changing parser behavior.
-- Remove temporary debug logging before finalizing changes.
+- PEP 8, explicit type hints on all function signatures.
+- All code, comments and log messages in English regardless of the language of the prompt.
+- Prefer `asyncio` for I/O; await all coroutines.
+- Logging: `_LOGGER = logging.getLogger(__name__)`. Log level is configurable via the options flow. Never leave debug prints in production code.
+- Be defensive with incoming payloads.
+- Avoid hidden side effects, duplicate MQTT subscriptions, global state and custom polling loops.
 
 ## Architecture
 
-Message flow:
+Message flow: MQTT message → `dispatcher.py` → parser selection → `ParsedMessage` → `TibberLocalHub` (`coordinator.py`) → `SensorManager` (`sensor.py`) → HA entities.
 
-MQTT Message
-    ↓
-dispatcher.py
-    ↓
-parser selection
-    ↓
-ParsedMessage
-    ↓
-SensorCoordinator
-    ↓
-EntityManager
-    ↓
-Home Assistant entities
+All paths below are under `custom_components/tibber_pulse_mqtt/`:
 
-Key modules:
+- `mqtt_client.py` – subscriptions
+- `dispatcher.py` – routes incoming messages
+- `parsers/` – protocol parsers:
+  - `pulse_envelope.py` – P1, compressed protobuf envelopes
+  - `obis_text.py` – plain text OBIS messages (some P1)
+  - `dlms_cosem.py` – HAN, DLMS/COSEM
+  - `obis_binary_fallback.py` – fallback
+- `obis/full_db.py` – all OBIS metadata and format-specific mappings; `obis/streaming.py` – OBIS stream handling
+- `sensor.py` – `SensorManager` creates and updates entities
+- `repairs.py`, `views.py`, `util/diagnostics.py` – repairs, HTTP views, diagnostics export
+- `raw_capture.py` – collects payloads to share with developers; `raw_capture_manager.py` – user-friendly sharing workflow
 
-- mqtt_client.py handles subscriptions
-- dispatcher.py routes incoming messages
-- parsers/ contains protocol specific parsers
-- full_db.py contains all OBIS metadata and mappings
-- entity_manager.py creates and updates entities
-- diagnostics.py exports troubleshooting data
-- raw_capture.py collects payloads for sharing to developers
-- raw_capture_manager.py provides a user-friendly workflow to share the raw captures.
+All devices periodically send a STATUS message (plain JSON). Data message formats vary by Tibber device, meter manufacturer and firmware. Before adding functionality, check whether an existing parser, dispatcher or entity flow can be extended.
 
-Before creating new functionality, first determine if an existing parser, dispatcher or entity management flow should be extended.
+## Metadata Layering
 
-### Parser Architecture
+A parser knows how to decode data, not what the data means. Parsers decode payloads, detect formats and extract values; they must not contain meter-specific metadata, OBIS metadata, positional mappings, unit definitions, scaling metadata or manufacturer registries. That belongs in `obis/full_db.py`.
 
-A parser should know how to decode data, not what the data means.
+Before adding metadata, ask whether it is a property of the OBIS code, of a payload format, or of a specific meter, and store it in that layer:
 
-Protocol parsers are responsible for:
-- Decoding protocol payloads
-- Detecting payload formats
-- Extracting values from payloads
+- Canonical OBIS metadata (meaning of the code): unit, device class, state class, precision, sensor metadata.
+- Format-specific metadata (how a format encodes values): positional mappings, scaling factors, structure definitions, format identifiers. Never store these as canonical OBIS properties.
 
-Protocol parsers should not contain:
-- Meter-specific metadata
-- OBIS metadata
-- Positional mappings
-- Unit definitions
-- Format-specific scaling metadata
+For a new meter format: first try metadata only; extend parser code only when the payload structure itself is new.
 
-Such definitions belong in full_db.py.
+DLMS-specific rules are in `.claude/rules/dlms-parsers.md` and Repairs rules in `.claude/rules/repairs.md`; they load when those files are touched.
 
-## Claude Code Workflow
+## Unit Conversion
 
-Before making changes:
+Convert units before entities receive values. Support Wh↔kWh, W↔kW, VArh↔kVArh, VAr↔kVAr. Sensors always show the normalized units from `obis/full_db.py`.
 
-1. Read relevant files completely.
-2. Search for existing patterns in the repository.
-3. Reuse existing implementations when possible.
-4. Explain planned changes before editing multiple files.
+## Home Assistant Rules
 
-When modifying code:
+### Threading and state
 
-- Keep changes focused.
-- Update tests when behavior changes.
-- Update translations when user-facing text changes.
-- Update CHANGELOG.md for user-visible changes.
-- Do not modify files unrelated to the requested change.
+- Home Assistant APIs and entity state updates must run on the event loop. Never call HA APIs or update state from worker/executor threads; schedule work onto the loop with thread-safe HA patterns.
 
-Before finishing:
+### Entity creation and persistence
 
-- Run tests when possible.
-- Verify linting.
-- Check for translation consistency.
+- Creation must be race-safe: synchronize concurrent attempts, track entities currently being created, and re-check that the entity does not exist immediately before creating it.
+- Check the Entity Registry first. If the entity exists, recreate the local object if needed, reuse the existing `unique_id` and let HA reattach it. Reuse existing entities whenever possible.
 
-## Modification Strategy
+### Devices
 
-When fixing bugs:
+- Pulse ID is the primary `DeviceInfo` identifier. Meter serial from OBIS data may be exposed as a device attribute but never replaces Pulse ID.
+- STATUS fields `hwmodel`, `Build` and `Hw` populate device model and software version; when `hwmodel` is empty, use `Hw`.
+- Expose only the standard STATUS attributes already defined in the implementation, not every STATUS field.
 
-- Prefer minimal targeted changes.
-- Do not refactor unrelated code unless explicitly asked to do so.
-- Do not replace working implementations unless required.
-- Preserve backward compatibility.
-- Existing behavior is intentional unless explicitly stated otherwise.
-- Prefer extending existing classes and workflows over creating new ones.
-- Avoid introducing new managers, coordinators, helpers or abstractions unless there is a clear architectural need.
+### Config flow reload
 
-Before proposing large refactors explain why they are needed.
+- Update listeners must only trigger a config entry reload. Do not manually stop or start the integration; HA already unloads and sets up on reload.
 
-### Backward Compatibility
+## Translations
 
-Changes must not break support for:
-- Existing entities
-- Existing unique IDs
-- Existing MQTT topics
-- Existing configuration entries
-- Previously supported meters
+All user-facing text (sensor enteties names, config/options flow labels, descriptions, help text, repairs, issues) must be translated.
 
-When behavior changes, add migration logic or maintain backwards compatibility where possible.
+- Update `strings.json` and every locale in `translations/` (da, de, en, fi, nl, no, sv) together, including both config-flow and options-flow entries where applicable.
+- Validate every translation JSON file after editing.
+- When changing configuration help text, verify `strings.json` and every locale are in sync and contain no stale threshold values; do not only update README/CHANGELOG.
 
-## Raw Capture Development
+## Testing
 
-Raw capture files stored in '\tests\fixtures\raw' are base64 encoded raw payloads from different users' devices and meters. The README.md file in the same directory describes the different raw captures.
+- Use `pytest`; prefer fixtures over setup/teardown.
+- Raw captures in `tests/fixtures/raw/` (base64 payloads from real devices, described in the README.md in that folder) are the primary test source. Test them through the dispatcher whenever applicable, to preserve support across device types, meters and firmware versions.
+- Create and reuse helpers that replay all raw fixtures and simulate message ordering; do not duplicate fixture loading and dispatch logic. For startup/message-order behavior, test both STATUS-before-data and data-before-STATUS when relevant.
+- Use plain unit tests only when raw-capture testing is not applicable. Use hard-coded synthetic input only when the behavior is independent of payload data.
+- New business logic needs high coverage. Every newly supported meter gets a regression test and its capture stored in `tests/fixtures/raw/`.
+- For bug fixes, add a regression test that reproduces the issue before implementing the fix.
+- When debugging, replay existing raw captures first and add temporary logging before changing parser behavior; remove it before finishing.
 
-When implementing support for new meters:
-
-- Always use real raw captures when available.
-- Never create parser logic based only on assumptions.
-- Verify behavior against actual captured data.
-- Store reusable captures in tests/fixtures/raw.
-- Add regression tests for every newly supported meter.
-- Never assume that behavior observed in a single raw capture applies to all meters of the same type.
-
-When implementing support for a new meter format:
-
-1. First determine if support can be added through metadata.
-2. Only extend parser behavior when the payload structure itself is new.
-3. Avoid modifying parser logic when a metadata change is sufficient.
-
-## Release Notes and CHANGELOG.md
-
-CHANGELOG.md is used to automate release creation in GitHub Actions.
-
-Everything written in the current release section, usually marked "Future Release", will be copied to the GitHub release details.
-
-When making changes, always add user-friendly information to CHANGELOG.md. Do not include workflow or test changes if not explicit request to do so.
-
-### Documentation Priority
+## Documentation Priority
 
 When implementing or modifying code, use information sources in this order:
 
@@ -197,237 +121,12 @@ When implementing or modifying code, use information sources in this order:
 
 README.md primarily contains installation and user documentation and should not be treated as an implementation specification.
 
-## Naming
+## Workflow
 
-- Repository: ha-tibber-pulse-mqtt
-- DOMAIN: tibber_pulse_mqtt
-- Integration name: Tibber Pulse MQTT
+Before changing code: read the relevant files completely, search for existing patterns and reuse them, and explain planned changes before editing multiple files.
 
-## MQTT messages
+Before finishing: run the tests when possible, update tests for changed behavior, check translation consistency for user-facing text changes, and update CHANGELOG.md.
 
-Messages are formatted differently depending on Tibber device, Meter manufacturer and firmware. All devices periodically send a status MQTT message containing information about the tibber device in plain json.
+## CHANGELOG.md
 
-For a P1 Tibber device, messages are usually compressed protobuf envelopes. These messages are handled in 'custom_components\tibber_pulse_mqtt\parsers\pulse_envelope.py'. In some cases plain text OBIS messages are received and handled in 'custom_components\tibber_pulse_mqtt\parsers\obis_text.py'.
-
-For a HAN Tibber device, messages are commonly encoded using DLMS/COSEM and are handled in 'custom_components\tibber_pulse_mqtt\parsers\dlms_cosem.py'. DLMS/COSEM payloads may differ between meter manufacturers and firmware versions, therefore parser changes should be validated against real raw captures whenever possible.
-
-DLMS/COSEM payloads often vary between meter vendors.
-
-When modifying dlms_cosem.py:
-- Never assume a specific meter manufacturer.
-- Prefer capability detection over meter-specific logic.
-- Preserve unknown OBIS values whenever possible.
-- Do not discard, filter or remove unsupported OBIS values from parsed meter data, diagnostics or raw captures, except when removing sensitive information during sanitization or when handling invalid/corrupted data.
-- Verify changes against multiple real captures.
-
-### DLMS Parser Responsibilities
-
-The DLMS/COSEM parser is responsible for:
-
-- Decoding DLMS/COSEM payload structures
-- Detecting payload formats
-- Extracting OBIS codes and values
-- Returning parsed measurements
-
-The parser must not contain:
-
-- Meter-specific OBIS mappings
-- Positional register definitions
-- OBIS unit definitions
-- Format-specific scaling metadata
-- Meter manufacturer registries
-
-Such metadata belongs in full_db.py.
-
-When adding support for new meter formats, prefer adding metadata definitions rather than parser logic whenever possible.
-
-## Config Flow Reloading
-
-Update listeners must only trigger a config entry reload.
-
-Do not manually stop or start the integration during reload handling.
-Home Assistant already performs unload and setup as part of the reload process.
-
-## Translation Maintenance
-
-Keep every supported locale in `custom_components/tibber_pulse_mqtt/translations/` updated whenever configuration options, labels, descriptions, repairs, issues, or help text are added or changed. Update `strings.json` and all locale files together, including both config-flow and options-flow entries where applicable. Validate every translation JSON file after editing. When changing configuration help text, verify the source strings.json and every supported locale translation—not only README/changelog—are synchronized and contain no stale threshold values.
-
-## Thread Safety
-
-Home Assistant APIs must only be called from the event loop. Use Home Assistant thread-safe patterns when scheduling work from worker threads. Never call async Home Assistant APIs directly from worker threads.
-
-## HA devices
-
-### State Updates
-
-Entity state updates must always occur on the Home Assistant event loop. Never update entity state directly from worker or executor threads.
-
-### Sensor Creation
-
-Entity creation must be race-safe.
-
-Required protections:
-- Synchronize concurrent creation attempts.
-- Track entities currently being created.
-- Verify that an entity still does not exist immediately before creation.
-
-### Entity Registry
-
-Check the Entity Registry before creating entities.
-
-If an entity already exists:
-- Recreate the local entity object when needed.
-- Reuse the existing unique_id.
-- Allow Home Assistant to reattach the entity.
-
-### Device Identification
-
-Pulse ID from the STATUS payload is the canonical identifier for devices and entities.
-
-Never base permanent identifiers on MQTT topics or topic suffixes.
-
-### DeviceInfo
-
-Pulse ID is the primary device identifier.
-
-When available, meter serial information extracted from OBIS data may be exposed as a device attribute but must not replace Pulse ID as the device identifier.
-
-### Entity Persistence
-
-Existing entities should be reused whenever possible.
-
-Never:
-- Generate a new unique_id for an existing sensor.
-- Create duplicate entities for the same OBIS value.
-- Change unique_id formats without explicit migration support.
-
-### Equipment Model Information
-
-STATUS fields such as hwmodel, Build and Hw should populate Home Assistant device model and software version information.
-
-When hwmodel is empty, use Hw instead.
-
-### Status Attributes
-
-Expose the standard set of STATUS fields defined in the current implementation. Do not automatically expose all STATUS payload fields.
-
-## Language
-
-All source code comments and code must be written in English regardless of user prompt language.
-
-## Logging
-
-All component logging must use:
-
-```python
-_LOGGER = logging.getLogger(__name__)
-```
-
-Dynamic log level configuration should be supported via options flow.
-
-Never leave debug print statements in production code.
-
-## OBIS Handling
-
-The integration must:
-
-- Preserve unknown OBIS codes.
-- Create sensors dynamically.
-- Support future Pulse variants without code changes.
-
-Do not hardcode assumptions specific to Pulse P1.
-
-Never hard code OBIS codes. All OBIS related settings should be stored in full_db.py.
-
-Before introducing new metadata, ask:
-
-- Is this a property of the OBIS code itself?
-- Is this a property of a payload format?
-- Is this a property of a specific meter?
-
-Store the information in the layer it belongs to.
-
-Do not place format-specific or meter-specific metadata in protocol parsers.
-
-OBIS metadata and format-specific metadata are separate concepts.
-
-Canonical OBIS metadata describes the meaning of an OBIS code and may include:
-
-- Unit
-- Device class
-- State class
-- Precision
-- Sensor metadata
-
-Format-specific metadata describes how a specific protocol format encodes values and may include:
-
-- Positional mappings
-- Scaling factors
-- Structure definitions
-- Format identifiers
-
-Format-specific metadata must not be stored as canonical OBIS properties.
-
-## Unit Conversion
-
-Perform unit conversion before entities receive values.
-
-Support:
-
-- Wh ↔ kWh
-- W ↔ kW
-- VArh ↔ kVArh
-- VAr ↔ kVAr
-
-Sensor entities must always show normalized units from full_db.py.
-
-## Home Assistant Compatibility
-
-Target:
-
-- Home Assistant Core
-- Home Assistant OS
-- HACS / HA Marketplace installations
-
-No dependencies on:
-
-- Tibber Cloud
-- Pulse Bridge
-- Pulse IR
-
-## Home Assistant Standards
-
-Always follow Home Assistant core patterns.
-
-Prefer:
-- DataUpdateCoordinator
-- ConfigEntry runtime data
-- DeviceInfo
-- EntityDescription
-- Repairs framework
-- Diagnostics framework
-
-Avoid:
-- Global state
-- Singleton patterns
-- Custom polling loops
-- Manual setup/unload lifecycle management
-
-## Repairs
-
-Repairs must:
-
-- Use issue_id that remains stable across restarts.
-- Support dismissal persistence.
-- Use fix_flow when user action is required.
-- Use translations for all titles and descriptions.
-- Never delete user data automatically without confirmation.
-- Repairs descriptions are informational only.
-- Repair issues must survive Home Assistant restarts.
-- Repairs should not recreate dismissed issues unless new underlying data exists.
-
-## Dependency Strategy
-
-- Prefer Home Assistant built-in helpers and frameworks over custom implementations.
-- Avoid introducing dependencies unless they provide significant value.
-- Compatibility with future Home Assistant releases is more important than short-term implementation convenience.
+GitHub Actions copies the current release section (the topmost one, e.g. `## [x.y.z] - future release`) into the GitHub release notes. For every user-visible change add user-friendly text there. Do not mention workflow or test changes unless explicitly requested.
