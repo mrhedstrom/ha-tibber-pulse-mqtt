@@ -273,6 +273,38 @@ def test_capture_redacts_known_obis_identifiers_and_flags_opaque_data(tmp_path):
     assert base64.b64decode(records[2]["payload"]) == bytes([0xFF, 0])
 
 
+def test_capture_redacts_obis_identifiers_on_every_channel(tmp_path):
+    """Identifiers reported for M-Bus devices (0-n:...) must be redacted like channel 0."""
+    capture = RawMessageCapture(tmp_path)
+    status_payload = b'{"status":{"ID":"pulse-1","hwmodel":"Pulse P1"}}'
+    capture.record("device", "pulse/status", status_payload, is_status=True)
+    capture.set_status("device", {"ID": "pulse-1", "hwmodel": "Pulse P1"}, "pulse/status", status_payload)
+    obis_payload = (
+        b"/KFM5KAIFA-METER\r\n\r\n"
+        b"0-0:96.1.1(111111111)\r\n"
+        b"0-1:24.1.0(003)\r\n"
+        b"0-1:96.1.0(222222222)\r\n"
+        b"0-1:24.2.1(261108192009W)(02045.886*m3)\r\n"
+        b"0-2:96.1.0(333333333)\r\n"
+        b"!5E9F"
+    )
+    for _ in range(MIN_DATA_MESSAGES):
+        capture.record("device", "pulse/data", obis_payload)
+
+    capture_file = next(tmp_path.glob("*.jsonl"))
+    records = [json.loads(line) for line in capture_file.read_text(encoding="utf-8").splitlines()]
+    saved_obis = base64.b64decode(records[1]["payload"])
+    assert b"111111111" not in saved_obis
+    assert b"222222222" not in saved_obis
+    assert b"333333333" not in saved_obis
+    assert b"0-1:96.1.0([redacted])" in saved_obis
+    assert b"0-2:96.1.0([redacted])" in saved_obis
+    # Measurements and device type stay intact for troubleshooting.
+    assert b"0-1:24.1.0(003)" in saved_obis
+    assert b"0-1:24.2.1(261108192009W)(02045.886*m3)" in saved_obis
+    assert records[1]["payload_redacted"] is True
+
+
 def test_capture_uses_distinct_synthetic_ids_for_devices(tmp_path):
     capture = RawMessageCapture(tmp_path)
     for device_key, original_id in (("device-one", "pulse-original-one"), ("device-two", "pulse-original-two")):
