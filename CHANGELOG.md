@@ -4,6 +4,7 @@
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### Fixed
+- Raw captures now also redact meter identifiers reported by devices connected to the meter on other channels, such as the serial number of a gas meter (`0-1:96.1.0`). Previously these were only redacted on channel 0.
 - Decode every frame in repeated protobuf payload fields and support single-phase Kaifa `KFM_001` List 2 measurements. Reported in issue #53
 - Fixed excessive Home Assistant Recorder database growth caused by frequent metadata and telemetry updates, reducing unnecessary state and attribute records. Thanks @vsilvar for PR #52
 - Increased the number of raw capture samples required before triggering the OBIS decoding repair message from 5 to 20, improving decoding reliability and reducing false positives. A false positive was reported in issue #54.

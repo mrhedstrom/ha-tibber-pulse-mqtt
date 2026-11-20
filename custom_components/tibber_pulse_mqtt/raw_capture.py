@@ -20,6 +20,12 @@ _SAFE_STATUS_KEYS = {
 _SENSITIVE_OBIS = {"0-0:1.0.0", "0-0:96.1.0", "0-0:96.1.1", "0-0:42.0.0", "0-0:96.13.0", "0-0:96.13.1"}
 _OBIS_VALUE = re.compile(r"(\d+-\d+:\d+\.\d+\.\d+\()([^)]*)(\))")
 _OBIS_CODE = re.compile(r"\d+-\d+:\d+\.\d+\.\d+")
+_OBIS_CHANNEL = re.compile(r"^(\d+)-\d+:")
+
+
+def _is_sensitive_obis(code: str) -> bool:
+    """Return True if the OBIS code is sensitive on any channel (e.g. 0-1:96.1.0 for 0-0:96.1.0)."""
+    return _OBIS_CHANNEL.sub(r"\1-0:", code) in _SENSITIVE_OBIS
 
 
 class RawMessageCapture:
@@ -168,7 +174,7 @@ class RawMessageCapture:
                 return payload, False, True
             redacted_text = _OBIS_VALUE.sub(
                 lambda match: f"{match.group(1)}[redacted]{match.group(3)}"
-                if match.group(1)[:-1] in _SENSITIVE_OBIS
+                if _is_sensitive_obis(match.group(1)[:-1])
                 else match.group(0),
                 text,
             )
