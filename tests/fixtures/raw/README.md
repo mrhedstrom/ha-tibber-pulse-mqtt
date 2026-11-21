@@ -14,6 +14,8 @@ python tests/generate_raw_fixture_metadata.py path/to/fixture-directory
 
 Review the generated JSON file and run `pytest tests/test_raw_fixtures.py` before committing the new capture.
 
+Captures of unsupported meters cannot be sanitized automatically. Before committing, replace meter IDs (such as the GS1 id `0-0:96.1.0`), serial numbers and similar identifiers with dummy values by hand.
+
 ## Files
 
 File: F-55bc424cac.jsonl

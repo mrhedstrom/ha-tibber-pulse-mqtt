@@ -270,7 +270,7 @@ Enable **Save sanitized raw MQTT data for sharing** to create sanitized MQTT cap
 
 Because developers do not have access to every device and meter combination, shared captures help expand test coverage. Captures are added to the automated test suite and replayed during development, helping ensure both new and existing devices continue working in future releases.
 
-Sensitive identifiers are redacted where possible, but you should always review captures before sharing them.
+Sensitive identifiers are redacted where possible, but payloads of unsupported meters cannot be read and are left unchanged. They may contain identifiers such as the meter ID. Always review captures before sharing them, and consider sharing privately if you are unsure.
 
 #### Finding and sharing captures
 

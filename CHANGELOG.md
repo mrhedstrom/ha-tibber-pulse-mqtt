@@ -10,6 +10,7 @@
 - Increased the number of raw capture samples required before triggering the OBIS decoding repair message from 5 to 20, improving decoding reliability and reducing false positives. A false positive was reported in issue #54.
 
 ### Changed
+- The raw capture help text now warns that unreadable payloads are left unchanged and may contain identifiers such as the meter ID.
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
 - Updated installation instructions to reflect that the integration is now a HA Marketplace integration.
 
