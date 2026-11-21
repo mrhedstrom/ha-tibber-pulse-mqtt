@@ -14,10 +14,6 @@
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
 - Updated installation instructions to reflect that the integration is now a HA Marketplace integration.
 
-> [!IMPORTANT]
-> **Help keep your meter supported.**
-> Reviewed raw captures are added to the automated test suite and replayed in future releases, helping detect regressions before they affect your device. Please consider sharing captures using the [capture sharing instructions](https://github.com/mrhedstrom/ha-tibber-pulse-mqtt#sharing-raw-device-data).
-
 ## [0.4.7]
 
 ### Added
