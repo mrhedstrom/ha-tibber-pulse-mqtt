@@ -8,6 +8,7 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from .const import *
 from .mqtt_client import HAMQTTBridge, ExternalMQTTClient
 from .dispatcher import TibberDispatcher
+from .cloud_forwarder import CloudForwarder, CloudForwardingConfig, StateCallback
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class TibberLocalHub:
         self.dispatcher = TibberDispatcher(hass, entry)
         self._ha_mqtt: HAMQTTBridge | None = None
         self._ext_mqtt: ExternalMQTTClient | None = None
+        self._forwarders: dict[str, CloudForwarder] = {}  # keyed by Pulse ID
         self.sensor_manager = None  # set by sensor.py
         self._unsub_ha_stop = None  # type: Optional[callable]
 
@@ -30,7 +32,7 @@ class TibberLocalHub:
 
         if self.cfg.get(CONF_BROKER_MODE) == "homeassistant":
             self._ha_mqtt = HAMQTTBridge(self.hass)
-            await self._ha_mqtt.async_subscribe(topic, self.dispatcher.on_mqtt_message)
+            await self._ha_mqtt.async_subscribe(topic, self._on_mqtt_message)
             _LOGGER.info("Tibber Pulse MQTT listening via HA MQTT on %s", topic)
         else:
             self._ext_mqtt = ExternalMQTTClient(
@@ -38,7 +40,7 @@ class TibberLocalHub:
                 host=self.cfg.get(CONF_HOST, "127.0.0.1"),
                 port=self.cfg.get(CONF_PORT, DEFAULT_PORT),
                 topic=topic,
-                cb=self.dispatcher.on_mqtt_message,
+                cb=self._on_mqtt_message,
                 username=self.cfg.get(CONF_USERNAME),
                 password=self.cfg.get(CONF_PASSWORD),
                 client_id=self.cfg.get(CONF_CLIENT_ID),
@@ -76,6 +78,42 @@ class TibberLocalHub:
 
         self.entry.async_on_unload(_on_unload_async)
 
+    def _on_mqtt_message(self, topic: str, payload: bytes) -> None:
+        """Hand every local message to the cloud forwarders, then to the dispatcher."""
+        for forwarder in tuple(self._forwarders.values()):
+            try:
+                forwarder.forward_upstream(topic, payload)
+            except Exception:
+                _LOGGER.exception("Tibber Cloud forwarding failed")
+        self.dispatcher.on_mqtt_message(topic, payload)
+
+    async def _async_publish_local(self, topic: str, payload: bytes) -> None:
+        """Publish a message (from the cloud) on the local broker."""
+        if self._ha_mqtt is not None:
+            await self._ha_mqtt.async_publish(topic, payload)
+        elif self._ext_mqtt is not None:
+            await self._ext_mqtt.async_publish(topic, payload)
+        else:
+            raise ConnectionError("Local MQTT is not running")
+
+    async def async_add_forwarder(
+        self,
+        config: CloudForwardingConfig,
+        on_state: StateCallback | None = None,
+    ) -> CloudForwarder:
+        """Start forwarding one Pulse to Tibber Cloud, replacing any previous setup."""
+        await self.async_remove_forwarder(config.pulse_id)
+        forwarder = CloudForwarder(self.hass, config, self._async_publish_local, on_state)
+        self._forwarders[config.pulse_id] = forwarder
+        await forwarder.async_start()
+        return forwarder
+
+    async def async_remove_forwarder(self, pulse_id: str) -> None:
+        """Stop forwarding a Pulse to Tibber Cloud."""
+        forwarder = self._forwarders.pop(pulse_id, None)
+        if forwarder is not None:
+            await forwarder.async_stop()
+
     async def async_stop(self):
         # Idempotent stop: safe to call multiple times
         if self._unsub_ha_stop is not None:
@@ -84,6 +122,13 @@ class TibberLocalHub:
             except Exception:
                 pass
             self._unsub_ha_stop = None
+
+        # Stop cloud forwarders before the local MQTT clients they publish through
+        for pulse_id in list(self._forwarders):
+            try:
+                await self.async_remove_forwarder(pulse_id)
+            except Exception:
+                pass
 
         # Stop dispatcher (cancels and awaits worker tasks)
         try:

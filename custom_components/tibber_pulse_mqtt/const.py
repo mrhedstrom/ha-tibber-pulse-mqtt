@@ -41,3 +41,15 @@ RAW_CAPTURE_API_URL = "/api/tibber_pulse_mqtt/raw_capture"
 CAPTURE_RETENTION_DAYS = 10
 CAPTURE_WARNING_FILES = 5
 CAPTURE_WARNING_SIZE_MB = 25
+
+# Tibber Cloud forwarding (built-in replacement for an external MQTT bridge)
+CLOUD_STATE_DISABLED = "disabled"
+CLOUD_STATE_CONNECTING = "connecting"
+CLOUD_STATE_CONNECTED = "connected"
+CLOUD_STATE_DISCONNECTED = "disconnected"
+CLOUD_STATE_AUTH_FAILED = "auth_failed"
+CLOUD_STATE_INVALID_CERTIFICATE = "invalid_certificate"
+
+DEFAULT_CLOUD_HOST = "a1zhmn1192zl1a.iot.eu-west-1.amazonaws.com"
+DEFAULT_CLOUD_PORT = 8883
+DEFAULT_CLOUD_TLS_VERSION = "tlsv1.2"
