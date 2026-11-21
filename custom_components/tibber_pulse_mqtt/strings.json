@@ -89,6 +89,109 @@
       }
     }
   },
+  "config_subentries": {
+    "cloud_forwarding": {
+      "initiate_flow": {
+        "user": "Add Tibber Cloud forwarding"
+      },
+      "entry_type": "Tibber Cloud forwarding",
+      "step": {
+        "user": {
+          "title": "Choose Pulse",
+          "description": "Select the Tibber Pulse to forward to Tibber Cloud. Only Pulse devices that have already sent a STATUS message are listed.\n\n**Important:** If a Mosquitto bridge (or another broker bridge) to Tibber Cloud is already set up for this Pulse, remove it first. Both use the same client ID, so Tibber Cloud keeps disconnecting one of them.",
+          "data": {
+            "pulse_id": "Pulse"
+          }
+        },
+        "credentials": {
+          "title": "Tibber Cloud certificates",
+          "description": "Forward data from Pulse {pulse} to Tibber Cloud. Copy the values from the Pulse setup page (the field names are in parentheses). The certificates are stored on this Home Assistant installation and the connection is tested before anything is saved.\n\n**Important:** Remove any existing Mosquitto bridge for this Pulse first, otherwise Tibber Cloud disconnects one of the two connections.",
+          "data": {
+            "certificate": "Client certificate (certificate)",
+            "private_key": "Private key (private_key)"
+          },
+          "data_description": {
+            "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+            "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Advanced settings",
+              "description": "The defaults work for Tibber's standard setup. Only change them if you know you need to.",
+              "data": {
+                "ca_cert": "CA certificate (ca_cert), optional",
+                "mqtt_topic": "Topic to Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic from Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Address (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS version"
+              },
+              "data_description": {
+                "ca_cert": "Leave empty to use the CA certificate that comes with the integration. Paste the ca_cert field only if you need a different one.",
+                "mqtt_topic": "Topic the Pulse publishes on locally, forwarded to Tibber Cloud. The default is the same topic as locally.",
+                "mqtt_topic_sub": "Topic Tibber Cloud sends firmware updates and commands on, forwarded to the Pulse.",
+                "mqtt_url": "Host name of Tibber's AWS IoT endpoint.",
+                "mqtt_port": "Port of Tibber's AWS IoT endpoint, normally 8883.",
+                "tls_version": "TLS version used towards Tibber Cloud. The default is TLS 1.2."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Reconfigure Tibber Cloud forwarding",
+          "description": "Settings for Pulse {pulse}. Leave the certificate and private key empty to keep the stored ones. Fill in both (and the CA certificate if needed) to replace them. The connection is tested before anything is saved.",
+          "data": {
+            "certificate": "Client certificate (certificate)",
+            "private_key": "Private key (private_key)"
+          },
+          "data_description": {
+            "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+            "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Advanced settings",
+              "description": "The defaults work for Tibber's standard setup. Only change them if you know you need to.",
+              "data": {
+                "ca_cert": "CA certificate (ca_cert), optional",
+                "mqtt_topic": "Topic to Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic from Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Address (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS version"
+              },
+              "data_description": {
+                "ca_cert": "Leave empty to use the CA certificate that comes with the integration. Paste the ca_cert field only if you need a different one.",
+                "mqtt_topic": "Topic the Pulse publishes on locally, forwarded to Tibber Cloud. The default is the same topic as locally.",
+                "mqtt_topic_sub": "Topic Tibber Cloud sends firmware updates and commands on, forwarded to the Pulse.",
+                "mqtt_url": "Host name of Tibber's AWS IoT endpoint.",
+                "mqtt_port": "Port of Tibber's AWS IoT endpoint, normally 8883.",
+                "tls_version": "TLS version used towards Tibber Cloud. The default is TLS 1.2."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "credentials_incomplete": "Fill in both the certificate and the private key.",
+        "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+        "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+        "key_mismatch": "The private key does not belong to this certificate.",
+        "certificate_expired": "The certificate has expired.",
+        "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+        "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+        "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+        "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+        "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+        "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+      },
+      "abort": {
+        "entry_not_loaded": "The integration is not running. Wait until it has started and try again.",
+        "no_pulse_available": "No Pulse available. A Pulse must have sent at least one STATUS message to this integration since the last restart, and Pulse devices that already have forwarding are not listed.",
+        "reconfigure_successful": "Tibber Cloud forwarding was updated."
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "1-0_1_8_0": {

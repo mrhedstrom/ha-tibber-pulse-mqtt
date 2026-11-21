@@ -89,6 +89,109 @@
       }
     }
   },
+  "config_subentries": {
+    "cloud_forwarding": {
+      "initiate_flow": {
+        "user": "Tilføj Tibber Cloud-videresendelse"
+      },
+      "entry_type": "Tibber Cloud-videresendelse",
+      "step": {
+        "user": {
+          "title": "Vælg Pulse",
+          "description": "Vælg den Tibber Pulse, der skal videresendes til Tibber Cloud. Kun Pulse-enheder, der allerede har sendt en STATUS-meddelelse, vises.\n\n**Vigtigt:** Hvis en Mosquitto-bridge (eller anden broker-bridge) til Tibber Cloud allerede er sat op for denne Pulse, skal du fjerne den først. Begge bruger samme klient-ID, så Tibber Cloud afbryder hele tiden den ene forbindelse.",
+          "data": {
+            "pulse_id": "Pulse"
+          }
+        },
+        "credentials": {
+          "title": "Tibber Cloud-certifikater",
+          "description": "Videresend data fra Pulse {pulse} til Tibber Cloud. Kopiér værdierne fra Pulsens opsætningsside (feltnavnene står i parentes). Certifikaterne gemmes på denne Home Assistant-installation, og forbindelsen testes, før noget gemmes.\n\n**Vigtigt:** Fjern en eventuel eksisterende Mosquitto-bridge for denne Pulse først, ellers afbryder Tibber Cloud en af de to forbindelser.",
+          "data": {
+            "certificate": "Klientcertifikat (certificate)",
+            "private_key": "Privat nøgle (private_key)"
+          },
+          "data_description": {
+            "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+            "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Avancerede indstillinger",
+              "description": "Standardværdierne virker til Tibbers almindelige opsætning. Ændr dem kun, hvis du ved, at du har brug for det.",
+              "data": {
+                "ca_cert": "CA-certifikat (ca_cert), valgfrit",
+                "mqtt_topic": "Topic til Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic fra Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adresse (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS-version"
+              },
+              "data_description": {
+                "ca_cert": "Lad feltet stå tomt for at bruge det CA-certifikat, der følger med integrationen. Indsæt kun feltet ca_cert, hvis du har brug for et andet.",
+                "mqtt_topic": "Topic, som Pulsen udgiver på lokalt, og som videresendes til Tibber Cloud. Standard er samme topic som lokalt.",
+                "mqtt_topic_sub": "Topic, som Tibber Cloud sender firmwareopdateringer og kommandoer på, og som videresendes til Pulsen.",
+                "mqtt_url": "Værtsnavn for Tibbers AWS IoT-adresse.",
+                "mqtt_port": "Port for Tibbers AWS IoT-adresse, normalt 8883.",
+                "tls_version": "TLS-version brugt mod Tibber Cloud. Standard er TLS 1.2."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Konfigurer Tibber Cloud-videresendelse",
+          "description": "Indstillinger for Pulse {pulse}. Lad certifikat og privat nøgle stå tomme for at beholde de gemte. Udfyld begge (og CA-certifikatet, hvis det er nødvendigt) for at erstatte dem. Forbindelsen testes, før noget gemmes.",
+          "data": {
+            "certificate": "Klientcertifikat (certificate)",
+            "private_key": "Privat nøgle (private_key)"
+          },
+          "data_description": {
+            "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+            "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Avancerede indstillinger",
+              "description": "Standardværdierne virker til Tibbers almindelige opsætning. Ændr dem kun, hvis du ved, at du har brug for det.",
+              "data": {
+                "ca_cert": "CA-certifikat (ca_cert), valgfrit",
+                "mqtt_topic": "Topic til Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic fra Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adresse (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS-version"
+              },
+              "data_description": {
+                "ca_cert": "Lad feltet stå tomt for at bruge det CA-certifikat, der følger med integrationen. Indsæt kun feltet ca_cert, hvis du har brug for et andet.",
+                "mqtt_topic": "Topic, som Pulsen udgiver på lokalt, og som videresendes til Tibber Cloud. Standard er samme topic som lokalt.",
+                "mqtt_topic_sub": "Topic, som Tibber Cloud sender firmwareopdateringer og kommandoer på, og som videresendes til Pulsen.",
+                "mqtt_url": "Værtsnavn for Tibbers AWS IoT-adresse.",
+                "mqtt_port": "Port for Tibbers AWS IoT-adresse, normalt 8883.",
+                "tls_version": "TLS-version brugt mod Tibber Cloud. Standard er TLS 1.2."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "credentials_incomplete": "Udfyld både certifikat og privat nøgle.",
+        "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+        "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+        "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+        "certificate_expired": "Certifikatet er udløbet.",
+        "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+        "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+        "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+        "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+        "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+        "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+      },
+      "abort": {
+        "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen.",
+        "no_pulse_available": "Ingen Pulse tilgængelig. En Pulse skal have sendt mindst én STATUS-meddelelse til denne integration siden sidste genstart, og Pulse-enheder, der allerede har videresendelse, vises ikke.",
+        "reconfigure_successful": "Tibber Cloud-videresendelse er opdateret."
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "1-0_1_8_0": {

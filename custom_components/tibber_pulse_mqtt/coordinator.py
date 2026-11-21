@@ -8,7 +8,13 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from .const import *
 from .mqtt_client import HAMQTTBridge, ExternalMQTTClient
 from .dispatcher import TibberDispatcher
-from .cloud_forwarder import CloudForwarder, CloudForwardingConfig, StateCallback
+from .cloud_certs import credentials_root, remove_orphaned_credentials
+from .cloud_forwarder import (
+    CloudForwarder,
+    CloudForwardingConfig,
+    StateCallback,
+    config_from_subentry,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,6 +65,8 @@ class TibberLocalHub:
                 topic
             )
 
+        await self._async_start_cloud_forwarders()
+
         # Robust HA-stop listener (NOT listen_once). We self-unsubscribe on first fire.
         # Must be async so HA schedules it on the event loop (sync listeners run in executor).
         async def _on_ha_stop(_):
@@ -77,6 +85,31 @@ class TibberLocalHub:
             await self.async_stop()
 
         self.entry.async_on_unload(_on_unload_async)
+
+    async def _async_start_cloud_forwarders(self) -> None:
+        """Start Tibber Cloud forwarding for every configured Pulse."""
+        # Credentials of removed forwardings are deleted; every hub entry counts so
+        # one entry never cleans up another's files.
+        in_use = {
+            subentry.data.get(CONF_PULSE_ID)
+            for entry in self.hass.config_entries.async_entries(DOMAIN)
+            for subentry in entry.get_subentries_of_type(SUBENTRY_TYPE_CLOUD_FORWARDING)
+        }
+        await self.hass.async_add_executor_job(
+            remove_orphaned_credentials, credentials_root(self.hass.config.path), in_use
+        )
+
+        for subentry in self.entry.get_subentries_of_type(SUBENTRY_TYPE_CLOUD_FORWARDING):
+            try:
+                config = config_from_subentry(self.hass.config.path, subentry)
+            except (KeyError, TypeError, ValueError) as err:
+                _LOGGER.warning(
+                    "Skipping Tibber Cloud forwarding %s, its stored settings are invalid (%s)",
+                    subentry.title,
+                    err,
+                )
+                continue
+            await self.async_add_forwarder(config)
 
     def _on_mqtt_message(self, topic: str, payload: bytes) -> None:
         """Hand every local message to the cloud forwarders, then to the dispatcher."""
@@ -107,6 +140,10 @@ class TibberLocalHub:
         self._forwarders[config.pulse_id] = forwarder
         await forwarder.async_start()
         return forwarder
+
+    def has_forwarder(self, pulse_id: str) -> bool:
+        """Return True while a Pulse is being forwarded to Tibber Cloud."""
+        return pulse_id in self._forwarders
 
     async def async_remove_forwarder(self, pulse_id: str) -> None:
         """Stop forwarding a Pulse to Tibber Cloud."""

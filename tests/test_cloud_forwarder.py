@@ -1,22 +1,16 @@
 """Tests for the built-in Tibber Cloud forwarder (replacement for a broker bridge)."""
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
+import os
 import ssl
-from datetime import datetime, timedelta, timezone
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
 import paho.mqtt.client as paho
 import pytest
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import NameOID
-from paho.mqtt.packettypes import PacketTypes
-from paho.mqtt.reasoncodes import ReasonCode
 
 from custom_components.tibber_pulse_mqtt import cloud_forwarder, mqtt_client
 from custom_components.tibber_pulse_mqtt.cloud_forwarder import (
@@ -37,6 +31,16 @@ from custom_components.tibber_pulse_mqtt.const import (
     DEFAULT_CLOUD_HOST,
 )
 from custom_components.tibber_pulse_mqtt.coordinator import TibberLocalHub
+from tests.cloud_helpers import (
+    PULSE_ID,
+    TOPIC,
+    FakeClient,
+    FakeHass,
+    make_pems,
+    run,
+    settle,
+    write_credentials,
+)
 from tests.test_raw_fixtures import (
     RAW_FIXTURES,
     _is_status_record,
@@ -44,108 +48,14 @@ from tests.test_raw_fixtures import (
     _order_fixture_records,
 )
 
-TOPIC = "tibber-pulse-0123456789abcdef0123456789abcdef/publish"
-PULSE_ID = "aabbccddeeff"
-
 
 # --------------------------------- helpers ------------------------------------
-
-
-def run(coro):
-    return asyncio.run(coro)
-
-
-async def settle() -> None:
-    for _ in range(3):
-        await asyncio.sleep(0)
-
-
-class FakeHass:
-    """Just enough of HomeAssistant for the forwarder."""
-
-    @property
-    def loop(self):
-        return asyncio.get_running_loop()
-
-    async def async_add_executor_job(self, func, *args):
-        return func(*args)
-
-    def async_create_task(self, coro):
-        return asyncio.get_running_loop().create_task(coro)
-
-
-class FakeClient:
-    """Stand-in for paho.Client that records everything the forwarder does."""
-
-    instances: list["FakeClient"] = []
-
-    def __init__(self, callback_api_version=None, client_id="", clean_session=None,
-                 protocol=None, **kwargs):
-        self.callback_api_version = callback_api_version
-        self.client_id = client_id
-        self.clean_session = clean_session
-        self.protocol = protocol
-        self.tls_context = None
-        self.reconnect_delay = None
-        self.max_queued = None
-        self.connect_args = None
-        self.loop_started = False
-        self.loop_stopped = False
-        self.disconnected = False
-        self.published: list[tuple[str, bytes, int, bool]] = []
-        self.subscribed: list[tuple[str, int]] = []
-        self.publish_rc = paho.MQTT_ERR_SUCCESS
-        self.on_connect = self.on_connect_fail = self.on_disconnect = self.on_message = None
-        FakeClient.instances.append(self)
-
-    def tls_set_context(self, context):
-        self.tls_context = context
-
-    def reconnect_delay_set(self, min_delay, max_delay):
-        self.reconnect_delay = (min_delay, max_delay)
-
-    def max_queued_messages_set(self, value):
-        self.max_queued = value
-
-    def connect_async(self, host, port, keepalive=60):
-        self.connect_args = (host, port, keepalive)
-
-    def loop_start(self):
-        self.loop_started = True
-
-    def loop_stop(self):
-        self.loop_stopped = True
-
-    def disconnect(self):
-        self.disconnected = True
-
-    def subscribe(self, topic, qos=0):
-        self.subscribed.append((topic, qos))
-
-    def publish(self, topic, payload, qos=0, retain=False):
-        self.published.append((topic, payload, qos, retain))
-        return SimpleNamespace(rc=self.publish_rc)
-
-    # Helpers simulating paho's network thread
-    def simulate_connected(self):
-        self.on_connect(self, None, {}, ReasonCode(PacketTypes.CONNACK, identifier=0), None)
-
-    def simulate_refused(self, code):
-        self.on_connect(self, None, {}, ReasonCode(PacketTypes.CONNACK, identifier=code), None)
-
-    def simulate_connect_failed(self):
-        self.on_connect_fail(self, None)
-
-    def simulate_disconnected(self):
-        self.on_disconnect(self, None, None, ReasonCode(PacketTypes.DISCONNECT, identifier=0), None)
-
-    def simulate_message(self, topic, payload):
-        self.on_message(self, None, SimpleNamespace(topic=topic, payload=payload))
 
 
 @pytest.fixture(autouse=True)
 def fake_paho(monkeypatch):
     FakeClient.instances = []
+    FakeClient.auto_event = None
     monkeypatch.setattr(cloud_forwarder.paho, "Client", FakeClient)
     return FakeClient
 
@@ -153,32 +63,7 @@ def fake_paho(monkeypatch):
 @pytest.fixture(scope="module")
 def cert_files(tmp_path_factory) -> tuple[Path, Path]:
     """Self-signed certificate plus an RSA PKCS#1 key, the format the Pulse shows."""
-    directory = tmp_path_factory.mktemp("certs")
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test-pulse")])
-    now = datetime.now(timezone.utc)
-    cert = (
-        x509.CertificateBuilder()
-        .subject_name(name)
-        .issuer_name(name)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now - timedelta(days=1))
-        .not_valid_after(now + timedelta(days=30))
-        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
-        .sign(key, hashes.SHA256())
-    )
-    cert_path = directory / "cert.pem"
-    key_path = directory / "key.pem"
-    cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
-    key_path.write_bytes(
-        key.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.TraditionalOpenSSL,
-            serialization.NoEncryption(),
-        )
-    )
-    return cert_path, key_path
+    return write_credentials(tmp_path_factory.mktemp("certs"))
 
 
 def make_config(cert_files, topic: str = TOPIC, **overrides) -> CloudForwardingConfig:
@@ -285,15 +170,8 @@ def test_custom_ca_replaces_the_bundled_ca(cert_files):
 
 
 def test_mismatching_key_is_rejected(cert_files, tmp_path):
-    other_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     bad_key = tmp_path / "other.pem"
-    bad_key.write_bytes(
-        other_key.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.TraditionalOpenSSL,
-            serialization.NoEncryption(),
-        )
-    )
+    bad_key.write_text(make_pems(key_index=1)[1], encoding="ascii")
     config = CloudForwardingConfig(
         pulse_id=PULSE_ID, local_publish_topic=TOPIC, cert_path=cert_files[0], key_path=bad_key
     )
@@ -584,9 +462,9 @@ async def _noop_stop() -> None:
     return None
 
 
-def make_hub():
+def make_hub(config_dir=None):
     hub = object.__new__(TibberLocalHub)
-    hub.hass = FakeHass()
+    hub.hass = FakeHass(config_dir)
     hub.dispatcher = RecordingDispatcher()
     hub.dispatcher.async_stop = _noop_stop
     hub._unsub_ha_stop = None
@@ -611,6 +489,36 @@ def test_hub_forwards_before_dispatching_and_survives_a_failing_forwarder(cert_f
         assert good.state == CLOUD_STATE_CONNECTING
 
     run(scenario())
+
+
+def test_hub_starts_forwarding_for_stored_subentries_and_removes_orphaned_credentials(tmp_path, caplog):
+    root = tmp_path / ".storage" / "tibber_pulse_mqtt" / "certs"
+    write_credentials(root / PULSE_ID)
+    orphan = root / "orphan"
+    orphan.mkdir(parents=True)
+    old = time.time() - 3600
+    os.utime(orphan, (old, old))
+
+    subentries = [
+        SimpleNamespace(title="ok", data={"pulse_id": PULSE_ID, "local_topic": TOPIC}),
+        SimpleNamespace(title="broken", data={"pulse_id": "other"}),  # no topic stored
+    ]
+
+    async def scenario():
+        hub = make_hub(tmp_path)
+        hub.entry = SimpleNamespace(get_subentries_of_type=lambda subentry_type: subentries)
+        hub.hass.config_entries = SimpleNamespace(async_entries=lambda domain: [hub.entry])
+        await hub._async_start_cloud_forwarders()
+        return hub
+
+    with caplog.at_level(logging.WARNING, logger="custom_components.tibber_pulse_mqtt.coordinator"):
+        hub = run(scenario())
+
+    assert list(hub._forwarders) == [PULSE_ID]
+    assert FakeClient.instances[-1].client_id == "tibber-pulse-0123456789abcdef0123456789abcdef"
+    assert not orphan.exists()
+    assert (root / PULSE_ID / "cert.pem").exists()
+    assert "Skipping Tibber Cloud forwarding broken" in caplog.text
 
 
 def test_hub_without_forwarders_only_dispatches():
@@ -711,3 +619,115 @@ def test_external_client_publishes_through_paho_and_reports_failures():
 
 def test_bundled_ca_file_exists():
     assert BUNDLED_CA_PATH.is_file()
+
+
+# ---------------------------- connection test ---------------------------------
+
+
+def test_connection_test_succeeds_when_the_cloud_accepts_the_client(cert_files):
+    FakeClient.auto_event = "connected"
+    cloud_forwarder.test_connection(make_config(cert_files), timeout=1)
+    client = FakeClient.instances[-1]
+    assert client.client_id == "tibber-pulse-0123456789abcdef0123456789abcdef"
+    assert client.connect_args == (DEFAULT_CLOUD_HOST, 8883, 30)
+    assert client.kwargs == {"reconnect_on_failure": False}, "a test must not keep retrying"
+    assert client.disconnected and client.loop_stopped
+
+
+@pytest.mark.parametrize("code", [134, 135])
+def test_connection_test_reports_rejected_credentials(cert_files, code):
+    FakeClient.auto_event = f"refused:{code}"
+    with pytest.raises(cloud_forwarder.CloudAuthError):
+        cloud_forwarder.test_connection(make_config(cert_files), timeout=1)
+    assert FakeClient.instances[-1].loop_stopped
+
+
+def test_connection_test_reports_other_refusals_as_connection_errors(cert_files):
+    FakeClient.auto_event = "refused:136"
+    with pytest.raises(ConnectionError) as exc_info:
+        cloud_forwarder.test_connection(make_config(cert_files), timeout=1)
+    assert not isinstance(exc_info.value, cloud_forwarder.CloudAuthError)
+
+
+def test_connection_test_reports_failed_connections(cert_files):
+    FakeClient.auto_event = "fail"
+    with pytest.raises(ConnectionError):
+        cloud_forwarder.test_connection(make_config(cert_files), timeout=1)
+    assert FakeClient.instances[-1].loop_stopped
+
+
+def test_connection_test_times_out_and_still_cleans_up(cert_files):
+    FakeClient.auto_event = None
+    with pytest.raises(TimeoutError):
+        cloud_forwarder.test_connection(make_config(cert_files), timeout=0.05)
+    client = FakeClient.instances[-1]
+    assert client.disconnected and client.loop_stopped
+
+
+def test_connection_test_with_unreadable_credentials_never_connects(tmp_path):
+    garbage = tmp_path / "garbage.pem"
+    garbage.write_text("nope")
+    config = CloudForwardingConfig(
+        pulse_id=PULSE_ID, local_publish_topic=TOPIC, cert_path=garbage, key_path=garbage
+    )
+    with pytest.raises((ssl.SSLError, OSError, ValueError)):
+        cloud_forwarder.test_connection(config, timeout=1)
+    assert FakeClient.instances == []
+
+
+# ------------------------------ stored settings -------------------------------
+
+
+def _subentry(**data):
+    return SimpleNamespace(data={"pulse_id": PULSE_ID, "local_topic": TOPIC, **data})
+
+
+def _config_path(tmp_path):
+    return lambda *parts: str(tmp_path.joinpath(*parts))
+
+
+def test_config_from_subentry_uses_defaults_when_nothing_deviates(tmp_path):
+    config = cloud_forwarder.config_from_subentry(_config_path(tmp_path), _subentry())
+    directory = tmp_path / ".storage" / "tibber_pulse_mqtt" / "certs" / PULSE_ID
+    assert config.cert_path == directory / "cert.pem"
+    assert config.key_path == directory / "key.pem"
+    assert config.ca_path is None
+    assert (config.host, config.port, config.tls_version) == (DEFAULT_CLOUD_HOST, 8883, "tlsv1.2")
+    assert config.effective_aws_publish_topic == TOPIC
+    assert config.effective_aws_receive_topic == receive_topic_for(TOPIC)
+
+
+def test_config_from_subentry_applies_stored_deviations_and_a_custom_ca(tmp_path):
+    directory = tmp_path / ".storage" / "tibber_pulse_mqtt" / "certs" / PULSE_ID
+    directory.mkdir(parents=True)
+    (directory / "ca.pem").write_text("ca")
+    config = cloud_forwarder.config_from_subentry(
+        _config_path(tmp_path),
+        _subentry(
+            mqtt_url="example.test",
+            mqtt_port=443,
+            tls_version="tlsv1.3",
+            mqtt_topic="cloud/out",
+            mqtt_topic_sub="cloud/in",
+        ),
+    )
+    assert config.ca_path == directory / "ca.pem"
+    assert (config.host, config.port, config.tls_version) == ("example.test", 443, "tlsv1.3")
+    assert config.effective_aws_publish_topic == "cloud/out"
+    assert config.effective_aws_receive_topic == "cloud/in"
+
+
+@pytest.mark.parametrize(
+    "subentry",
+    [
+        SimpleNamespace(data={"local_topic": TOPIC}),
+        SimpleNamespace(data={"pulse_id": PULSE_ID}),
+        SimpleNamespace(data={"pulse_id": "../evil", "local_topic": TOPIC}),
+        SimpleNamespace(data={"pulse_id": PULSE_ID, "local_topic": "not-a-publish-topic"}),
+        _subentry(mqtt_port="abc"),
+    ],
+    ids=["no-pulse", "no-topic", "bad-pulse-id", "bad-topic", "bad-port"],
+)
+def test_config_from_subentry_rejects_unusable_stored_data(tmp_path, subentry):
+    with pytest.raises((KeyError, TypeError, ValueError)):
+        cloud_forwarder.config_from_subentry(_config_path(tmp_path), subentry)

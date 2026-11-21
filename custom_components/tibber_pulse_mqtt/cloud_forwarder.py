@@ -17,12 +17,14 @@ from __future__ import annotations
 
 import logging
 import ssl
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
 
 import paho.mqtt.client as paho
 
+from .cloud_certs import CA_FILE, CERT_FILE, KEY_FILE, credentials_dir
 from .const import (
     CLOUD_STATE_AUTH_FAILED,
     CLOUD_STATE_CONNECTED,
@@ -33,6 +35,13 @@ from .const import (
     DEFAULT_CLOUD_HOST,
     DEFAULT_CLOUD_PORT,
     DEFAULT_CLOUD_TLS_VERSION,
+    CONF_CLOUD_HOST,
+    CONF_CLOUD_PORT,
+    CONF_CLOUD_PUBLISH_TOPIC,
+    CONF_CLOUD_RECEIVE_TOPIC,
+    CONF_CLOUD_TLS_VERSION,
+    CONF_LOCAL_TOPIC,
+    CONF_PULSE_ID,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +62,7 @@ _TLS_VERSIONS = {
     "tlsv1.3": ssl.TLSVersion.TLSv1_3,
 }
 
+CONNECTION_TEST_TIMEOUT = 15
 MAX_QUEUED_MESSAGES = 200
 RECONNECT_MIN_DELAY = 5
 RECONNECT_MAX_DELAY = 120
@@ -155,6 +165,83 @@ def build_ssl_context(config: CloudForwardingConfig) -> ssl.SSLContext:
     context.maximum_version = version
     context.load_cert_chain(str(config.cert_path), str(config.key_path))
     return context
+
+
+def config_from_subentry(config_path, subentry) -> CloudForwardingConfig:
+    """Build the forwarder configuration from a stored subentry.
+
+    ``config_path`` is ``hass.config.path``. Only deviations from the defaults are
+    stored in the subentry; the credentials are read from their own directory.
+    Raises ValueError/KeyError when the stored data is unusable.
+    """
+    data = subentry.data
+    directory = credentials_dir(config_path, data[CONF_PULSE_ID])
+    ca_path = directory / CA_FILE
+    return CloudForwardingConfig(
+        pulse_id=data[CONF_PULSE_ID],
+        local_publish_topic=data[CONF_LOCAL_TOPIC],
+        cert_path=directory / CERT_FILE,
+        key_path=directory / KEY_FILE,
+        ca_path=ca_path if ca_path.is_file() else None,
+        host=data.get(CONF_CLOUD_HOST, DEFAULT_CLOUD_HOST),
+        port=int(data.get(CONF_CLOUD_PORT, DEFAULT_CLOUD_PORT)),
+        tls_version=data.get(CONF_CLOUD_TLS_VERSION, DEFAULT_CLOUD_TLS_VERSION),
+        aws_publish_topic=data.get(CONF_CLOUD_PUBLISH_TOPIC) or None,
+        aws_receive_topic=data.get(CONF_CLOUD_RECEIVE_TOPIC) or None,
+    )
+
+
+class CloudAuthError(ConnectionError):
+    """The cloud accepted the TLS connection but rejected the client."""
+
+
+def test_connection(config: CloudForwardingConfig, timeout: float = CONNECTION_TEST_TIMEOUT) -> None:
+    """Connect once to the cloud and return when it accepts the client. Blocking.
+
+    Raises CloudAuthError when the client is rejected, ConnectionError when no
+    connection could be made, TimeoutError when the cloud does not answer in time and
+    OSError/ssl.SSLError/ValueError when the credentials cannot be loaded.
+    """
+    context = build_ssl_context(config)
+    finished = threading.Event()
+    outcome: dict = {}
+
+    def _on_connect(client, userdata, flags, reason_code, properties=None):
+        outcome["reason_code"] = reason_code
+        finished.set()
+
+    def _on_connect_fail(client, userdata):
+        outcome["failed"] = True
+        finished.set()
+
+    client = paho.Client(
+        paho.CallbackAPIVersion.VERSION2,
+        client_id=config.client_id,
+        protocol=paho.MQTTv311,
+        clean_session=True,
+        reconnect_on_failure=False,
+    )
+    client.tls_set_context(context)
+    client.on_connect = _on_connect
+    client.on_connect_fail = _on_connect_fail
+    client.connect_async(config.host, config.port, keepalive=30)
+    client.loop_start()
+    try:
+        if not finished.wait(timeout):
+            raise TimeoutError("The cloud did not answer in time")
+        if outcome.get("failed"):
+            raise ConnectionError("Could not connect to the cloud")
+        reason_code = outcome["reason_code"]
+        if getattr(reason_code, "is_failure", reason_code != 0):
+            code = getattr(reason_code, "value", reason_code)
+            if code in _AUTH_REJECTED_CODES:
+                raise CloudAuthError("The cloud rejected the certificate")
+            raise ConnectionError(f"The cloud refused the connection ({code})")
+    finally:
+        try:
+            client.disconnect()
+        finally:
+            client.loop_stop()
 
 
 class CloudForwarder:

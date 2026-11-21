@@ -3,6 +3,25 @@
 ## [0.4.8] - future release
 <!-- Add sections for new features, fixes, and improvements -->
 
+### ⚠️ Important if you use a Mosquitto (or other broker) bridge to Tibber Cloud
+> [!IMPORTANT]
+> The new built-in Tibber Cloud forwarding replaces an external MQTT bridge (for example `bridge.conf` in Mosquitto).
+> **If you enable built-in forwarding for a Pulse, you must first remove the existing bridge for that Pulse.**
+> The bridge and the built-in forwarding use the same Tibber client ID, so if both run at the same time Tibber Cloud keeps disconnecting one of them. The connection then drops over and over and the Tibber app may stop receiving data.
+>
+> 1. Remove the `connection bridge-to-tibber` section (or the whole `bridge.conf`) from your broker configuration.
+> 2. Restart the broker.
+> 3. Add Tibber Cloud forwarding for the Pulse in the integration.
+>
+> If you do not enable built-in forwarding, your existing bridge keeps working exactly as before.
+
+### Added
+- Optional built-in Tibber Cloud forwarding per Pulse, so the Tibber app, firmware updates and Tibber cloud features keep working without a broker bridge. Go to **Settings → Devices & services → Tibber Pulse MQTT → Add Tibber Cloud forwarding**, pick the Pulse and paste the `certificate` and `private_key` values from the Pulse setup page. It works with any MQTT broker (Mosquitto, EMQX, HiveMQ and others), and each Pulse is forwarded separately.
+- The connection to Tibber Cloud is tested before anything is saved, and the dialog explains what is wrong, for example a certificate that has expired or a key that does not belong to the certificate.
+- Advanced settings (CA certificate, topics, address, port and TLS version) are collapsed by default. The defaults match the documented Mosquitto bridge, and the CA certificate Tibber uses is included.
+- To replace a certificate later, reconfigure the forwarding from the integration page. Leave the certificate and key empty to only change the settings.
+- The certificates are stored in Home Assistant's `.storage` folder, so they are included in backups, and they are removed when the forwarding is removed.
+
 ### Fixed
 - Raw captures now also redact meter identifiers reported by devices connected to the meter on other channels, such as the serial number of a gas meter (`0-1:96.1.0`). Previously these were only redacted on channel 0.
 - Decode every frame in repeated protobuf payload fields and support single-phase Kaifa `KFM_001` List 2 measurements. Reported in issue #53

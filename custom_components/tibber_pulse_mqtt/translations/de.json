@@ -89,6 +89,109 @@
       }
     }
   },
+  "config_subentries": {
+    "cloud_forwarding": {
+      "initiate_flow": {
+        "user": "Tibber-Cloud-Weiterleitung hinzufügen"
+      },
+      "entry_type": "Tibber-Cloud-Weiterleitung",
+      "step": {
+        "user": {
+          "title": "Pulse auswählen",
+          "description": "Wähle den Tibber Pulse, der an die Tibber Cloud weitergeleitet werden soll. Es werden nur Pulse-Geräte angezeigt, die bereits eine STATUS-Nachricht gesendet haben.\n\n**Wichtig:** Ist für diesen Pulse bereits eine Mosquitto-Bridge (oder eine andere Broker-Bridge) zur Tibber Cloud eingerichtet, entferne sie zuerst. Beide verwenden dieselbe Client-ID, daher trennt die Tibber Cloud ständig eine der beiden Verbindungen.",
+          "data": {
+            "pulse_id": "Pulse"
+          }
+        },
+        "credentials": {
+          "title": "Tibber-Cloud-Zertifikate",
+          "description": "Leite Daten von Pulse {pulse} an die Tibber Cloud weiter. Kopiere die Werte von der Einrichtungsseite des Pulse (die Feldnamen stehen in Klammern). Die Zertifikate werden auf dieser Home-Assistant-Installation gespeichert, und die Verbindung wird getestet, bevor etwas gespeichert wird.\n\n**Wichtig:** Entferne zuerst eine vorhandene Mosquitto-Bridge für diesen Pulse, sonst trennt die Tibber Cloud eine der beiden Verbindungen.",
+          "data": {
+            "certificate": "Client-Zertifikat (certificate)",
+            "private_key": "Privater Schlüssel (private_key)"
+          },
+          "data_description": {
+            "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+            "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Erweiterte Einstellungen",
+              "description": "Die Standardwerte funktionieren für Tibbers übliche Einrichtung. Ändere sie nur, wenn du es wirklich brauchst.",
+              "data": {
+                "ca_cert": "CA-Zertifikat (ca_cert), optional",
+                "mqtt_topic": "Topic zur Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic von der Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adresse (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS-Version"
+              },
+              "data_description": {
+                "ca_cert": "Leer lassen, um das mit der Integration gelieferte CA-Zertifikat zu verwenden. Füge das Feld ca_cert nur ein, wenn du ein anderes brauchst.",
+                "mqtt_topic": "Topic, auf dem der Pulse lokal veröffentlicht und das an die Tibber Cloud weitergeleitet wird. Standard ist dasselbe Topic wie lokal.",
+                "mqtt_topic_sub": "Topic, auf dem die Tibber Cloud Firmware-Updates und Befehle sendet und das an den Pulse weitergeleitet wird.",
+                "mqtt_url": "Hostname des AWS-IoT-Endpunkts von Tibber.",
+                "mqtt_port": "Port des AWS-IoT-Endpunkts von Tibber, normalerweise 8883.",
+                "tls_version": "TLS-Version für die Verbindung zur Tibber Cloud. Standard ist TLS 1.2."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Tibber-Cloud-Weiterleitung konfigurieren",
+          "description": "Einstellungen für Pulse {pulse}. Lasse Zertifikat und privaten Schlüssel leer, um die gespeicherten zu behalten. Fülle beide aus (und bei Bedarf das CA-Zertifikat), um sie zu ersetzen. Die Verbindung wird getestet, bevor etwas gespeichert wird.",
+          "data": {
+            "certificate": "Client-Zertifikat (certificate)",
+            "private_key": "Privater Schlüssel (private_key)"
+          },
+          "data_description": {
+            "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+            "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Erweiterte Einstellungen",
+              "description": "Die Standardwerte funktionieren für Tibbers übliche Einrichtung. Ändere sie nur, wenn du es wirklich brauchst.",
+              "data": {
+                "ca_cert": "CA-Zertifikat (ca_cert), optional",
+                "mqtt_topic": "Topic zur Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic von der Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adresse (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS-Version"
+              },
+              "data_description": {
+                "ca_cert": "Leer lassen, um das mit der Integration gelieferte CA-Zertifikat zu verwenden. Füge das Feld ca_cert nur ein, wenn du ein anderes brauchst.",
+                "mqtt_topic": "Topic, auf dem der Pulse lokal veröffentlicht und das an die Tibber Cloud weitergeleitet wird. Standard ist dasselbe Topic wie lokal.",
+                "mqtt_topic_sub": "Topic, auf dem die Tibber Cloud Firmware-Updates und Befehle sendet und das an den Pulse weitergeleitet wird.",
+                "mqtt_url": "Hostname des AWS-IoT-Endpunkts von Tibber.",
+                "mqtt_port": "Port des AWS-IoT-Endpunkts von Tibber, normalerweise 8883.",
+                "tls_version": "TLS-Version für die Verbindung zur Tibber Cloud. Standard ist TLS 1.2."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "credentials_incomplete": "Fülle sowohl das Zertifikat als auch den privaten Schlüssel aus.",
+        "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+        "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+        "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+        "certificate_expired": "Das Zertifikat ist abgelaufen.",
+        "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+        "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+        "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+        "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+        "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+        "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+      },
+      "abort": {
+        "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut.",
+        "no_pulse_available": "Kein Pulse verfügbar. Ein Pulse muss seit dem letzten Neustart mindestens eine STATUS-Nachricht an diese Integration gesendet haben; Pulse-Geräte mit bestehender Weiterleitung werden nicht angezeigt.",
+        "reconfigure_successful": "Die Tibber-Cloud-Weiterleitung wurde aktualisiert."
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "1-0_1_8_0": {

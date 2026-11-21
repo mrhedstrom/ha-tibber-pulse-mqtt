@@ -54,6 +54,7 @@ class TibberDispatcher:
         # Device state / mappings
         self._devices: Dict[str, Dict[str, Any]] = {}
         self._topic_to_pulse: Dict[str, str] = {}
+        self._pulse_topics: Dict[str, str] = {}  # pulse_id -> MQTT topic its STATUS arrived on
         self._pending_by_topic: Dict[str, list] = {}
         self._meter_id: Dict[str, str] = {}
 
@@ -86,6 +87,17 @@ class TibberDispatcher:
     def capture_manager(self) -> RawCaptureManager:
         """Return raw capture manager."""
         return self._capture_manager
+
+    @property
+    def discovered_pulses(self) -> Dict[str, Dict[str, Any]]:
+        """Pulse devices that have sent a STATUS message: pulse_id -> topic and STATUS."""
+        return {
+            pulse_id: {
+                "topic": topic,
+                "status": dict(self._devices.get(pulse_id, {}).get("status") or {}),
+            }
+            for pulse_id, topic in dict(self._pulse_topics).items()
+        }
 
     # ----------------------------- Lifecycle -----------------------------------
 
@@ -231,6 +243,7 @@ class TibberDispatcher:
                 if pulse_id:
                     d["has_status"] = True
                     self._topic_to_pulse[dev_id] = pulse_id
+                    self._pulse_topics[pulse_id] = topic
 
                     # Also cache STATUS under pulse_id (used for device_info)
                     dp = self._devices.setdefault(pulse_id, {"status": {}, "sensors": {}, "has_status": True})

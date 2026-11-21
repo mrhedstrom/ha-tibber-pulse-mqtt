@@ -89,6 +89,109 @@
       }
     }
   },
+  "config_subentries": {
+    "cloud_forwarding": {
+      "initiate_flow": {
+        "user": "Tibber Cloud-doorsturen toevoegen"
+      },
+      "entry_type": "Tibber Cloud-doorsturen",
+      "step": {
+        "user": {
+          "title": "Kies Pulse",
+          "description": "Kies de Tibber Pulse die naar Tibber Cloud moet worden doorgestuurd. Alleen Pulse-apparaten die al een STATUS-bericht hebben verzonden, worden getoond.\n\n**Belangrijk:** Als er al een Mosquitto-bridge (of andere broker-bridge) naar Tibber Cloud is ingesteld voor deze Pulse, verwijder die dan eerst. Beide gebruiken dezelfde client-ID, waardoor Tibber Cloud steeds een van de twee verbindingen verbreekt.",
+          "data": {
+            "pulse_id": "Pulse"
+          }
+        },
+        "credentials": {
+          "title": "Tibber Cloud-certificaten",
+          "description": "Stuur gegevens van Pulse {pulse} door naar Tibber Cloud. Kopieer de waarden van de instellingenpagina van de Pulse (de veldnamen staan tussen haakjes). De certificaten worden opgeslagen op deze Home Assistant-installatie en de verbinding wordt getest voordat er iets wordt opgeslagen.\n\n**Belangrijk:** Verwijder eerst een bestaande Mosquitto-bridge voor deze Pulse, anders verbreekt Tibber Cloud een van de twee verbindingen.",
+          "data": {
+            "certificate": "Clientcertificaat (certificate)",
+            "private_key": "Privésleutel (private_key)"
+          },
+          "data_description": {
+            "certificate": "Plak de volledige inhoud van het veld certificate, inclusief de regels -----BEGIN CERTIFICATE----- en -----END CERTIFICATE-----.",
+            "private_key": "Plak de volledige inhoud van het veld private_key, inclusief de BEGIN- en END-regels."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Geavanceerde instellingen",
+              "description": "De standaardwaarden werken voor de gebruikelijke Tibber-opzet. Wijzig ze alleen als je weet dat het nodig is.",
+              "data": {
+                "ca_cert": "CA-certificaat (ca_cert), optioneel",
+                "mqtt_topic": "Topic naar Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic van Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adres (mqtt_url)",
+                "mqtt_port": "Poort (mqtt_port)",
+                "tls_version": "TLS-versie"
+              },
+              "data_description": {
+                "ca_cert": "Laat leeg om het CA-certificaat te gebruiken dat met de integratie wordt meegeleverd. Plak het veld ca_cert alleen als je een ander nodig hebt.",
+                "mqtt_topic": "Topic waarop de Pulse lokaal publiceert en dat naar Tibber Cloud wordt doorgestuurd. Standaard is hetzelfde topic als lokaal.",
+                "mqtt_topic_sub": "Topic waarop Tibber Cloud firmware-updates en opdrachten verstuurt en dat naar de Pulse wordt doorgestuurd.",
+                "mqtt_url": "Hostnaam van het AWS IoT-adres van Tibber.",
+                "mqtt_port": "Poort van het AWS IoT-adres van Tibber, normaal 8883.",
+                "tls_version": "TLS-versie voor de verbinding met Tibber Cloud. Standaard is TLS 1.2."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Tibber Cloud-doorsturen configureren",
+          "description": "Instellingen voor Pulse {pulse}. Laat certificaat en privésleutel leeg om de opgeslagen te behouden. Vul beide in (en zo nodig het CA-certificaat) om ze te vervangen. De verbinding wordt getest voordat er iets wordt opgeslagen.",
+          "data": {
+            "certificate": "Clientcertificaat (certificate)",
+            "private_key": "Privésleutel (private_key)"
+          },
+          "data_description": {
+            "certificate": "Plak de volledige inhoud van het veld certificate, inclusief de regels -----BEGIN CERTIFICATE----- en -----END CERTIFICATE-----.",
+            "private_key": "Plak de volledige inhoud van het veld private_key, inclusief de BEGIN- en END-regels."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Geavanceerde instellingen",
+              "description": "De standaardwaarden werken voor de gebruikelijke Tibber-opzet. Wijzig ze alleen als je weet dat het nodig is.",
+              "data": {
+                "ca_cert": "CA-certificaat (ca_cert), optioneel",
+                "mqtt_topic": "Topic naar Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic van Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adres (mqtt_url)",
+                "mqtt_port": "Poort (mqtt_port)",
+                "tls_version": "TLS-versie"
+              },
+              "data_description": {
+                "ca_cert": "Laat leeg om het CA-certificaat te gebruiken dat met de integratie wordt meegeleverd. Plak het veld ca_cert alleen als je een ander nodig hebt.",
+                "mqtt_topic": "Topic waarop de Pulse lokaal publiceert en dat naar Tibber Cloud wordt doorgestuurd. Standaard is hetzelfde topic als lokaal.",
+                "mqtt_topic_sub": "Topic waarop Tibber Cloud firmware-updates en opdrachten verstuurt en dat naar de Pulse wordt doorgestuurd.",
+                "mqtt_url": "Hostnaam van het AWS IoT-adres van Tibber.",
+                "mqtt_port": "Poort van het AWS IoT-adres van Tibber, normaal 8883.",
+                "tls_version": "TLS-versie voor de verbinding met Tibber Cloud. Standaard is TLS 1.2."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "credentials_incomplete": "Vul zowel het certificaat als de privésleutel in.",
+        "certificate_invalid": "Het certificaat is geen geldig PEM-certificaat. Kopieer het hele veld certificate, inclusief de BEGIN- en END-regels.",
+        "key_invalid": "De privésleutel is geen geldige PEM-sleutel zonder wachtwoord. Kopieer het hele veld private_key, inclusief de BEGIN- en END-regels.",
+        "key_mismatch": "De privésleutel hoort niet bij dit certificaat.",
+        "certificate_expired": "Het certificaat is verlopen.",
+        "certificate_not_yet_valid": "Het certificaat is nog niet geldig. Controleer de datum en tijd van deze Home Assistant-installatie.",
+        "ca_invalid": "Het CA-certificaat is geen geldig PEM-certificaat.",
+        "storage_failed": "De certificaten konden niet worden opgeslagen. Controleer het Home Assistant-logboek.",
+        "invalid_settings": "Een van de geavanceerde instellingen is ongeldig. Controleer adres, poort en topics (topics mogen geen + of # bevatten).",
+        "cannot_connect": "Kan geen verbinding maken met Tibber Cloud. Controleer adres, poort en internetverbinding, en dat geen andere bridge dezelfde Pulse gebruikt.",
+        "auth_failed": "Tibber Cloud heeft het certificaat geweigerd. Controleer of het bij deze Pulse hoort."
+      },
+      "abort": {
+        "entry_not_loaded": "De integratie draait niet. Wacht tot deze is gestart en probeer het opnieuw.",
+        "no_pulse_available": "Geen Pulse beschikbaar. Een Pulse moet sinds de laatste herstart minstens één STATUS-bericht naar deze integratie hebben gestuurd; Pulse-apparaten die al doorsturen worden niet getoond.",
+        "reconfigure_successful": "Tibber Cloud-doorsturen is bijgewerkt."
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "1-0_1_8_0": {
