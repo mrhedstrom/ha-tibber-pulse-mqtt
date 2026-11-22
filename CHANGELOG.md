@@ -21,6 +21,11 @@
 - Advanced settings (CA certificate, topics, address, port and TLS version) are collapsed by default. The defaults match the documented Mosquitto bridge, and the CA certificate Tibber uses is included.
 - To replace a certificate later, reconfigure the forwarding from the integration page. Leave the certificate and key empty to only change the settings.
 - The certificates are stored in Home Assistant's `.storage` folder, so they are included in backups, and they are removed when the forwarding is removed.
+- Each forwarded Pulse gets a diagnostic sensor, **Tibber Cloud connection**, that shows whether it is connected, and a switch, **Tibber Cloud forwarding**, that turns the forwarding off and on. The switch keeps its position after a restart.
+- A Repairs notification appears when a certificate is about to expire (30 and 7 days before), has expired, cannot be read, or is rejected by Tibber Cloud. Open it, paste the new `certificate` and `private_key`, and they are tested before they replace the old ones.
+- A Repairs notification appears if the connection to Tibber Cloud keeps dropping, which is usually caused by an old bridge that is still running. Remove the bridge and confirm, and forwarding restarts.
+- When a new Pulse is found, a one-time Repairs notification offers to set up forwarding for it. If you ignore it, it does not come back.
+- After forwarding is set up it can take a few minutes before the Pulse shows data in the Tibber app. While the Pulse points to your local broker without forwarding, the Tibber app shows no new data. This is expected.
 
 ### Fixed
 - Raw captures now also redact meter identifiers reported by devices connected to the meter on other channels, such as the serial number of a gas meter (`0-1:96.1.0`). Previously these were only redacted on channel 0.
@@ -29,6 +34,7 @@
 - Increased the number of raw capture samples required before triggering the OBIS decoding repair message from 5 to 20, improving decoding reliability and reducing false positives. A false positive was reported in issue #54.
 
 ### Changed
+- The README now describes the built-in forwarding, with the certificate extraction as its own optional chapter. The Mosquitto bridge instructions have moved to `docs/legacy-mosquitto-bridge.md` for reference.
 - The raw capture help text now warns that unreadable payloads are left unchanged and may contain identifiers such as the meter ID.
 - Refactored DLMS parsing to use shared OBIS metadata and registered positional layouts while preserving existing sensor unique IDs.
 - Updated installation instructions to reflect that the integration is now a HA Marketplace integration.

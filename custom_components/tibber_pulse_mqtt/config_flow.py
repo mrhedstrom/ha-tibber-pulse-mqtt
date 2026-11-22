@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ssl
 from pathlib import Path
 from typing import Any, Dict, Optional
 import voluptuous as vol
@@ -21,11 +20,10 @@ from .cloud_certs import (
     stage_credentials,
 )
 from .cloud_forwarder import (
-    CloudAuthError,
     CloudForwardingConfig,
+    async_test_connection,
     config_from_subentry,
     receive_topic_for,
-    test_connection,
 )
 from .const import (
     DOMAIN,
@@ -569,7 +567,7 @@ class CloudForwardingSubentryFlow(config_entries.ConfigSubentryFlow):
                 previous_config = None
             await hub.async_remove_forwarder(pulse_id)
 
-        error = await self._async_test(config)
+        error = await async_test_connection(self.hass, config)
         if error is not None:
             if stage is not None:
                 await self.hass.async_add_executor_job(discard_staged_credentials, stage)
@@ -604,16 +602,3 @@ class CloudForwardingSubentryFlow(config_entries.ConfigSubentryFlow):
             # Nothing triggers a reload, so start forwarding again with the saved files.
             await hub.async_add_forwarder(config_from_subentry(self.hass.config.path, subentry))
         return self.async_abort(reason="reconfigure_successful")
-
-    async def _async_test(self, config: CloudForwardingConfig) -> Optional[str]:
-        """Test the connection. Returns an error key, or None when it works."""
-        try:
-            await self.hass.async_add_executor_job(test_connection, config)
-        except CloudAuthError:
-            return "auth_failed"
-        except (TimeoutError, ConnectionError):
-            return "cannot_connect"
-        except (ssl.SSLError, OSError, ValueError):
-            # The credentials could not be loaded, e.g. the stored files are gone.
-            return "certificate_invalid"
-        return None

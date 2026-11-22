@@ -12,7 +12,12 @@ from types import SimpleNamespace
 import paho.mqtt.client as paho
 import pytest
 
-from custom_components.tibber_pulse_mqtt import cloud_forwarder, mqtt_client
+from custom_components.tibber_pulse_mqtt import (
+    cloud_forwarder,
+    cloud_issues,
+    coordinator,
+    mqtt_client,
+)
 from custom_components.tibber_pulse_mqtt.cloud_forwarder import (
     BUNDLED_CA_PATH,
     CloudForwarder,
@@ -36,6 +41,8 @@ from tests.cloud_helpers import (
     TOPIC,
     FakeClient,
     FakeHass,
+    FakeIssues,
+    FakeStore,
     make_pems,
     run,
     settle,
@@ -453,25 +460,46 @@ def test_failed_local_publish_is_logged_and_does_not_stop_forwarding(cert_files,
 class RecordingDispatcher:
     def __init__(self):
         self.messages = []
+        self.discovered_pulses = {}
+        self.on_pulse_discovered = None
 
     def on_mqtt_message(self, topic, payload):
         self.messages.append((topic, payload))
 
+    async def async_stop(self):
+        return None
 
-async def _noop_stop() -> None:
-    return None
+
+ENTRY_ID = "entry1"
 
 
-def make_hub(config_dir=None):
-    hub = object.__new__(TibberLocalHub)
-    hub.hass = FakeHass(config_dir)
+def make_hub(config_dir=None, subentries=()):
+    subentries = list(subentries)
+    hass = FakeHass(config_dir)
+    entry = SimpleNamespace(
+        entry_id=ENTRY_ID,
+        data={},
+        options={},
+        subentries={s.subentry_id: s for s in subentries},
+        get_subentries_of_type=lambda subentry_type: subentries,
+    )
+    hass.config_entries = SimpleNamespace(async_entries=lambda domain: [entry])
+    hub = TibberLocalHub(hass, entry)
     hub.dispatcher = RecordingDispatcher()
-    hub.dispatcher.async_stop = _noop_stop
-    hub._unsub_ha_stop = None
-    hub._ha_mqtt = None
-    hub._ext_mqtt = None
-    hub._forwarders = {}
     return hub
+
+
+@pytest.fixture(autouse=True)
+def fake_cloud_environment(monkeypatch):
+    """Keep the hub away from Home Assistant's storage, issue registry and scheduler."""
+    FakeStore.data = {}
+    issues = FakeIssues()
+    monkeypatch.setattr(coordinator, "Store", FakeStore)
+    monkeypatch.setattr(cloud_issues, "ir", issues)
+    monkeypatch.setattr(
+        coordinator, "async_track_time_interval", lambda hass, action, interval: (lambda: None)
+    )
+    return issues
 
 
 def test_hub_forwards_before_dispatching_and_survives_a_failing_forwarder(cert_files):
@@ -500,14 +528,12 @@ def test_hub_starts_forwarding_for_stored_subentries_and_removes_orphaned_creden
     os.utime(orphan, (old, old))
 
     subentries = [
-        SimpleNamespace(title="ok", data={"pulse_id": PULSE_ID, "local_topic": TOPIC}),
-        SimpleNamespace(title="broken", data={"pulse_id": "other"}),  # no topic stored
+        SimpleNamespace(subentry_id="s1", title="ok", data={"pulse_id": PULSE_ID, "local_topic": TOPIC}),
+        SimpleNamespace(subentry_id="s2", title="broken", data={"pulse_id": "other"}),  # no topic stored
     ]
 
     async def scenario():
-        hub = make_hub(tmp_path)
-        hub.entry = SimpleNamespace(get_subentries_of_type=lambda subentry_type: subentries)
-        hub.hass.config_entries = SimpleNamespace(async_entries=lambda domain: [hub.entry])
+        hub = make_hub(tmp_path, subentries)
         await hub._async_start_cloud_forwarders()
         return hub
 
@@ -731,3 +757,248 @@ def test_config_from_subentry_applies_stored_deviations_and_a_custom_ca(tmp_path
 def test_config_from_subentry_rejects_unusable_stored_data(tmp_path, subentry):
     with pytest.raises((KeyError, TypeError, ValueError)):
         cloud_forwarder.config_from_subentry(_config_path(tmp_path), subentry)
+
+
+# ----------------------- hub: state, switch, issues, discovery ----------------------
+
+
+def stored_forwarding(tmp_path, **credential_options):
+    """A stored forwarding with real credentials on disk."""
+    write_credentials(tmp_path / ".storage" / "tibber_pulse_mqtt" / "certs" / PULSE_ID, **credential_options)
+    return SimpleNamespace(
+        subentry_id="sub1",
+        title="ok",
+        unique_id=PULSE_ID,
+        data={"pulse_id": PULSE_ID, "local_topic": TOPIC},
+    )
+
+
+async def started_hub(tmp_path, **credential_options):
+    hub = make_hub(tmp_path, [stored_forwarding(tmp_path, **credential_options)])
+    await hub._async_start_cloud_forwarders()
+    return hub
+
+
+def test_hub_tracks_the_connection_state_and_tells_listeners(tmp_path):
+    async def scenario():
+        hub = make_hub(tmp_path, [stored_forwarding(tmp_path)])
+        events = []
+        unsubscribe = hub.async_add_cloud_listener(events.append)
+        assert hub.cloud_state(PULSE_ID) == "disabled", "unknown until a forwarder reports"
+
+        await hub._async_start_cloud_forwarders()
+        assert hub.cloud_state(PULSE_ID) == "connecting"
+        FakeClient.instances[-1].simulate_connected()
+        await settle()
+        assert hub.cloud_state(PULSE_ID) == "connected"
+        assert events == [PULSE_ID, PULSE_ID]
+
+        unsubscribe()
+        FakeClient.instances[-1].simulate_disconnected()
+        await settle()
+        assert hub.cloud_state(PULSE_ID) == "disconnected"
+        assert events == [PULSE_ID, PULSE_ID], "an unsubscribed listener hears nothing"
+
+    run(scenario())
+
+
+def test_a_failing_listener_does_not_stop_the_others(tmp_path):
+    async def scenario():
+        hub = make_hub(tmp_path, [stored_forwarding(tmp_path)])
+        heard = []
+
+        def broken(pulse_id):
+            raise RuntimeError("boom")
+
+        hub.async_add_cloud_listener(broken)
+        hub.async_add_cloud_listener(heard.append)
+        await hub._async_start_cloud_forwarders()
+        assert heard == [PULSE_ID]
+
+    run(scenario())
+
+
+def test_a_rejected_certificate_raises_a_repairs_issue(tmp_path, fake_cloud_environment):
+    async def scenario():
+        await started_hub(tmp_path)
+        FakeClient.instances[-1].simulate_refused(135)
+        await settle()
+
+    run(scenario())
+    assert f"cloud_auth_rejected_{PULSE_ID}" in fake_cloud_environment.ids
+    issue = fake_cloud_environment.issues[("tibber_pulse_mqtt", f"cloud_auth_rejected_{PULSE_ID}")]
+    assert issue["data"] == {"entry_id": ENTRY_ID, "subentry_id": "sub1", "pulse_id": PULSE_ID}
+
+
+def test_switching_forwarding_off_and_on_survives_restarts(tmp_path):
+    async def scenario():
+        hub = await started_hub(tmp_path)
+        events = []
+        hub.async_add_cloud_listener(events.append)
+        first = FakeClient.instances[-1]
+        assert hub.cloud_enabled(PULSE_ID) and hub.has_forwarder(PULSE_ID)
+
+        await hub.async_set_cloud_enabled(PULSE_ID, False)
+        assert first.disconnected and not hub.has_forwarder(PULSE_ID)
+        assert not hub.cloud_enabled(PULSE_ID)
+        assert hub.cloud_state(PULSE_ID) == "disabled"
+        assert FakeStore.data == {"tibber_pulse_mqtt.entry1.cloud_forwarding": {"disabled": [PULSE_ID]}}
+        assert PULSE_ID in events
+
+        # A reload (new hub, same storage) keeps it off and never connects.
+        instances_before = len(FakeClient.instances)
+        reloaded = make_hub(tmp_path, [stored_forwarding(tmp_path)])
+        await reloaded._async_start_cloud_forwarders()
+        assert not reloaded.cloud_enabled(PULSE_ID) and not reloaded.has_forwarder(PULSE_ID)
+        assert reloaded.cloud_state(PULSE_ID) == "disabled"
+        assert len(FakeClient.instances) == instances_before
+
+        await reloaded.async_set_cloud_enabled(PULSE_ID, True)
+        assert reloaded.cloud_enabled(PULSE_ID) and reloaded.has_forwarder(PULSE_ID)
+        assert len(FakeClient.instances) == instances_before + 1
+        assert FakeStore.data == {"tibber_pulse_mqtt.entry1.cloud_forwarding": {"disabled": []}}
+
+    run(scenario())
+
+
+def test_switching_an_unknown_forwarding_raises(tmp_path):
+    async def scenario():
+        with pytest.raises(ValueError):
+            await make_hub(tmp_path).async_set_cloud_enabled("nobody", True)
+
+    run(scenario())
+
+
+def test_resetting_the_connection_restarts_forwarding_and_forgets_drops(tmp_path, fake_cloud_environment):
+    async def scenario():
+        hub = await started_hub(tmp_path)
+        client = FakeClient.instances[-1]
+        for _ in range(5):
+            client.simulate_connected()
+            client.simulate_disconnected()
+            await settle()
+        assert f"cloud_connection_unstable_{PULSE_ID}" in fake_cloud_environment.ids
+
+        await hub.async_reset_cloud_connection(PULSE_ID)
+        assert f"cloud_connection_unstable_{PULSE_ID}" not in fake_cloud_environment.ids
+        assert client.disconnected and FakeClient.instances[-1] is not client
+
+    run(scenario())
+
+
+def test_resetting_does_not_start_a_forwarding_the_user_switched_off(tmp_path):
+    async def scenario():
+        hub = await started_hub(tmp_path)
+        await hub.async_set_cloud_enabled(PULSE_ID, False)
+        count = len(FakeClient.instances)
+        await hub.async_reset_cloud_connection(PULSE_ID)
+        assert len(FakeClient.instances) == count
+
+    run(scenario())
+
+
+def test_certificates_are_checked_when_forwarding_starts_and_every_day(tmp_path, monkeypatch, fake_cloud_environment):
+    scheduled = []
+
+    def track(hass, action, interval):
+        scheduled.append((action, interval))
+        return lambda: scheduled.append("unsubscribed")
+
+    monkeypatch.setattr(coordinator, "async_track_time_interval", track)
+
+    async def scenario():
+        hub = await started_hub(tmp_path, not_after_days=5)
+        assert fake_cloud_environment.ids == [f"cloud_certificate_expiring_soon_{PULSE_ID}"]
+        await hub.async_stop()
+
+    run(scenario())
+    assert scheduled[0][1].total_seconds() == 24 * 3600
+    assert scheduled[-1] == "unsubscribed"
+
+
+def test_the_daily_check_reports_a_certificate_that_has_since_expired(tmp_path, fake_cloud_environment):
+    async def scenario():
+        hub = await started_hub(tmp_path, not_after_days=60)
+        assert fake_cloud_environment.ids == []
+        write_credentials(
+            tmp_path / ".storage" / "tibber_pulse_mqtt" / "certs" / PULSE_ID,
+            not_before_days=-10,
+            not_after_days=-1,
+        )
+        await hub._async_certificate_check_due(None)
+
+    run(scenario())
+    assert fake_cloud_environment.ids == [f"cloud_certificate_expired_{PULSE_ID}"]
+
+
+def test_a_broken_certificate_file_is_reported(tmp_path, fake_cloud_environment):
+    async def scenario():
+        hub = make_hub(tmp_path, [stored_forwarding(tmp_path)])
+        cert = tmp_path / ".storage" / "tibber_pulse_mqtt" / "certs" / PULSE_ID / "cert.pem"
+        cert.write_text("garbage")
+        await hub._async_start_cloud_forwarders()
+        await settle()
+
+    run(scenario())
+    assert f"cloud_certificate_invalid_{PULSE_ID}" in fake_cloud_environment.ids
+    assert FakeClient.instances == [], "no client is created when the files cannot be loaded"
+
+
+def test_issues_of_a_removed_forwarding_disappear_when_the_hub_starts(tmp_path, fake_cloud_environment):
+    fake_cloud_environment.async_create_issue(
+        None,
+        "tibber_pulse_mqtt",
+        "cloud_auth_rejected_old",
+        data={"entry_id": ENTRY_ID, "subentry_id": "removed", "pulse_id": "old"},
+    )
+
+    async def scenario():
+        await started_hub(tmp_path)
+
+    run(scenario())
+    assert "cloud_auth_rejected_old" not in fake_cloud_environment.ids
+
+
+# ---- discovery offer
+
+
+def test_a_discovered_pulse_without_forwarding_is_offered_forwarding(tmp_path, fake_cloud_environment):
+    hub = make_hub(tmp_path)
+    hub._on_pulse_discovered(PULSE_ID, TOPIC)
+    assert fake_cloud_environment.ids == [f"cloud_pulse_discovered_{PULSE_ID}"]
+
+
+def test_a_pulse_that_already_has_forwarding_is_not_offered_again(tmp_path, fake_cloud_environment):
+    hub = make_hub(tmp_path, [stored_forwarding(tmp_path)])
+    fake_cloud_environment.async_create_issue(None, "tibber_pulse_mqtt", f"cloud_pulse_discovered_{PULSE_ID}")
+    hub._on_pulse_discovered(PULSE_ID, TOPIC)
+    assert fake_cloud_environment.ids == []
+
+
+@pytest.mark.parametrize(
+    "pulse_id, topic",
+    [(PULSE_ID, "no-publish-topic"), (PULSE_ID, "tibber-pulse-+/publish"), ("../evil", TOPIC)],
+    ids=["not-a-publish-topic", "wildcard", "bad-pulse-id"],
+)
+def test_no_offer_is_made_when_forwarding_cannot_be_built(tmp_path, fake_cloud_environment, pulse_id, topic):
+    make_hub(tmp_path)._on_pulse_discovered(pulse_id, topic)
+    assert fake_cloud_environment.ids == []
+
+
+def test_setting_up_forwarding_removes_the_offer_when_the_hub_starts(tmp_path, fake_cloud_environment):
+    fake_cloud_environment.async_create_issue(None, "tibber_pulse_mqtt", f"cloud_pulse_discovered_{PULSE_ID}")
+
+    async def scenario():
+        await started_hub(tmp_path)
+
+    run(scenario())
+    assert fake_cloud_environment.ids == []
+
+
+def test_removing_the_integration_deletes_what_it_stored(monkeypatch):
+    from custom_components.tibber_pulse_mqtt import async_remove_entry
+
+    FakeStore.data = {"tibber_pulse_mqtt.entry1.cloud_forwarding": {"disabled": []}, "other": {}}
+    monkeypatch.setattr("homeassistant.helpers.storage.Store", FakeStore)
+    run(async_remove_entry(SimpleNamespace(), SimpleNamespace(entry_id=ENTRY_ID)))
+    assert FakeStore.data == {"other": {}}

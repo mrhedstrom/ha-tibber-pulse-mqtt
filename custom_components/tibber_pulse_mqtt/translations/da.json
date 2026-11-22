@@ -292,6 +292,22 @@
       },
       "0-0_96_13_1": {
         "name": "Beskedkode"
+      },
+      "cloud_connection": {
+        "name": "Tibber Cloud-forbindelse",
+        "state": {
+          "connected": "Forbundet",
+          "connecting": "Forbinder",
+          "disconnected": "Afbrudt",
+          "auth_failed": "Afvist af Tibber Cloud",
+          "invalid_certificate": "Ugyldigt certifikat",
+          "disabled": "Fra"
+        }
+      }
+    },
+    "switch": {
+      "cloud_forwarding": {
+        "name": "Tibber Cloud-videresendelse"
       }
     }
   },
@@ -326,6 +342,225 @@
             "title": "Afslut målerindsamling",
             "description": "En raw capture for {device} indsamles og kan downloades via linket nedenfor. Filen vil fortsætte med at blive opdateret med nye meddelelser, mens indsamlingen er aktiv.\n\nBemærk: Hvis downloaden ikke starter, når du klikker på linket, kan du højreklikke på linket og vælge \"Gem link som...\" eller \"Åbn link i ny fane\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nKontrollér først, at du har downloadet den seneste raw capture-fil og oprettet en GitHub-issue.\n\nNår du bekræfter, stoppes indsamlingen, og den lokale capture-fil slettes permanent."
           }
+        }
+      }
+    },
+    "cloud_certificate_expiring": {
+      "title": "Tibber Cloud-certifikatet for Pulse {device} udløber om {days} dage",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Udskift certifikat",
+            "description": "Certifikatet, der bruges til at videresende Pulse {device} til Tibber Cloud, udløber den {date} (om {days} dage). Udtræk et nyt certifikat og en ny privat nøgle fra Pulsen (se dokumentationen), og indsæt dem nedenfor. De testes, før de erstatter de nuværende.",
+            "data": {
+              "certificate": "Klientcertifikat (certificate)",
+              "private_key": "Privat nøgle (private_key)"
+            },
+            "data_description": {
+              "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+              "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+          "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+          "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+          "certificate_expired": "Certifikatet er udløbet.",
+          "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+          "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+          "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+          "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+          "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+          "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen."
+        }
+      }
+    },
+    "cloud_certificate_expiring_soon": {
+      "title": "Tibber Cloud-certifikatet for Pulse {device} udløber om {days} dage",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Udskift certifikat",
+            "description": "Certifikatet, der bruges til at videresende Pulse {device} til Tibber Cloud, udløber den {date} (om {days} dage). Udtræk et nyt certifikat og en ny privat nøgle fra Pulsen (se dokumentationen), og indsæt dem nedenfor. De testes, før de erstatter de nuværende.",
+            "data": {
+              "certificate": "Klientcertifikat (certificate)",
+              "private_key": "Privat nøgle (private_key)"
+            },
+            "data_description": {
+              "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+              "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+          "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+          "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+          "certificate_expired": "Certifikatet er udløbet.",
+          "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+          "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+          "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+          "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+          "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+          "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen."
+        }
+      }
+    },
+    "cloud_certificate_expired": {
+      "title": "Tibber Cloud-certifikatet for Pulse {device} er udløbet",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Udskift certifikat",
+            "description": "Certifikatet, der bruges til at videresende Pulse {device} til Tibber Cloud, udløb den {date}, så data videresendes ikke længere. Udtræk et nyt certifikat og en ny privat nøgle fra Pulsen (se dokumentationen), og indsæt dem nedenfor. De testes, før de erstatter de nuværende.",
+            "data": {
+              "certificate": "Klientcertifikat (certificate)",
+              "private_key": "Privat nøgle (private_key)"
+            },
+            "data_description": {
+              "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+              "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+          "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+          "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+          "certificate_expired": "Certifikatet er udløbet.",
+          "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+          "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+          "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+          "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+          "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+          "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen."
+        }
+      }
+    },
+    "cloud_certificate_invalid": {
+      "title": "Tibber Cloud-certifikatet for Pulse {device} kan ikke bruges",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Udskift certifikat",
+            "description": "Det gemte certifikat eller den private nøgle for Pulse {device} kunne ikke læses, så data videresendes ikke. Indsæt certifikatet og den private nøgle igen. De testes, før de erstatter de nuværende.",
+            "data": {
+              "certificate": "Klientcertifikat (certificate)",
+              "private_key": "Privat nøgle (private_key)"
+            },
+            "data_description": {
+              "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+              "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+          "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+          "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+          "certificate_expired": "Certifikatet er udløbet.",
+          "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+          "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+          "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+          "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+          "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+          "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen."
+        }
+      }
+    },
+    "cloud_auth_rejected": {
+      "title": "Tibber Cloud afviste certifikatet for Pulse {device}",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Udskift certifikat",
+            "description": "Tibber Cloud afviste certifikatet for Pulse {device}, så data videresendes ikke. Kontrollér, at certifikatet hører til denne Pulse, og indsæt certifikatet og den private nøgle igen. De testes, før de erstatter de nuværende.",
+            "data": {
+              "certificate": "Klientcertifikat (certificate)",
+              "private_key": "Privat nøgle (private_key)"
+            },
+            "data_description": {
+              "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+              "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+          "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+          "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+          "certificate_expired": "Certifikatet er udløbet.",
+          "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+          "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+          "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+          "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+          "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+          "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen."
+        }
+      }
+    },
+    "cloud_connection_unstable": {
+      "title": "Forbindelsen til Tibber Cloud for Pulse {device} bliver ved med at blive afbrudt",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Genstart videresendelse",
+            "description": "Forbindelsen til Tibber Cloud for Pulse {device} er blevet afbrudt flere gange på kort tid. Den almindeligste årsag er, at en Mosquitto-bridge (eller anden broker-bridge) til Tibber Cloud stadig kører for denne Pulse. Begge bruger samme klient-ID, så Tibber Cloud afbryder hele tiden den ene.\n\nFjern bridgen fra brokerens konfiguration, genstart brokeren, og bekræft derefter her. Videresendelsen genstartes, og denne meddelelse fjernes."
+          }
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen."
+        }
+      }
+    },
+    "cloud_pulse_discovered": {
+      "title": "Pulse {device} kan videresendes til Tibber Cloud",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Opsæt Tibber Cloud-videresendelse",
+            "description": "Pulse {device} er fundet. Du kan videresende dens data til Tibber Cloud, så Tibber-appen, firmwareopdateringer og Tibbers cloudfunktioner fortsat virker. Indsæt certifikatet og den private nøgle fra Pulsens opsætningsside. De testes, før noget gemmes.\n\n**Vigtigt:** Hvis en Mosquitto-bridge (eller anden broker-bridge) til Tibber Cloud allerede er sat op for denne Pulse, skal du fjerne den først. Vil du ikke videresende, så vælg Ignorer, og denne meddelelse kommer ikke tilbage.",
+            "data": {
+              "certificate": "Klientcertifikat (certificate)",
+              "private_key": "Privat nøgle (private_key)"
+            },
+            "data_description": {
+              "certificate": "Indsæt hele indholdet af feltet certificate, inklusive linjerne -----BEGIN CERTIFICATE----- og -----END CERTIFICATE-----.",
+              "private_key": "Indsæt hele indholdet af feltet private_key, inklusive BEGIN- og END-linjerne."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Certifikatet er ikke et gyldigt PEM-certifikat. Kopiér hele feltet certificate, inklusive BEGIN- og END-linjerne.",
+          "key_invalid": "Den private nøgle er ikke en gyldig PEM-nøgle uden adgangskode. Kopiér hele feltet private_key, inklusive BEGIN- og END-linjerne.",
+          "key_mismatch": "Den private nøgle hører ikke til certifikatet.",
+          "certificate_expired": "Certifikatet er udløbet.",
+          "certificate_not_yet_valid": "Certifikatet er ikke gyldigt endnu. Kontrollér dato og klokkeslæt på denne Home Assistant-installation.",
+          "ca_invalid": "CA-certifikatet er ikke et gyldigt PEM-certifikat.",
+          "storage_failed": "Certifikaterne kunne ikke gemmes. Se Home Assistants log.",
+          "invalid_settings": "En af de avancerede indstillinger er ugyldig. Kontrollér adresse, port og topics (topics må ikke indeholde + eller #).",
+          "cannot_connect": "Kunne ikke oprette forbindelse til Tibber Cloud. Kontrollér adresse, port og internetforbindelse, og at ingen anden bridge bruger samme Pulse.",
+          "auth_failed": "Tibber Cloud afviste certifikatet. Kontrollér, at det hører til denne Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "Integrationen kører ikke. Vent, til den er startet, og prøv igen.",
+          "already_configured": "Tibber Cloud-videresendelse er allerede sat op for denne Pulse."
         }
       }
     }

@@ -141,7 +141,7 @@ def make_pems(
     key_index: int = 0,
     cert_key_index: Optional[int] = None,
     not_before_days: int = -1,
-    not_after_days: int = 30,
+    not_after_days: int = 365,
     key_format: str = "pkcs1",
     ca: bool = True,
 ) -> tuple[str, str]:
@@ -186,3 +186,55 @@ def write_credentials(directory: Path, **kwargs) -> tuple[Path, Path]:
     cert_path.write_text(certificate, encoding="ascii")
     key_path.write_text(private_key, encoding="ascii")
     return cert_path, key_path
+
+
+class FakeStore:
+    """In-memory stand-in for homeassistant.helpers.storage.Store."""
+
+    data: dict = {}
+
+    def __init__(self, hass, version, key):
+        self.key = key
+
+    async def async_load(self):
+        return FakeStore.data.get(self.key)
+
+    async def async_save(self, data):
+        FakeStore.data[self.key] = data
+
+    async def async_remove(self):
+        FakeStore.data.pop(self.key, None)
+
+
+class FakeIssues:
+    """Stand-in for homeassistant.helpers.issue_registry that records issues."""
+
+    IssueSeverity = SimpleNamespace(WARNING="warning", ERROR="error", CRITICAL="critical")
+
+    def __init__(self):
+        self.issues: dict[tuple[str, str], dict] = {}
+
+    def async_create_issue(self, hass, domain, issue_id, **kwargs):
+        self.issues[(domain, issue_id)] = kwargs
+
+    def async_delete_issue(self, hass, domain, issue_id):
+        self.issues.pop((domain, issue_id), None)
+
+    def async_get(self, hass):
+        def async_get_issue(domain, issue_id):
+            kwargs = self.issues.get((domain, issue_id))
+            if kwargs is None:
+                return None
+            return SimpleNamespace(
+                data=kwargs.get("data"),
+                translation_placeholders=kwargs.get("translation_placeholders"),
+            )
+
+        return SimpleNamespace(
+            issues={key: SimpleNamespace(data=value.get("data")) for key, value in self.issues.items()},
+            async_get_issue=async_get_issue,
+        )
+
+    @property
+    def ids(self) -> list[str]:
+        return sorted(issue_id for _domain, issue_id in self.issues)

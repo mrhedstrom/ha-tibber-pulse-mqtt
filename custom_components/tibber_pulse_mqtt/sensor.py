@@ -8,14 +8,16 @@ from typing import Any, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.sensor import (
+    SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.helpers.entity import DeviceInfo, async_generate_entity_id
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory, async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .cloud_entity import TibberCloudEntity, async_remove_stale_cloud_entities
+from .const import CLOUD_STATES, DOMAIN, SUBENTRY_TYPE_CLOUD_FORWARDING
 from .obis.full_db import obis_meta
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,6 +108,11 @@ async def async_setup_entry(
     hub = hass.data[DOMAIN][entry.entry_id]
     manager = SensorManager(hass, entry, async_add_entities)
     hub.sensor_manager = manager
+
+    # Attached to the Pulse device, not to the subentry. See async_remove_stale_cloud_entities.
+    async_remove_stale_cloud_entities(hass, entry, "sensor")
+    for subentry in entry.get_subentries_of_type(SUBENTRY_TYPE_CLOUD_FORWARDING):
+        async_add_entities([TibberCloudConnectionSensor(hub, subentry)])
 
     _LOGGER.info("Tibber Local sensor platform initialized")
 
@@ -457,3 +464,20 @@ class TibberSensor(SensorEntity):
                 self.async_write_ha_state()
             except Exception:
                 pass
+
+
+class TibberCloudConnectionSensor(TibberCloudEntity, SensorEntity):
+    """Diagnostic sensor showing the state of a Pulse's Tibber Cloud connection."""
+
+    _attr_translation_key = "cloud_connection"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_options = list(CLOUD_STATES)
+
+    def __init__(self, hub, subentry) -> None:
+        super().__init__(hub, subentry)
+        self._attr_unique_id = f"tibber_{self._pulse_id}_cloud_connection"
+
+    @property
+    def native_value(self) -> str:
+        return self._hub.cloud_state(self._pulse_id)

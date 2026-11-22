@@ -8,7 +8,7 @@ import pytest
 import voluptuous as vol
 from homeassistant.data_entry_flow import FlowResultType, section
 
-from custom_components.tibber_pulse_mqtt import config_flow
+from custom_components.tibber_pulse_mqtt import cloud_forwarder
 from custom_components.tibber_pulse_mqtt.cloud_certs import (
     commit_staged_credentials,
     stage_credentials,
@@ -130,7 +130,7 @@ def cloud(monkeypatch):
         if state.outcome is not None:
             raise state.outcome
 
-    monkeypatch.setattr(config_flow, "test_connection", fake_test_connection)
+    monkeypatch.setattr(cloud_forwarder, "test_connection", fake_test_connection)
     return state
 
 

@@ -35,7 +35,7 @@ def reason(exc_info) -> str:
 
 @pytest.mark.parametrize("key_format", ["pkcs1", "pkcs8"])
 def test_valid_credentials_are_accepted_in_both_key_formats(key_format):
-    certificate, key = make_pems(key_format=key_format)
+    certificate, key = make_pems(key_format=key_format, not_after_days=30)
     info = validate_credentials(certificate, key)
     remaining = info.not_after - datetime.now(timezone.utc)
     assert timedelta(days=29) < remaining <= timedelta(days=30)

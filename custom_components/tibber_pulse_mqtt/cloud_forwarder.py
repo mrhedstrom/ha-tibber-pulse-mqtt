@@ -15,6 +15,7 @@ touch Home Assistant.
 """
 from __future__ import annotations
 
+import dataclasses
 import logging
 import ssl
 import threading
@@ -24,7 +25,16 @@ from typing import Awaitable, Callable, Optional
 
 import paho.mqtt.client as paho
 
-from .cloud_certs import CA_FILE, CERT_FILE, KEY_FILE, credentials_dir
+from .cloud_certs import (
+    CA_FILE,
+    CERT_FILE,
+    KEY_FILE,
+    CertificateError,
+    commit_staged_credentials,
+    credentials_dir,
+    discard_staged_credentials,
+    stage_credentials,
+)
 from .const import (
     CLOUD_STATE_AUTH_FAILED,
     CLOUD_STATE_CONNECTED,
@@ -427,3 +437,91 @@ class CloudForwarder:
                 self._on_state(self._config.pulse_id, state)
             except Exception:  # noqa: BLE001 - a listener must not break forwarding
                 _LOGGER.exception("Tibber Cloud state listener failed")
+
+
+# ------------------------- shared by the config and repair flows -------------------------
+
+
+async def async_test_connection(hass, config: CloudForwardingConfig) -> Optional[str]:
+    """Test the connection off the event loop. Returns a flow error key, or None if it works."""
+    try:
+        await hass.async_add_executor_job(test_connection, config)
+    except CloudAuthError:
+        return "auth_failed"
+    except (TimeoutError, ConnectionError):
+        return "cannot_connect"
+    except (ssl.SSLError, OSError, ValueError):
+        # The credentials could not be loaded, e.g. the stored files are gone.
+        return "certificate_invalid"
+    return None
+
+
+async def async_stage_and_test(
+    hass,
+    template: CloudForwardingConfig,
+    certificate: str,
+    private_key: str,
+    ca_pem: Optional[str] = None,
+) -> tuple[Optional[Path], Optional[str]]:
+    """Validate new credentials, stage them and test them against the cloud.
+
+    ``template`` supplies every other setting. Returns ``(stage, None)`` when the cloud
+    accepts the credentials; the caller then commits the stage. Otherwise returns
+    ``(None, error_key)`` and nothing is left behind.
+    """
+    directory = credentials_dir(hass.config.path, template.pulse_id)
+    try:
+        stage = await hass.async_add_executor_job(
+            stage_credentials, directory, certificate, private_key, ca_pem
+        )
+    except CertificateError as err:
+        return None, err.reason
+    except OSError:
+        return None, "storage_failed"
+
+    ca_path = stage / CA_FILE
+    config = dataclasses.replace(
+        template,
+        cert_path=stage / CERT_FILE,
+        key_path=stage / KEY_FILE,
+        ca_path=ca_path if ca_path.is_file() else None,
+    )
+    error = await async_test_connection(hass, config)
+    if error is not None:
+        await hass.async_add_executor_job(discard_staged_credentials, stage)
+        return None, error
+    return stage, None
+
+
+def _read_text_if_exists(path: Path) -> Optional[str]:
+    return path.read_text(encoding="ascii") if path.is_file() else None
+
+
+async def async_replace_credentials(
+    hass, hub, subentry, certificate: str, private_key: str
+) -> Optional[str]:
+    """Replace the certificate and key of an existing forwarding. Returns an error key or None.
+
+    A custom CA is kept. The current credentials stay active unless the cloud accepts the
+    new ones.
+    """
+    template = config_from_subentry(hass.config.path, subentry)
+    directory = credentials_dir(hass.config.path, template.pulse_id)
+    ca_pem = await hass.async_add_executor_job(_read_text_if_exists, directory / CA_FILE)
+
+    # The cloud allows one connection per client ID, so a running forwarder steps aside.
+    was_running = hub.has_forwarder(template.pulse_id)
+    if was_running:
+        await hub.async_remove_forwarder(template.pulse_id)
+
+    stage, error = await async_stage_and_test(hass, template, certificate, private_key, ca_pem)
+    if error is not None:
+        if was_running:
+            await hub.async_add_forwarder(template)
+        return error
+
+    await hass.async_add_executor_job(commit_staged_credentials, stage, directory)
+    if hub.cloud_enabled(template.pulse_id):
+        await hub.async_add_forwarder(template)
+    await hub.async_check_certificates()
+    return None

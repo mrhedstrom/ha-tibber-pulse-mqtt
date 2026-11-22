@@ -292,6 +292,22 @@
       },
       "0-0_96_13_1": {
         "name": "Message code"
+      },
+      "cloud_connection": {
+        "name": "Tibber Cloud connection",
+        "state": {
+          "connected": "Connected",
+          "connecting": "Connecting",
+          "disconnected": "Disconnected",
+          "auth_failed": "Rejected by Tibber Cloud",
+          "invalid_certificate": "Invalid certificate",
+          "disabled": "Off"
+        }
+      }
+    },
+    "switch": {
+      "cloud_forwarding": {
+        "name": "Tibber Cloud forwarding"
       }
     }
   },
@@ -326,6 +342,225 @@
             "title": "Finish meter capture",
             "description": "A raw capture for {device} is being collected and can be downloaded using the link below. The file will continue to be updated with new messages while collection is active.\n\nNote: If the download does not start when clicking the link, right-click the link and choose \"Save link as...\" or \"Open link in new tab\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nBefore continuing, make sure you have downloaded the latest raw capture and created a GitHub issue.\n\nWhen you confirm, capture collection will stop and the local capture file will be permanently deleted."
           }
+        }
+      }
+    },
+    "cloud_certificate_expiring": {
+      "title": "Tibber Cloud certificate for Pulse {device} expires in {days} days",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Replace certificate",
+            "description": "The certificate used to forward Pulse {device} to Tibber Cloud expires on {date} ({days} days from now). Extract a new certificate and private key from the Pulse (see the documentation) and paste them below. They are tested before they replace the current ones.",
+            "data": {
+              "certificate": "Client certificate (certificate)",
+              "private_key": "Private key (private_key)"
+            },
+            "data_description": {
+              "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+              "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+          "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+          "key_mismatch": "The private key does not belong to this certificate.",
+          "certificate_expired": "The certificate has expired.",
+          "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+          "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+          "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+          "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+          "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+          "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again."
+        }
+      }
+    },
+    "cloud_certificate_expiring_soon": {
+      "title": "Tibber Cloud certificate for Pulse {device} expires in {days} days",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Replace certificate",
+            "description": "The certificate used to forward Pulse {device} to Tibber Cloud expires on {date} ({days} days from now). Extract a new certificate and private key from the Pulse (see the documentation) and paste them below. They are tested before they replace the current ones.",
+            "data": {
+              "certificate": "Client certificate (certificate)",
+              "private_key": "Private key (private_key)"
+            },
+            "data_description": {
+              "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+              "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+          "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+          "key_mismatch": "The private key does not belong to this certificate.",
+          "certificate_expired": "The certificate has expired.",
+          "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+          "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+          "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+          "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+          "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+          "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again."
+        }
+      }
+    },
+    "cloud_certificate_expired": {
+      "title": "Tibber Cloud certificate for Pulse {device} has expired",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Replace certificate",
+            "description": "The certificate used to forward Pulse {device} to Tibber Cloud expired on {date}, so data is no longer forwarded. Extract a new certificate and private key from the Pulse (see the documentation) and paste them below. They are tested before they replace the current ones.",
+            "data": {
+              "certificate": "Client certificate (certificate)",
+              "private_key": "Private key (private_key)"
+            },
+            "data_description": {
+              "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+              "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+          "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+          "key_mismatch": "The private key does not belong to this certificate.",
+          "certificate_expired": "The certificate has expired.",
+          "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+          "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+          "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+          "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+          "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+          "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again."
+        }
+      }
+    },
+    "cloud_certificate_invalid": {
+      "title": "Tibber Cloud certificate for Pulse {device} cannot be used",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Replace certificate",
+            "description": "The stored certificate or private key for Pulse {device} could not be read, so data is not forwarded. Paste the certificate and private key again. They are tested before they replace the current ones.",
+            "data": {
+              "certificate": "Client certificate (certificate)",
+              "private_key": "Private key (private_key)"
+            },
+            "data_description": {
+              "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+              "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+          "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+          "key_mismatch": "The private key does not belong to this certificate.",
+          "certificate_expired": "The certificate has expired.",
+          "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+          "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+          "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+          "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+          "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+          "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again."
+        }
+      }
+    },
+    "cloud_auth_rejected": {
+      "title": "Tibber Cloud rejected the certificate for Pulse {device}",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Replace certificate",
+            "description": "Tibber Cloud rejected the certificate for Pulse {device}, so data is not forwarded. Check that the certificate belongs to this Pulse and paste the certificate and private key again. They are tested before they replace the current ones.",
+            "data": {
+              "certificate": "Client certificate (certificate)",
+              "private_key": "Private key (private_key)"
+            },
+            "data_description": {
+              "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+              "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+          "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+          "key_mismatch": "The private key does not belong to this certificate.",
+          "certificate_expired": "The certificate has expired.",
+          "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+          "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+          "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+          "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+          "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+          "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again."
+        }
+      }
+    },
+    "cloud_connection_unstable": {
+      "title": "Connection to Tibber Cloud for Pulse {device} keeps dropping",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Restart forwarding",
+            "description": "The connection to Tibber Cloud for Pulse {device} has been lost several times in a short period. The most common cause is that a Mosquitto bridge (or another broker bridge) to Tibber Cloud is still running for this Pulse. Both use the same client ID, so Tibber Cloud keeps disconnecting one of them.\n\nRemove the bridge from your broker configuration and restart the broker, then confirm here. Forwarding is restarted and this notice is removed."
+          }
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again."
+        }
+      }
+    },
+    "cloud_pulse_discovered": {
+      "title": "Pulse {device} can be forwarded to Tibber Cloud",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Set up Tibber Cloud forwarding",
+            "description": "Pulse {device} has been found. You can forward its data to Tibber Cloud so the Tibber app, firmware updates and Tibber cloud features keep working. Paste the certificate and private key from the Pulse setup page. They are tested before anything is saved.\n\n**Important:** If a Mosquitto bridge (or another broker bridge) to Tibber Cloud is already set up for this Pulse, remove it first. If you do not want forwarding, choose Ignore and this notice will not come back.",
+            "data": {
+              "certificate": "Client certificate (certificate)",
+              "private_key": "Private key (private_key)"
+            },
+            "data_description": {
+              "certificate": "Paste the full contents of the certificate field, including the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.",
+              "private_key": "Paste the full contents of the private_key field, including the BEGIN and END lines."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "The certificate is not a valid PEM certificate. Copy the whole certificate field, including the BEGIN and END lines.",
+          "key_invalid": "The private key is not a valid PEM key without a password. Copy the whole private_key field, including the BEGIN and END lines.",
+          "key_mismatch": "The private key does not belong to this certificate.",
+          "certificate_expired": "The certificate has expired.",
+          "certificate_not_yet_valid": "The certificate is not valid yet. Check the date and time of this Home Assistant installation.",
+          "ca_invalid": "The CA certificate is not a valid PEM certificate.",
+          "storage_failed": "The certificates could not be saved. Check the Home Assistant log.",
+          "invalid_settings": "One of the advanced settings is invalid. Check the address, port and topics (topics must not contain + or #).",
+          "cannot_connect": "Could not connect to Tibber Cloud. Check the address, port and internet connection, and that no other bridge uses the same Pulse.",
+          "auth_failed": "Tibber Cloud rejected the certificate. Check that it belongs to this Pulse."
+        },
+        "abort": {
+          "entry_not_loaded": "The integration is not running. Wait until it has started and try again.",
+          "already_configured": "Tibber Cloud forwarding is already set up for this Pulse."
         }
       }
     }

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from custom_components.tibber_pulse_mqtt.config_flow import CloudForwardingSubentryFlow
+from custom_components.tibber_pulse_mqtt.const import CLOUD_STATES
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / "tibber_pulse_mqtt"
 LOCALES = ["da", "de", "en", "fi", "nl", "no", "sv"]
@@ -134,3 +135,77 @@ def test_pulse_field_names_are_identical_in_all_languages():
     assert reference == {field: field for field in PULSE_FIELDS}
     for lang in LOCALES:
         assert names(lang) == reference
+
+
+# ------------------------- entities and repair flows -------------------------
+
+CERTIFICATE_ISSUES = [
+    "cloud_certificate_expiring",
+    "cloud_certificate_expiring_soon",
+    "cloud_certificate_expired",
+    "cloud_certificate_invalid",
+    "cloud_auth_rejected",
+]
+# Errors the repair flows can show: the flow errors minus the ones only the form can cause.
+REPAIR_ERRORS = FLOW_ERRORS - {"credentials_incomplete"}
+ALL_REPAIR_ISSUES = CERTIFICATE_ISSUES + ["cloud_connection_unstable", "cloud_pulse_discovered"]
+
+
+def test_entity_names_and_every_connection_state_are_translated(translations):
+    sensor = translations["entity"]["sensor"]["cloud_connection"]
+    assert sensor["name"]
+    assert set(sensor["state"]) == set(CLOUD_STATES), "every sensor option needs a label"
+    assert translations["entity"]["switch"]["cloud_forwarding"]["name"]
+
+
+@pytest.mark.parametrize("key", CERTIFICATE_ISSUES + ["cloud_pulse_discovered"])
+def test_repair_flows_that_ask_for_credentials_have_all_their_texts(translations, key):
+    fix_flow = translations["issues"][key]["fix_flow"]
+    step = fix_flow["step"]["credentials"]
+    assert set(step["data"]) == {"certificate", "private_key"}
+    assert set(step["data_description"]) == {"certificate", "private_key"}
+    assert step["title"] and step["description"]
+    assert REPAIR_ERRORS <= set(fix_flow["error"])
+    assert "entry_not_loaded" in fix_flow["abort"]
+
+
+def test_credential_labels_in_repairs_are_the_same_as_in_the_config_flow(translations):
+    form = subentry_block(translations)["step"]["credentials"]
+    for key in CERTIFICATE_ISSUES + ["cloud_pulse_discovered"]:
+        step = translations["issues"][key]["fix_flow"]["step"]["credentials"]
+        assert step["data"] == form["data"]
+
+
+def test_unstable_connection_repair_has_its_texts(translations):
+    fix_flow = translations["issues"]["cloud_connection_unstable"]["fix_flow"]
+    assert fix_flow["step"]["confirm"]["title"] and fix_flow["step"]["confirm"]["description"]
+    assert "entry_not_loaded" in fix_flow["abort"]
+
+
+def test_discovered_pulse_repair_can_report_an_already_configured_pulse(translations):
+    assert "already_configured" in translations["issues"]["cloud_pulse_discovered"]["fix_flow"]["abort"]
+
+
+@pytest.mark.parametrize("key", ALL_REPAIR_ISSUES)
+def test_repair_texts_only_use_placeholders_the_issues_provide(translations, key):
+    issue = translations["issues"][key]
+    texts = [issue["title"]] + [value for path, value in flatten(issue["fix_flow"]["step"])]
+    for text in texts:
+        assert set(re.findall(r"\{(\w+)\}", text)) <= {"device", "days", "date"}
+    assert "{device}" in issue["title"]
+
+
+def test_expiry_texts_name_the_days_and_the_date(translations):
+    for key in ("cloud_certificate_expiring", "cloud_certificate_expiring_soon"):
+        issue = translations["issues"][key]
+        assert "{days}" in issue["title"]
+        description = issue["fix_flow"]["step"]["credentials"]["description"]
+        assert "{days}" in description and "{date}" in description
+    expired = translations["issues"]["cloud_certificate_expired"]["fix_flow"]["step"]["credentials"]["description"]
+    assert "{date}" in expired
+
+
+def test_the_unstable_and_discovered_repairs_warn_about_the_old_bridge(translations):
+    for key, step in (("cloud_connection_unstable", "confirm"), ("cloud_pulse_discovered", "credentials")):
+        description = translations["issues"][key]["fix_flow"]["step"][step]["description"]
+        assert "Mosquitto" in description

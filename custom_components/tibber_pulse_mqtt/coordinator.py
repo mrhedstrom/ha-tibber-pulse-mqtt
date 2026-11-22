@@ -1,22 +1,35 @@
 from __future__ import annotations
 
 import logging
-from homeassistant.core import HomeAssistant
+from datetime import datetime, timedelta
+from typing import Callable
+
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
+from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.storage import Store
 
 from .const import *
 from .mqtt_client import HAMQTTBridge, ExternalMQTTClient
 from .dispatcher import TibberDispatcher
-from .cloud_certs import credentials_root, remove_orphaned_credentials
+from .cloud_certs import credentials_dir, credentials_root, remove_orphaned_credentials
 from .cloud_forwarder import (
     CloudForwarder,
     CloudForwardingConfig,
-    StateCallback,
     config_from_subentry,
+    receive_topic_for,
+)
+from .cloud_issues import (
+    CloudIssueReporter,
+    async_clear_pulse_discovered,
+    async_remove_stale_issues,
+    async_report_pulse_discovered,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+CERTIFICATE_CHECK_INTERVAL = timedelta(hours=24)
 
 class TibberLocalHub:
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
@@ -27,6 +40,12 @@ class TibberLocalHub:
         self._ha_mqtt: HAMQTTBridge | None = None
         self._ext_mqtt: ExternalMQTTClient | None = None
         self._forwarders: dict[str, CloudForwarder] = {}  # keyed by Pulse ID
+        self._cloud_states: dict[str, str] = {}
+        self._cloud_disabled: set[str] = set()  # forwardings switched off by the user
+        self._cloud_listeners: list[Callable[[str], None]] = []
+        self._reporters: dict[str, CloudIssueReporter] = {}
+        self._cloud_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.cloud_forwarding")
+        self._unsub_certificate_check: Callable[[], None] | None = None
         self.sensor_manager = None  # set by sensor.py
         self._unsub_ha_stop = None  # type: Optional[callable]
 
@@ -65,6 +84,7 @@ class TibberLocalHub:
                 topic
             )
 
+        self.dispatcher.on_pulse_discovered = self._on_pulse_discovered
         await self._async_start_cloud_forwarders()
 
         # Robust HA-stop listener (NOT listen_once). We self-unsubscribe on first fire.
@@ -98,8 +118,17 @@ class TibberLocalHub:
         await self.hass.async_add_executor_job(
             remove_orphaned_credentials, credentials_root(self.hass.config.path), in_use
         )
+        async_remove_stale_issues(self.hass, self.entry)
+
+        stored = await self._cloud_store.async_load() or {}
+        self._cloud_disabled = set(stored.get("disabled", []))
 
         for subentry in self.entry.get_subentries_of_type(SUBENTRY_TYPE_CLOUD_FORWARDING):
+            pulse_id = subentry.data.get(CONF_PULSE_ID)
+            async_clear_pulse_discovered(self.hass, pulse_id)
+            if pulse_id in self._cloud_disabled:
+                self._cloud_states[pulse_id] = CLOUD_STATE_DISABLED
+                continue
             try:
                 config = config_from_subentry(self.hass.config.path, subentry)
             except (KeyError, TypeError, ValueError) as err:
@@ -110,6 +139,122 @@ class TibberLocalHub:
                 )
                 continue
             await self.async_add_forwarder(config)
+
+        await self.async_check_certificates()
+        self._unsub_certificate_check = async_track_time_interval(
+            self.hass, self._async_certificate_check_due, CERTIFICATE_CHECK_INTERVAL
+        )
+
+    # ----------------------------- Tibber Cloud state ----------------------------
+
+    def cloud_state(self, pulse_id: str) -> str:
+        """Return the connection state of a Pulse's forwarding."""
+        return self._cloud_states.get(pulse_id, CLOUD_STATE_DISABLED)
+
+    def cloud_enabled(self, pulse_id: str) -> bool:
+        """Return False when the user switched the forwarding off."""
+        return pulse_id not in self._cloud_disabled
+
+    def async_add_cloud_listener(self, listener: Callable[[str], None]) -> Callable[[], None]:
+        """Call ``listener(pulse_id)`` when a forwarding changes. Returns the unsubscribe."""
+        self._cloud_listeners.append(listener)
+
+        def _unsubscribe() -> None:
+            if listener in self._cloud_listeners:
+                self._cloud_listeners.remove(listener)
+
+        return _unsubscribe
+
+    def _notify_cloud_listeners(self, pulse_id: str) -> None:
+        for listener in tuple(self._cloud_listeners):
+            try:
+                listener(pulse_id)
+            except Exception:
+                _LOGGER.exception("Tibber Cloud listener failed")
+
+    def _subentry_for(self, pulse_id: str):
+        return next(
+            (
+                subentry
+                for subentry in self.entry.get_subentries_of_type(SUBENTRY_TYPE_CLOUD_FORWARDING)
+                if subentry.data.get(CONF_PULSE_ID) == pulse_id
+            ),
+            None,
+        )
+
+    def _reporter_for(self, pulse_id: str) -> CloudIssueReporter | None:
+        reporter = self._reporters.get(pulse_id)
+        if reporter is None:
+            subentry = self._subentry_for(pulse_id)
+            if subentry is None:
+                return None
+            reporter = self._reporters[pulse_id] = CloudIssueReporter(
+                self.hass, self.entry.entry_id, subentry.subentry_id, pulse_id
+            )
+        return reporter
+
+    @callback
+    def _on_cloud_state(self, pulse_id: str, state: str) -> None:
+        self._cloud_states[pulse_id] = state
+        reporter = self._reporter_for(pulse_id)
+        if reporter is not None:
+            reporter.on_state(state)
+        self._notify_cloud_listeners(pulse_id)
+
+    async def async_set_cloud_enabled(self, pulse_id: str, enabled: bool) -> None:
+        """Switch a forwarding on or off. The choice survives restarts and reloads."""
+        subentry = self._subentry_for(pulse_id)
+        if subentry is None:
+            raise ValueError(f"No Tibber Cloud forwarding for Pulse {pulse_id}")
+        if enabled:
+            config = config_from_subentry(self.hass.config.path, subentry)
+            self._cloud_disabled.discard(pulse_id)
+        else:
+            self._cloud_disabled.add(pulse_id)
+        await self._cloud_store.async_save({"disabled": sorted(self._cloud_disabled)})
+
+        if enabled:
+            await self.async_add_forwarder(config)
+        else:
+            await self.async_remove_forwarder(pulse_id)
+        self._notify_cloud_listeners(pulse_id)
+
+    async def async_reset_cloud_connection(self, pulse_id: str) -> None:
+        """Restart a forwarding and forget earlier connection drops (after removing a bridge)."""
+        reporter = self._reporter_for(pulse_id)
+        if reporter is not None:
+            reporter.clear_unstable()
+        subentry = self._subentry_for(pulse_id)
+        if subentry is not None and self.cloud_enabled(pulse_id):
+            await self.async_add_forwarder(config_from_subentry(self.hass.config.path, subentry))
+
+    async def async_check_certificates(self) -> None:
+        """Report certificates that cannot be read, have expired or expire soon."""
+        for subentry in self.entry.get_subentries_of_type(SUBENTRY_TYPE_CLOUD_FORWARDING):
+            pulse_id = subentry.data.get(CONF_PULSE_ID)
+            reporter = self._reporter_for(pulse_id)
+            try:
+                directory = credentials_dir(self.hass.config.path, pulse_id)
+            except ValueError:
+                continue
+            if reporter is not None:
+                await reporter.async_check_certificate(directory / "cert.pem")
+
+    async def _async_certificate_check_due(self, _now: datetime) -> None:
+        await self.async_check_certificates()
+
+    @callback
+    def _on_pulse_discovered(self, pulse_id: str, topic: str) -> None:
+        """Offer forwarding for a Pulse that has none. An ignored offer stays ignored."""
+        if self._subentry_for(pulse_id) is not None:
+            async_clear_pulse_discovered(self.hass, pulse_id)
+            return
+        try:
+            receive_topic_for(topic)
+            credentials_dir(self.hass.config.path, pulse_id)
+        except ValueError:
+            return  # forwarding cannot be built from this topic or ID
+        async_report_pulse_discovered(self.hass, self.entry.entry_id, pulse_id, topic)
 
     def _on_mqtt_message(self, topic: str, payload: bytes) -> None:
         """Hand every local message to the cloud forwarders, then to the dispatcher."""
@@ -129,14 +274,12 @@ class TibberLocalHub:
         else:
             raise ConnectionError("Local MQTT is not running")
 
-    async def async_add_forwarder(
-        self,
-        config: CloudForwardingConfig,
-        on_state: StateCallback | None = None,
-    ) -> CloudForwarder:
+    async def async_add_forwarder(self, config: CloudForwardingConfig) -> CloudForwarder:
         """Start forwarding one Pulse to Tibber Cloud, replacing any previous setup."""
         await self.async_remove_forwarder(config.pulse_id)
-        forwarder = CloudForwarder(self.hass, config, self._async_publish_local, on_state)
+        forwarder = CloudForwarder(
+            self.hass, config, self._async_publish_local, self._on_cloud_state
+        )
         self._forwarders[config.pulse_id] = forwarder
         await forwarder.async_start()
         return forwarder
@@ -159,6 +302,10 @@ class TibberLocalHub:
             except Exception:
                 pass
             self._unsub_ha_stop = None
+
+        if self._unsub_certificate_check is not None:
+            self._unsub_certificate_check()
+            self._unsub_certificate_check = None
 
         # Stop cloud forwarders before the local MQTT clients they publish through
         for pulse_id in list(self._forwarders):

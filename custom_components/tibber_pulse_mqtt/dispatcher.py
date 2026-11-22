@@ -5,7 +5,7 @@ import logging
 import asyncio
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Any, Optional
+from typing import TYPE_CHECKING, Callable, Dict, Any, Optional
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -55,6 +55,8 @@ class TibberDispatcher:
         self._devices: Dict[str, Dict[str, Any]] = {}
         self._topic_to_pulse: Dict[str, str] = {}
         self._pulse_topics: Dict[str, str] = {}  # pulse_id -> MQTT topic its STATUS arrived on
+        # Set by the hub; called on the event loop the first time a Pulse sends STATUS.
+        self.on_pulse_discovered: Optional[Callable[[str, str], None]] = None
         self._pending_by_topic: Dict[str, list] = {}
         self._meter_id: Dict[str, str] = {}
 
@@ -98,6 +100,14 @@ class TibberDispatcher:
             }
             for pulse_id, topic in dict(self._pulse_topics).items()
         }
+
+    def _notify_pulse_discovered(self, pulse_id: str, topic: str) -> None:
+        if self.on_pulse_discovered is None:
+            return
+        try:
+            self.on_pulse_discovered(pulse_id, topic)
+        except Exception:
+            _LOGGER.exception("Pulse discovery listener failed")
 
     # ----------------------------- Lifecycle -----------------------------------
 
@@ -243,7 +253,12 @@ class TibberDispatcher:
                 if pulse_id:
                     d["has_status"] = True
                     self._topic_to_pulse[dev_id] = pulse_id
+                    first_status = pulse_id not in self._pulse_topics
                     self._pulse_topics[pulse_id] = topic
+                    if first_status:
+                        self.hass.loop.call_soon_threadsafe(
+                            self._notify_pulse_discovered, pulse_id, topic
+                        )
 
                     # Also cache STATUS under pulse_id (used for device_info)
                     dp = self._devices.setdefault(pulse_id, {"status": {}, "sensors": {}, "has_status": True})
