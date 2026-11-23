@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.8] - future release
+## [0.5.0] - future release
 <!-- Add sections for new features, fixes, and improvements -->
 
 ### ⚠️ Important if you use a Mosquitto (or other broker) bridge to Tibber Cloud
