@@ -89,6 +89,109 @@
       }
     }
   },
+  "config_subentries": {
+    "cloud_forwarding": {
+      "initiate_flow": {
+        "user": "Lisää Tibber Cloud -välitys"
+      },
+      "entry_type": "Tibber Cloud -välitys",
+      "step": {
+        "user": {
+          "title": "Valitse Pulse",
+          "description": "Valitse Tibber Pulse, jonka tiedot välitetään Tibber Cloudiin. Vain Pulse-laitteet, jotka ovat jo lähettäneet STATUS-viestin, näytetään.\n\n**Tärkeää:** Jos tälle Pulselle on jo määritetty Mosquitto-silta (tai muu brokerisilta) Tibber Cloudiin, poista se ensin. Molemmat käyttävät samaa asiakastunnusta (client ID), joten Tibber Cloud katkaisee jatkuvasti toisen yhteyksistä.",
+          "data": {
+            "pulse_id": "Pulse"
+          }
+        },
+        "credentials": {
+          "title": "Tibber Cloud -varmenteet",
+          "description": "Välitä Pulsen {pulse} tiedot Tibber Cloudiin. Kopioi arvot Pulsen asetussivulta (kenttien nimet ovat suluissa). Varmenteet tallennetaan tähän Home Assistant -asennukseen, ja yhteys testataan ennen kuin mitään tallennetaan.\n\n**Tärkeää:** Poista ensin mahdollinen tämän Pulsen Mosquitto-silta, muuten Tibber Cloud katkaisee toisen kahdesta yhteydestä.",
+          "data": {
+            "certificate": "Asiakasvarmenne (certificate)",
+            "private_key": "Yksityinen avain (private_key)"
+          },
+          "data_description": {
+            "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+            "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Lisäasetukset",
+              "description": "Oletusarvot toimivat Tibberin tavallisessa käyttöönotossa. Muuta niitä vain, jos tiedät tarvitsevasi sitä.",
+              "data": {
+                "ca_cert": "CA-varmenne (ca_cert), valinnainen",
+                "mqtt_topic": "Topic Tibber Cloudiin (mqtt_topic)",
+                "mqtt_topic_sub": "Topic Tibber Cloudista (mqtt_topic_sub)",
+                "mqtt_url": "Osoite (mqtt_url)",
+                "mqtt_port": "Portti (mqtt_port)",
+                "tls_version": "TLS-versio"
+              },
+              "data_description": {
+                "ca_cert": "Jätä tyhjäksi käyttääksesi integraation mukana tulevaa CA-varmennetta. Liitä kenttä ca_cert vain, jos tarvitset toisen.",
+                "mqtt_topic": "Topic, jolle Pulse julkaisee paikallisesti ja joka välitetään Tibber Cloudiin. Oletus on sama topic kuin paikallisesti.",
+                "mqtt_topic_sub": "Topic, jolla Tibber Cloud lähettää laiteohjelmistopäivitykset ja komennot ja joka välitetään Pulselle.",
+                "mqtt_url": "Tibberin AWS IoT -osoitteen isäntänimi.",
+                "mqtt_port": "Tibberin AWS IoT -osoitteen portti, yleensä 8883.",
+                "tls_version": "Tibber Cloud -yhteydessä käytettävä TLS-versio. Oletus on TLS 1.2."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Määritä Tibber Cloud -välitys",
+          "description": "Pulsen {pulse} asetukset. Jätä varmenne ja yksityinen avain tyhjiksi säilyttääksesi tallennetut. Täytä molemmat (ja tarvittaessa CA-varmenne) korvataksesi ne. Yhteys testataan ennen tallennusta.",
+          "data": {
+            "certificate": "Asiakasvarmenne (certificate)",
+            "private_key": "Yksityinen avain (private_key)"
+          },
+          "data_description": {
+            "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+            "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Lisäasetukset",
+              "description": "Oletusarvot toimivat Tibberin tavallisessa käyttöönotossa. Muuta niitä vain, jos tiedät tarvitsevasi sitä.",
+              "data": {
+                "ca_cert": "CA-varmenne (ca_cert), valinnainen",
+                "mqtt_topic": "Topic Tibber Cloudiin (mqtt_topic)",
+                "mqtt_topic_sub": "Topic Tibber Cloudista (mqtt_topic_sub)",
+                "mqtt_url": "Osoite (mqtt_url)",
+                "mqtt_port": "Portti (mqtt_port)",
+                "tls_version": "TLS-versio"
+              },
+              "data_description": {
+                "ca_cert": "Jätä tyhjäksi käyttääksesi integraation mukana tulevaa CA-varmennetta. Liitä kenttä ca_cert vain, jos tarvitset toisen.",
+                "mqtt_topic": "Topic, jolle Pulse julkaisee paikallisesti ja joka välitetään Tibber Cloudiin. Oletus on sama topic kuin paikallisesti.",
+                "mqtt_topic_sub": "Topic, jolla Tibber Cloud lähettää laiteohjelmistopäivitykset ja komennot ja joka välitetään Pulselle.",
+                "mqtt_url": "Tibberin AWS IoT -osoitteen isäntänimi.",
+                "mqtt_port": "Tibberin AWS IoT -osoitteen portti, yleensä 8883.",
+                "tls_version": "Tibber Cloud -yhteydessä käytettävä TLS-versio. Oletus on TLS 1.2."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "credentials_incomplete": "Täytä sekä varmenne että yksityinen avain.",
+        "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+        "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+        "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+        "certificate_expired": "Varmenne on vanhentunut.",
+        "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+        "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+        "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+        "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+        "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+        "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+      },
+      "abort": {
+        "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen.",
+        "no_pulse_available": "Pulsea ei ole saatavilla. Pulsen on pitänyt lähettää vähintään yksi STATUS-viesti tälle integraatiolle viimeisimmän uudelleenkäynnistyksen jälkeen, eikä Pulse-laitteita, joilla on jo välitys, näytetä.",
+        "reconfigure_successful": "Tibber Cloud -välitys on päivitetty."
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "1-0_1_8_0": {
@@ -189,6 +292,22 @@
       },
       "0-0_96_13_1": {
         "name": "Viestikoodi"
+      },
+      "cloud_connection": {
+        "name": "Tibber Cloud -yhteys",
+        "state": {
+          "connected": "Yhdistetty",
+          "connecting": "Yhdistetään",
+          "disconnected": "Yhteys katkennut",
+          "auth_failed": "Tibber Cloud hylkäsi",
+          "invalid_certificate": "Virheellinen varmenne",
+          "disabled": "Pois"
+        }
+      }
+    },
+    "switch": {
+      "cloud_forwarding": {
+        "name": "Tibber Cloud -välitys"
       }
     }
   },
@@ -223,6 +342,225 @@
             "title": "Viimeistele mittarin tiedonkeruu",
             "description": "Laitteelle {device} kerätään raw capture -tiedostoa, jonka voi ladata alla olevasta linkistä. Tiedostoa päivitetään uusilla viesteillä niin kauan kuin keräys on käynnissä.\n\nHuomautus: Jos lataus ei käynnisty linkkiä napsauttamalla, napsauta linkkiä hiiren oikealla painikkeella ja valitse \"Tallenna linkki nimellä...\" tai \"Avaa linkki uudessa välilehdessä\".\n\n{download_url} | {documentation_url} | {issue_url}\n\nVarmista ensin, että olet ladannut uusimman raw capture -tiedoston ja luonut GitHub-ongelman.\n\nKun vahvistat, tiedonkeruu lopetetaan ja paikallinen capture-tiedosto poistetaan pysyvästi."
           }
+        }
+      }
+    },
+    "cloud_certificate_expiring": {
+      "title": "Pulsen {device} Tibber Cloud -varmenne vanhenee {days} päivän kuluttua",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Vaihda varmenne",
+            "description": "Varmenne, jolla Pulse {device} välitetään Tibber Cloudiin, vanhenee {date} ({days} päivän kuluttua). Hae Pulselta uusi varmenne ja yksityinen avain (katso dokumentaatio) ja liitä ne alle. Ne testataan ennen kuin ne korvaavat nykyiset.",
+            "data": {
+              "certificate": "Asiakasvarmenne (certificate)",
+              "private_key": "Yksityinen avain (private_key)"
+            },
+            "data_description": {
+              "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+              "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+          "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+          "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+          "certificate_expired": "Varmenne on vanhentunut.",
+          "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+          "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+          "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+          "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+          "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+          "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen."
+        }
+      }
+    },
+    "cloud_certificate_expiring_soon": {
+      "title": "Pulsen {device} Tibber Cloud -varmenne vanhenee {days} päivän kuluttua",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Vaihda varmenne",
+            "description": "Varmenne, jolla Pulse {device} välitetään Tibber Cloudiin, vanhenee {date} ({days} päivän kuluttua). Hae Pulselta uusi varmenne ja yksityinen avain (katso dokumentaatio) ja liitä ne alle. Ne testataan ennen kuin ne korvaavat nykyiset.",
+            "data": {
+              "certificate": "Asiakasvarmenne (certificate)",
+              "private_key": "Yksityinen avain (private_key)"
+            },
+            "data_description": {
+              "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+              "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+          "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+          "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+          "certificate_expired": "Varmenne on vanhentunut.",
+          "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+          "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+          "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+          "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+          "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+          "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen."
+        }
+      }
+    },
+    "cloud_certificate_expired": {
+      "title": "Pulsen {device} Tibber Cloud -varmenne on vanhentunut",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Vaihda varmenne",
+            "description": "Varmenne, jolla Pulse {device} välitetään Tibber Cloudiin, vanheni {date}, joten tietoja ei enää välitetä. Hae Pulselta uusi varmenne ja yksityinen avain (katso dokumentaatio) ja liitä ne alle. Ne testataan ennen kuin ne korvaavat nykyiset.",
+            "data": {
+              "certificate": "Asiakasvarmenne (certificate)",
+              "private_key": "Yksityinen avain (private_key)"
+            },
+            "data_description": {
+              "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+              "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+          "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+          "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+          "certificate_expired": "Varmenne on vanhentunut.",
+          "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+          "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+          "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+          "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+          "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+          "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen."
+        }
+      }
+    },
+    "cloud_certificate_invalid": {
+      "title": "Pulsen {device} Tibber Cloud -varmennetta ei voi käyttää",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Vaihda varmenne",
+            "description": "Pulsen {device} tallennettua varmennetta tai yksityistä avainta ei voitu lukea, joten tietoja ei välitetä. Liitä varmenne ja yksityinen avain uudelleen. Ne testataan ennen kuin ne korvaavat nykyiset.",
+            "data": {
+              "certificate": "Asiakasvarmenne (certificate)",
+              "private_key": "Yksityinen avain (private_key)"
+            },
+            "data_description": {
+              "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+              "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+          "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+          "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+          "certificate_expired": "Varmenne on vanhentunut.",
+          "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+          "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+          "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+          "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+          "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+          "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen."
+        }
+      }
+    },
+    "cloud_auth_rejected": {
+      "title": "Tibber Cloud hylkäsi Pulsen {device} varmenteen",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Vaihda varmenne",
+            "description": "Tibber Cloud hylkäsi Pulsen {device} varmenteen, joten tietoja ei välitetä. Tarkista, että varmenne kuuluu tälle Pulselle, ja liitä varmenne ja yksityinen avain uudelleen. Ne testataan ennen kuin ne korvaavat nykyiset.",
+            "data": {
+              "certificate": "Asiakasvarmenne (certificate)",
+              "private_key": "Yksityinen avain (private_key)"
+            },
+            "data_description": {
+              "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+              "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+          "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+          "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+          "certificate_expired": "Varmenne on vanhentunut.",
+          "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+          "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+          "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+          "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+          "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+          "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen."
+        }
+      }
+    },
+    "cloud_connection_unstable": {
+      "title": "Pulsen {device} yhteys Tibber Cloudiin katkeaa jatkuvasti",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Käynnistä välitys uudelleen",
+            "description": "Pulsen {device} yhteys Tibber Cloudiin on katkennut useita kertoja lyhyessä ajassa. Yleisin syy on, että tälle Pulselle on edelleen käynnissä Mosquitto-silta (tai muu brokerisilta) Tibber Cloudiin. Molemmat käyttävät samaa asiakastunnusta (client ID), joten Tibber Cloud katkaisee jatkuvasti toisen.\n\nPoista silta brokerin asetuksista, käynnistä broker uudelleen ja vahvista sitten tässä. Välitys käynnistetään uudelleen ja tämä ilmoitus poistetaan."
+          }
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen."
+        }
+      }
+    },
+    "cloud_pulse_discovered": {
+      "title": "Pulse {device} voidaan välittää Tibber Cloudiin",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Määritä Tibber Cloud -välitys",
+            "description": "Pulse {device} löytyi. Voit välittää sen tiedot Tibber Cloudiin, jotta Tibber-sovellus, laiteohjelmistopäivitykset ja Tibberin pilvitoiminnot jatkavat toimintaansa. Liitä varmenne ja yksityinen avain Pulsen asetussivulta. Ne testataan ennen kuin mitään tallennetaan.\n\n**Tärkeää:** Jos tälle Pulselle on jo määritetty Mosquitto-silta (tai muu brokerisilta) Tibber Cloudiin, poista se ensin. Jos et halua välitystä, valitse Ohita, niin tämä ilmoitus ei palaa.",
+            "data": {
+              "certificate": "Asiakasvarmenne (certificate)",
+              "private_key": "Yksityinen avain (private_key)"
+            },
+            "data_description": {
+              "certificate": "Liitä kentän certificate koko sisältö, mukaan lukien rivit -----BEGIN CERTIFICATE----- ja -----END CERTIFICATE-----.",
+              "private_key": "Liitä kentän private_key koko sisältö, mukaan lukien BEGIN- ja END-rivit."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Varmenne ei ole kelvollinen PEM-varmenne. Kopioi koko kenttä certificate, mukaan lukien BEGIN- ja END-rivit.",
+          "key_invalid": "Yksityinen avain ei ole kelvollinen salasanaton PEM-avain. Kopioi koko kenttä private_key, mukaan lukien BEGIN- ja END-rivit.",
+          "key_mismatch": "Yksityinen avain ei kuulu tähän varmenteeseen.",
+          "certificate_expired": "Varmenne on vanhentunut.",
+          "certificate_not_yet_valid": "Varmenne ei ole vielä voimassa. Tarkista tämän Home Assistant -asennuksen päivämäärä ja kellonaika.",
+          "ca_invalid": "CA-varmenne ei ole kelvollinen PEM-varmenne.",
+          "storage_failed": "Varmenteita ei voitu tallentaa. Tarkista Home Assistantin loki.",
+          "invalid_settings": "Jokin lisäasetuksista on virheellinen. Tarkista osoite, portti ja topicit (topicit eivät saa sisältää merkkejä + tai #).",
+          "cannot_connect": "Yhteyttä Tibber Cloudiin ei voitu muodostaa. Tarkista osoite, portti ja internetyhteys sekä se, ettei mikään toinen silta käytä samaa Pulsea.",
+          "auth_failed": "Tibber Cloud hylkäsi varmenteen. Tarkista, että se kuuluu tälle Pulselle."
+        },
+        "abort": {
+          "entry_not_loaded": "Integraatio ei ole käynnissä. Odota, että se on käynnistynyt, ja yritä uudelleen.",
+          "already_configured": "Tibber Cloud -välitys on jo määritetty tälle Pulselle."
         }
       }
     }

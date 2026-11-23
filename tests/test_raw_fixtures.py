@@ -94,7 +94,7 @@ def _order_fixture_records(records, status_first):
     return ordered
 
 
-def _replay_fixture(raw_file, tmp_path, records=None):
+def _replay_fixture(raw_file, tmp_path, records=None, dispatcher_out=None, on_pulse_discovered=None):
     sensor_manager = RecordingSensorManager()
     entry = SimpleNamespace(entry_id="fixture", data={}, options={})
     hass = SimpleNamespace(
@@ -103,6 +103,9 @@ def _replay_fixture(raw_file, tmp_path, records=None):
         data={DOMAIN: {"fixture": SimpleNamespace(sensor_manager=sensor_manager)}},
     )
     dispatcher = TibberDispatcher(hass, entry)
+    if dispatcher_out is not None:
+        dispatcher_out.append(dispatcher)
+    dispatcher.on_pulse_discovered = on_pulse_discovered
     records = _load_fixture_records(raw_file) if records is None else records
 
     per_record_updates = []
@@ -383,3 +386,56 @@ def test_raw_fixture_replay_is_repeatable(raw_file, tmp_path):
         key: set(status) for key, status in second_manager.status.items()
     }
 
+
+@pytest.mark.parametrize("raw_file", RAW_FIXTURES, ids=lambda path: path.stem)
+@pytest.mark.parametrize("status_first", [True, False], ids=["status-first", "data-first"])
+def test_discovered_pulses_follow_the_status_messages(raw_file, status_first, tmp_path):
+    """Forwarding is offered for every Pulse that sent STATUS, with the topic it publishes on."""
+    records = _order_fixture_records(_load_fixture_records(raw_file), status_first)
+    expected = {}
+    for record in records:
+        if not _is_status_record(record):
+            continue
+        status = json.loads(base64.b64decode(record["payload"]))["status"]
+        pulse_id = str(status.get("ID") or "").strip()
+        if pulse_id:
+            expected[pulse_id] = record["topic"]
+
+    dispatchers = []
+    _replay_fixture(raw_file, tmp_path, records, dispatcher_out=dispatchers)
+
+    discovered = dispatchers[0].discovered_pulses
+    assert {pulse_id: info["topic"] for pulse_id, info in discovered.items()} == expected
+    for pulse_id, info in discovered.items():
+        assert str(info["status"].get("ID")).strip() == pulse_id
+
+
+@pytest.mark.parametrize("raw_file", RAW_FIXTURES, ids=lambda path: path.stem)
+@pytest.mark.parametrize("status_first", [True, False], ids=["status-first", "data-first"])
+def test_each_pulse_is_announced_once_with_the_topic_of_its_first_status(raw_file, status_first, tmp_path):
+    records = _order_fixture_records(_load_fixture_records(raw_file), status_first)
+    expected = {}
+    for record in records:
+        if not _is_status_record(record):
+            continue
+        status = json.loads(base64.b64decode(record["payload"]))["status"]
+        pulse_id = str(status.get("ID") or "").strip()
+        if pulse_id:
+            expected.setdefault(pulse_id, record["topic"])
+
+    announced = []
+    _replay_fixture(
+        raw_file, tmp_path, records, on_pulse_discovered=lambda pulse_id, topic: announced.append((pulse_id, topic))
+    )
+
+    assert announced == list(expected.items())
+
+
+def test_a_failing_discovery_listener_does_not_break_message_processing(tmp_path):
+    raw_file = RAW_FIXTURES[0]
+
+    def broken(pulse_id, topic):
+        raise RuntimeError("boom")
+
+    # _replay_fixture asserts that every data message still produced readings
+    _replay_fixture(raw_file, tmp_path, on_pulse_discovered=broken)

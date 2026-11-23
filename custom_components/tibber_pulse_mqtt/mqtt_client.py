@@ -134,6 +134,12 @@ class HAMQTTBridge:
         unsub = await ha_mqtt.async_subscribe(self.hass, subscribe_topic, _wrapped, qos=1, encoding=None)
         self._unsubs.append(unsub)
 
+    async def async_publish(
+        self, topic: str, payload: bytes, *, qos: int = 1, retain: bool = False
+    ) -> None:
+        """Publish raw bytes through Home Assistant's MQTT integration."""
+        await ha_mqtt.async_publish(self.hass, topic, payload, qos, retain, encoding=None)
+
     async def async_stop(self):
         for u in self._unsubs:
             u()
@@ -223,6 +229,18 @@ class ExternalMQTTClient:
 
     def _dispatch(self, topic, payload):
         self.cb(topic, payload)
+
+    async def async_publish(
+        self, topic: str, payload: bytes, *, qos: int = 1, retain: bool = False
+    ) -> None:
+        """Publish raw bytes through the external broker client.
+
+        paho's publish() is thread-safe and does not block, so it can be called
+        directly from the event loop.
+        """
+        result = self._client.publish(topic, payload, qos=qos, retain=retain)
+        if result.rc != paho.MQTT_ERR_SUCCESS:
+            raise ConnectionError(f"External MQTT publish failed (rc={result.rc})")
 
     def start(self):
         if self.host is None:

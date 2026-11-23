@@ -89,6 +89,109 @@
       }
     }
   },
+  "config_subentries": {
+    "cloud_forwarding": {
+      "initiate_flow": {
+        "user": "Tibber-Cloud-Weiterleitung hinzufügen"
+      },
+      "entry_type": "Tibber-Cloud-Weiterleitung",
+      "step": {
+        "user": {
+          "title": "Pulse auswählen",
+          "description": "Wähle den Tibber Pulse, der an die Tibber Cloud weitergeleitet werden soll. Es werden nur Pulse-Geräte angezeigt, die bereits eine STATUS-Nachricht gesendet haben.\n\n**Wichtig:** Ist für diesen Pulse bereits eine Mosquitto-Bridge (oder eine andere Broker-Bridge) zur Tibber Cloud eingerichtet, entferne sie zuerst. Beide verwenden dieselbe Client-ID, daher trennt die Tibber Cloud ständig eine der beiden Verbindungen.",
+          "data": {
+            "pulse_id": "Pulse"
+          }
+        },
+        "credentials": {
+          "title": "Tibber-Cloud-Zertifikate",
+          "description": "Leite Daten von Pulse {pulse} an die Tibber Cloud weiter. Kopiere die Werte von der Einrichtungsseite des Pulse (die Feldnamen stehen in Klammern). Die Zertifikate werden auf dieser Home-Assistant-Installation gespeichert, und die Verbindung wird getestet, bevor etwas gespeichert wird.\n\n**Wichtig:** Entferne zuerst eine vorhandene Mosquitto-Bridge für diesen Pulse, sonst trennt die Tibber Cloud eine der beiden Verbindungen.",
+          "data": {
+            "certificate": "Client-Zertifikat (certificate)",
+            "private_key": "Privater Schlüssel (private_key)"
+          },
+          "data_description": {
+            "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+            "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Erweiterte Einstellungen",
+              "description": "Die Standardwerte funktionieren für Tibbers übliche Einrichtung. Ändere sie nur, wenn du es wirklich brauchst.",
+              "data": {
+                "ca_cert": "CA-Zertifikat (ca_cert), optional",
+                "mqtt_topic": "Topic zur Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic von der Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adresse (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS-Version"
+              },
+              "data_description": {
+                "ca_cert": "Leer lassen, um das mit der Integration gelieferte CA-Zertifikat zu verwenden. Füge das Feld ca_cert nur ein, wenn du ein anderes brauchst.",
+                "mqtt_topic": "Topic, auf dem der Pulse lokal veröffentlicht und das an die Tibber Cloud weitergeleitet wird. Standard ist dasselbe Topic wie lokal.",
+                "mqtt_topic_sub": "Topic, auf dem die Tibber Cloud Firmware-Updates und Befehle sendet und das an den Pulse weitergeleitet wird.",
+                "mqtt_url": "Hostname des AWS-IoT-Endpunkts von Tibber.",
+                "mqtt_port": "Port des AWS-IoT-Endpunkts von Tibber, normalerweise 8883.",
+                "tls_version": "TLS-Version für die Verbindung zur Tibber Cloud. Standard ist TLS 1.2."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Tibber-Cloud-Weiterleitung konfigurieren",
+          "description": "Einstellungen für Pulse {pulse}. Lasse Zertifikat und privaten Schlüssel leer, um die gespeicherten zu behalten. Fülle beide aus (und bei Bedarf das CA-Zertifikat), um sie zu ersetzen. Die Verbindung wird getestet, bevor etwas gespeichert wird.",
+          "data": {
+            "certificate": "Client-Zertifikat (certificate)",
+            "private_key": "Privater Schlüssel (private_key)"
+          },
+          "data_description": {
+            "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+            "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+          },
+          "sections": {
+            "advanced": {
+              "name": "Erweiterte Einstellungen",
+              "description": "Die Standardwerte funktionieren für Tibbers übliche Einrichtung. Ändere sie nur, wenn du es wirklich brauchst.",
+              "data": {
+                "ca_cert": "CA-Zertifikat (ca_cert), optional",
+                "mqtt_topic": "Topic zur Tibber Cloud (mqtt_topic)",
+                "mqtt_topic_sub": "Topic von der Tibber Cloud (mqtt_topic_sub)",
+                "mqtt_url": "Adresse (mqtt_url)",
+                "mqtt_port": "Port (mqtt_port)",
+                "tls_version": "TLS-Version"
+              },
+              "data_description": {
+                "ca_cert": "Leer lassen, um das mit der Integration gelieferte CA-Zertifikat zu verwenden. Füge das Feld ca_cert nur ein, wenn du ein anderes brauchst.",
+                "mqtt_topic": "Topic, auf dem der Pulse lokal veröffentlicht und das an die Tibber Cloud weitergeleitet wird. Standard ist dasselbe Topic wie lokal.",
+                "mqtt_topic_sub": "Topic, auf dem die Tibber Cloud Firmware-Updates und Befehle sendet und das an den Pulse weitergeleitet wird.",
+                "mqtt_url": "Hostname des AWS-IoT-Endpunkts von Tibber.",
+                "mqtt_port": "Port des AWS-IoT-Endpunkts von Tibber, normalerweise 8883.",
+                "tls_version": "TLS-Version für die Verbindung zur Tibber Cloud. Standard ist TLS 1.2."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "credentials_incomplete": "Fülle sowohl das Zertifikat als auch den privaten Schlüssel aus.",
+        "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+        "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+        "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+        "certificate_expired": "Das Zertifikat ist abgelaufen.",
+        "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+        "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+        "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+        "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+        "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+        "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+      },
+      "abort": {
+        "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut.",
+        "no_pulse_available": "Kein Pulse verfügbar. Ein Pulse muss seit dem letzten Neustart mindestens eine STATUS-Nachricht an diese Integration gesendet haben; Pulse-Geräte mit bestehender Weiterleitung werden nicht angezeigt.",
+        "reconfigure_successful": "Die Tibber-Cloud-Weiterleitung wurde aktualisiert."
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "1-0_1_8_0": {
@@ -189,6 +292,22 @@
       },
       "0-0_96_13_1": {
         "name": "Nachrichtencode"
+      },
+      "cloud_connection": {
+        "name": "Tibber-Cloud-Verbindung",
+        "state": {
+          "connected": "Verbunden",
+          "connecting": "Verbindet",
+          "disconnected": "Getrennt",
+          "auth_failed": "Von der Tibber Cloud abgelehnt",
+          "invalid_certificate": "Ungültiges Zertifikat",
+          "disabled": "Aus"
+        }
+      }
+    },
+    "switch": {
+      "cloud_forwarding": {
+        "name": "Tibber-Cloud-Weiterleitung"
       }
     }
   },
@@ -223,6 +342,225 @@
             "title": "Zählererfassung abschließen",
             "description": "Für {device} wird derzeit eine Raw Capture gesammelt und kann über den untenstehenden Link heruntergeladen werden. Die Datei wird während der Erfassung fortlaufend mit neuen Nachrichten aktualisiert.\n\nHinweis: Falls der Download beim Anklicken des Links nicht startet, klicken Sie mit der rechten Maustaste auf den Link und wählen Sie „Link speichern unter...“ oder „Link in neuem Tab öffnen“.\n\n{download_url} | {documentation_url} | {issue_url}\n\nStellen Sie zunächst sicher, dass Sie die neueste Raw-Capture-Datei heruntergeladen und ein GitHub-Issue erstellt haben.\n\nNach der Bestätigung wird die Erfassung beendet und die lokale Capture-Datei dauerhaft gelöscht."
           }
+        }
+      }
+    },
+    "cloud_certificate_expiring": {
+      "title": "Das Tibber-Cloud-Zertifikat für Pulse {device} läuft in {days} Tagen ab",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Zertifikat ersetzen",
+            "description": "Das Zertifikat, mit dem Pulse {device} an die Tibber Cloud weitergeleitet wird, läuft am {date} ab (in {days} Tagen). Hole ein neues Zertifikat und einen neuen privaten Schlüssel vom Pulse (siehe Dokumentation) und füge sie unten ein. Sie werden getestet, bevor sie die aktuellen ersetzen.",
+            "data": {
+              "certificate": "Client-Zertifikat (certificate)",
+              "private_key": "Privater Schlüssel (private_key)"
+            },
+            "data_description": {
+              "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+              "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+          "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+          "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+          "certificate_expired": "Das Zertifikat ist abgelaufen.",
+          "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+          "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+          "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+          "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+          "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+          "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut."
+        }
+      }
+    },
+    "cloud_certificate_expiring_soon": {
+      "title": "Das Tibber-Cloud-Zertifikat für Pulse {device} läuft in {days} Tagen ab",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Zertifikat ersetzen",
+            "description": "Das Zertifikat, mit dem Pulse {device} an die Tibber Cloud weitergeleitet wird, läuft am {date} ab (in {days} Tagen). Hole ein neues Zertifikat und einen neuen privaten Schlüssel vom Pulse (siehe Dokumentation) und füge sie unten ein. Sie werden getestet, bevor sie die aktuellen ersetzen.",
+            "data": {
+              "certificate": "Client-Zertifikat (certificate)",
+              "private_key": "Privater Schlüssel (private_key)"
+            },
+            "data_description": {
+              "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+              "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+          "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+          "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+          "certificate_expired": "Das Zertifikat ist abgelaufen.",
+          "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+          "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+          "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+          "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+          "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+          "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut."
+        }
+      }
+    },
+    "cloud_certificate_expired": {
+      "title": "Das Tibber-Cloud-Zertifikat für Pulse {device} ist abgelaufen",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Zertifikat ersetzen",
+            "description": "Das Zertifikat, mit dem Pulse {device} an die Tibber Cloud weitergeleitet wird, ist am {date} abgelaufen, daher werden keine Daten mehr weitergeleitet. Hole ein neues Zertifikat und einen neuen privaten Schlüssel vom Pulse (siehe Dokumentation) und füge sie unten ein. Sie werden getestet, bevor sie die aktuellen ersetzen.",
+            "data": {
+              "certificate": "Client-Zertifikat (certificate)",
+              "private_key": "Privater Schlüssel (private_key)"
+            },
+            "data_description": {
+              "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+              "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+          "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+          "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+          "certificate_expired": "Das Zertifikat ist abgelaufen.",
+          "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+          "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+          "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+          "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+          "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+          "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut."
+        }
+      }
+    },
+    "cloud_certificate_invalid": {
+      "title": "Das Tibber-Cloud-Zertifikat für Pulse {device} kann nicht verwendet werden",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Zertifikat ersetzen",
+            "description": "Das gespeicherte Zertifikat oder der private Schlüssel für Pulse {device} konnte nicht gelesen werden, daher werden keine Daten weitergeleitet. Füge Zertifikat und privaten Schlüssel erneut ein. Sie werden getestet, bevor sie die aktuellen ersetzen.",
+            "data": {
+              "certificate": "Client-Zertifikat (certificate)",
+              "private_key": "Privater Schlüssel (private_key)"
+            },
+            "data_description": {
+              "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+              "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+          "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+          "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+          "certificate_expired": "Das Zertifikat ist abgelaufen.",
+          "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+          "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+          "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+          "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+          "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+          "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut."
+        }
+      }
+    },
+    "cloud_auth_rejected": {
+      "title": "Die Tibber Cloud hat das Zertifikat für Pulse {device} abgelehnt",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Zertifikat ersetzen",
+            "description": "Die Tibber Cloud hat das Zertifikat für Pulse {device} abgelehnt, daher werden keine Daten weitergeleitet. Prüfe, ob das Zertifikat zu diesem Pulse gehört, und füge Zertifikat und privaten Schlüssel erneut ein. Sie werden getestet, bevor sie die aktuellen ersetzen.",
+            "data": {
+              "certificate": "Client-Zertifikat (certificate)",
+              "private_key": "Privater Schlüssel (private_key)"
+            },
+            "data_description": {
+              "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+              "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+          "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+          "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+          "certificate_expired": "Das Zertifikat ist abgelaufen.",
+          "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+          "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+          "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+          "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+          "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+          "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut."
+        }
+      }
+    },
+    "cloud_connection_unstable": {
+      "title": "Die Verbindung zur Tibber Cloud für Pulse {device} bricht ständig ab",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Weiterleitung neu starten",
+            "description": "Die Verbindung zur Tibber Cloud für Pulse {device} ist innerhalb kurzer Zeit mehrmals abgebrochen. Die häufigste Ursache ist, dass für diesen Pulse noch eine Mosquitto-Bridge (oder eine andere Broker-Bridge) zur Tibber Cloud läuft. Beide verwenden dieselbe Client-ID, daher trennt die Tibber Cloud ständig eine der beiden Verbindungen.\n\nEntferne die Bridge aus der Broker-Konfiguration, starte den Broker neu und bestätige dann hier. Die Weiterleitung wird neu gestartet und dieser Hinweis entfernt."
+          }
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut."
+        }
+      }
+    },
+    "cloud_pulse_discovered": {
+      "title": "Pulse {device} kann an die Tibber Cloud weitergeleitet werden",
+      "fix_flow": {
+        "step": {
+          "credentials": {
+            "title": "Tibber-Cloud-Weiterleitung einrichten",
+            "description": "Pulse {device} wurde gefunden. Du kannst seine Daten an die Tibber Cloud weiterleiten, damit die Tibber-App, Firmware-Updates und Cloud-Funktionen von Tibber weiter funktionieren. Füge Zertifikat und privaten Schlüssel von der Einrichtungsseite des Pulse ein. Sie werden getestet, bevor etwas gespeichert wird.\n\n**Wichtig:** Ist für diesen Pulse bereits eine Mosquitto-Bridge (oder eine andere Broker-Bridge) zur Tibber Cloud eingerichtet, entferne sie zuerst. Möchtest du keine Weiterleitung, wähle Ignorieren, dann kommt dieser Hinweis nicht wieder.",
+            "data": {
+              "certificate": "Client-Zertifikat (certificate)",
+              "private_key": "Privater Schlüssel (private_key)"
+            },
+            "data_description": {
+              "certificate": "Füge den gesamten Inhalt des Felds certificate ein, einschließlich der Zeilen -----BEGIN CERTIFICATE----- und -----END CERTIFICATE-----.",
+              "private_key": "Füge den gesamten Inhalt des Felds private_key ein, einschließlich der BEGIN- und END-Zeilen."
+            }
+          }
+        },
+        "error": {
+          "certificate_invalid": "Das Zertifikat ist kein gültiges PEM-Zertifikat. Kopiere das gesamte Feld certificate, einschließlich der BEGIN- und END-Zeilen.",
+          "key_invalid": "Der private Schlüssel ist kein gültiger PEM-Schlüssel ohne Passwort. Kopiere das gesamte Feld private_key, einschließlich der BEGIN- und END-Zeilen.",
+          "key_mismatch": "Der private Schlüssel gehört nicht zu diesem Zertifikat.",
+          "certificate_expired": "Das Zertifikat ist abgelaufen.",
+          "certificate_not_yet_valid": "Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit dieser Home-Assistant-Installation.",
+          "ca_invalid": "Das CA-Zertifikat ist kein gültiges PEM-Zertifikat.",
+          "storage_failed": "Die Zertifikate konnten nicht gespeichert werden. Prüfe das Home-Assistant-Protokoll.",
+          "invalid_settings": "Eine der erweiterten Einstellungen ist ungültig. Prüfe Adresse, Port und Topics (Topics dürfen weder + noch # enthalten).",
+          "cannot_connect": "Verbindung zur Tibber Cloud nicht möglich. Prüfe Adresse, Port und Internetverbindung sowie, dass keine andere Bridge denselben Pulse verwendet.",
+          "auth_failed": "Die Tibber Cloud hat das Zertifikat abgelehnt. Prüfe, ob es zu diesem Pulse gehört."
+        },
+        "abort": {
+          "entry_not_loaded": "Die Integration läuft nicht. Warte, bis sie gestartet ist, und versuche es erneut.",
+          "already_configured": "Die Tibber-Cloud-Weiterleitung ist für diesen Pulse bereits eingerichtet."
         }
       }
     }

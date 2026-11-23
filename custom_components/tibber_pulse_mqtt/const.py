@@ -41,3 +41,38 @@ RAW_CAPTURE_API_URL = "/api/tibber_pulse_mqtt/raw_capture"
 CAPTURE_RETENTION_DAYS = 10
 CAPTURE_WARNING_FILES = 5
 CAPTURE_WARNING_SIZE_MB = 25
+
+# Tibber Cloud forwarding (built-in replacement for an external MQTT bridge)
+CLOUD_STATE_DISABLED = "disabled"
+CLOUD_STATE_CONNECTING = "connecting"
+CLOUD_STATE_CONNECTED = "connected"
+CLOUD_STATE_DISCONNECTED = "disconnected"
+CLOUD_STATE_AUTH_FAILED = "auth_failed"
+CLOUD_STATE_INVALID_CERTIFICATE = "invalid_certificate"
+# Order of the options of the connection sensor
+CLOUD_STATES = (
+    CLOUD_STATE_CONNECTED,
+    CLOUD_STATE_CONNECTING,
+    CLOUD_STATE_DISCONNECTED,
+    CLOUD_STATE_AUTH_FAILED,
+    CLOUD_STATE_INVALID_CERTIFICATE,
+    CLOUD_STATE_DISABLED,
+)
+
+DEFAULT_CLOUD_HOST = "a1zhmn1192zl1a.iot.eu-west-1.amazonaws.com"
+DEFAULT_CLOUD_PORT = 8883
+DEFAULT_CLOUD_TLS_VERSION = "tlsv1.2"
+
+# Tibber Cloud forwarding subentry (one per Pulse)
+SUBENTRY_TYPE_CLOUD_FORWARDING = "cloud_forwarding"
+CONF_PULSE_ID = "pulse_id"
+CONF_LOCAL_TOPIC = "local_topic"  # topic the Pulse publishes on locally
+CONF_ADVANCED = "advanced"  # form section; names below match the Pulse setup page
+CONF_CLOUD_CERTIFICATE = "certificate"
+CONF_CLOUD_PRIVATE_KEY = "private_key"
+CONF_CLOUD_CA = "ca_cert"
+CONF_CLOUD_HOST = "mqtt_url"
+CONF_CLOUD_PORT = "mqtt_port"
+CONF_CLOUD_PUBLISH_TOPIC = "mqtt_topic"
+CONF_CLOUD_RECEIVE_TOPIC = "mqtt_topic_sub"
+CONF_CLOUD_TLS_VERSION = "tls_version"

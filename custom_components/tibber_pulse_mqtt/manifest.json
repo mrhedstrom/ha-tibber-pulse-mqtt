@@ -22,7 +22,7 @@
     "custom_components.tibber_pulse_mqtt"
   ],
   "requirements": [
-    "paho-mqtt>=1.6.1",
+    "paho-mqtt>=2.0.0",
     "protobuf>=4.25.0"
   ],
   "version": "0.4.7"

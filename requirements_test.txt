@@ -1,3 +1,4 @@
 homeassistant>=2026.3.0
 pytest>=8.3
+paho-mqtt>=2.0.0
 protobuf>=4.25.0
